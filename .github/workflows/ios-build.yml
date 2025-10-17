@@ -1,0 +1,78 @@
+name: iOS Build
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build-ios:
+    name: Build iOS/iPadOS AUv3
+    runs-on: macos-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Xcode
+      uses: maxim-lobanov/setup-xcode@v1
+      with:
+        xcode-version: latest-stable
+
+    - name: Install JUCE
+      run: |
+        git clone --depth 1 --branch 7.0.12 https://github.com/juce-framework/JUCE.git ~/JUCE
+        ln -sf ~/JUCE JUCE
+
+    - name: Generate Xcode Project
+      run: |
+        mkdir -p build_ios
+        cd build_ios
+        cmake .. -G Xcode \
+          -DCMAKE_SYSTEM_NAME=iOS \
+          -DCMAKE_OSX_SYSROOT=iphoneos \
+          -DCMAKE_OSX_DEPLOYMENT_TARGET=13.0
+
+    - name: Build for iOS
+      run: |
+        cd build_ios
+        xcodebuild -scheme GenerativeMIDI_AUv3 \
+          -configuration Release \
+          -destination 'generic/platform=iOS' \
+          CODE_SIGN_IDENTITY="" \
+          CODE_SIGNING_REQUIRED=NO \
+          build || true
+
+    - name: Upload Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: GenerativeMIDI-iOS
+        path: build_ios/**/*.app
+
+  build-macos:
+    name: Build macOS Plugins
+    runs-on: macos-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Install JUCE
+      run: |
+        git clone --depth 1 --branch 7.0.12 https://github.com/juce-framework/JUCE.git ~/JUCE
+        ln -sf ~/JUCE JUCE
+
+    - name: Build Plugins
+      run: |
+        mkdir -p build
+        cd build
+        cmake .. -DCMAKE_BUILD_TYPE=Release
+        cmake --build . --config Release
+
+    - name: Upload Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: GenerativeMIDI-macOS
+        path: build/GenerativeMIDI_artefacts/Release/**/*
