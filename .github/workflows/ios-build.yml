@@ -19,11 +19,11 @@ jobs:
     - name: Setup Xcode
       uses: maxim-lobanov/setup-xcode@v1
       with:
-        xcode-version: latest-stable
+        xcode-version: '15.4'
 
     - name: Install JUCE
       run: |
-        git clone --depth 1 --branch 7.0.12 https://github.com/juce-framework/JUCE.git ~/JUCE
+        git clone --depth 1 --branch develop https://github.com/juce-framework/JUCE.git ~/JUCE
         ln -sf ~/JUCE JUCE
 
     - name: Generate Xcode Project
@@ -59,9 +59,14 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
+    - name: Setup Xcode
+      uses: maxim-lobanov/setup-xcode@v1
+      with:
+        xcode-version: '15.4'
+
     - name: Install JUCE
       run: |
-        git clone --depth 1 --branch 7.0.12 https://github.com/juce-framework/JUCE.git ~/JUCE
+        git clone --depth 1 --branch develop https://github.com/juce-framework/JUCE.git ~/JUCE
         ln -sf ~/JUCE JUCE
 
     - name: Build Plugins
