@@ -146,6 +146,10 @@ public:
     std::vector<bool> generateRhythmSequence(int length);
     std::vector<float> generateVelocitySequence(int length);
 
+    // Set parameter ranges
+    void setPitchRange(int minPitch, int maxPitch);
+    void setVelocityRange(float minVel, float maxVel);
+
 private:
     GeneratorType currentType = Probabilistic;
 
@@ -155,6 +159,12 @@ private:
     ProbabilisticGenerator probabilistic;
 
     std::deque<int> noteHistory;
+
+    // Parameter ranges
+    int pitchMin = 48;
+    int pitchMax = 84;
+    float velocityMean = 0.7f;
+    float velocityVariance = 0.2f;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(AlgorithmicEngine)
 };

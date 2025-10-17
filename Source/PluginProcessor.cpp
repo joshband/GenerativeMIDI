@@ -162,6 +162,14 @@ void GenerativeMIDIProcessor::prepareToPlay(double sampleRate, int samplesPerBlo
     euclideanEngine.setSteps(static_cast<int>(steps));
     euclideanEngine.setPulses(static_cast<int>(pulses));
 
+    // Initialize algorithmic engine with parameter ranges
+    auto pitchMin = static_cast<int>(parameters.getRawParameterValue(PARAM_PITCH_MIN)->load());
+    auto pitchMax = static_cast<int>(parameters.getRawParameterValue(PARAM_PITCH_MAX)->load());
+    auto velocityMin = parameters.getRawParameterValue(PARAM_VELOCITY_MIN)->load();
+    auto velocityMax = parameters.getRawParameterValue(PARAM_VELOCITY_MAX)->load();
+    algorithmicEngine.setPitchRange(pitchMin, pitchMax);
+    algorithmicEngine.setVelocityRange(velocityMin, velocityMax);
+
     // Initialize polyrhythm engine with a default pattern
     if (polyrhythmEngine.getNumLayers() == 0)
     {
@@ -262,6 +270,12 @@ void GenerativeMIDIProcessor::onSubdivisionHit(int subdivision)
     // Generate events based on selected generator type
     auto generatorType = parameters.getRawParameterValue(PARAM_GENERATOR_TYPE)->load();
 
+    // Get velocity and pitch range parameters
+    auto velocityMin = parameters.getRawParameterValue(PARAM_VELOCITY_MIN)->load();
+    auto velocityMax = parameters.getRawParameterValue(PARAM_VELOCITY_MAX)->load();
+    auto pitchMin = static_cast<int>(parameters.getRawParameterValue(PARAM_PITCH_MIN)->load());
+    auto pitchMax = static_cast<int>(parameters.getRawParameterValue(PARAM_PITCH_MAX)->load());
+
     switch (static_cast<int>(generatorType))
     {
         case 0: // Euclidean
@@ -269,8 +283,13 @@ void GenerativeMIDIProcessor::onSubdivisionHit(int subdivision)
             int step = lastSubdivisionStep % euclideanEngine.getSteps();
             if (euclideanEngine.getStep(step))
             {
-                float velocity = euclideanEngine.getVelocity(step);
-                int pitch = static_cast<int>(parameters.getRawParameterValue(PARAM_PITCH_MIN)->load()) + (step % 12);
+                // Get raw velocity from engine and map to user-defined range
+                float rawVelocity = euclideanEngine.getVelocity(step);
+                float velocity = velocityMin + (rawVelocity * (velocityMax - velocityMin));
+
+                // Map step to pitch range instead of just adding offset
+                int pitchRange = pitchMax - pitchMin;
+                int pitch = pitchMin + (step % (pitchRange + 1));
 
                 // Schedule note on immediately
                 eventScheduler.scheduleNoteOn(pitch, velocity, 1, currentSamplePosition);
@@ -294,8 +313,12 @@ void GenerativeMIDIProcessor::onSubdivisionHit(int subdivision)
                 // Check if this step should trigger
                 if (layer->pattern[layer->currentStep])
                 {
-                    int pitch = layer->pitches[layer->currentStep];
-                    float velocity = layer->velocities[layer->currentStep];
+                    // Constrain pitch to user-defined range
+                    int pitch = juce::jlimit(pitchMin, pitchMax, layer->pitches[layer->currentStep]);
+
+                    // Map velocity to user-defined range
+                    float rawVelocity = layer->velocities[layer->currentStep];
+                    float velocity = velocityMin + (rawVelocity * (velocityMax - velocityMin));
 
                     // Schedule note on immediately
                     eventScheduler.scheduleNoteOn(pitch, velocity, 1, currentSamplePosition);
@@ -315,17 +338,27 @@ void GenerativeMIDIProcessor::onSubdivisionHit(int subdivision)
             auto density = parameters.getRawParameterValue(PARAM_NOTE_DENSITY)->load();
             if (juce::Random::getSystemRandom().nextFloat() < density)
             {
+                // Update algorithmic engine with current parameter ranges
+                algorithmicEngine.setPitchRange(pitchMin, pitchMax);
+                algorithmicEngine.setVelocityRange(velocityMin, velocityMax);
+
                 auto notes = algorithmicEngine.generateNoteSequence(1);
                 if (!notes.empty() && notes[0] >= 0)
                 {
+                    // Constrain generated note to user-defined pitch range
+                    int pitch = juce::jlimit(pitchMin, pitchMax, notes[0]);
+
                     auto velocities = algorithmicEngine.generateVelocitySequence(1);
-                    float velocity = velocities.empty() ? 0.7f : velocities[0];
+                    float rawVelocity = velocities.empty() ? 0.7f : velocities[0];
+
+                    // Map velocity to user-defined range
+                    float velocity = velocityMin + (rawVelocity * (velocityMax - velocityMin));
 
                     // Schedule note on immediately
-                    eventScheduler.scheduleNoteOn(notes[0], velocity, 1, currentSamplePosition);
+                    eventScheduler.scheduleNoteOn(pitch, velocity, 1, currentSamplePosition);
 
                     int noteDuration = static_cast<int>(clockManager.getSamplesPerSubdivision(16) * 0.5);
-                    eventScheduler.scheduleNoteOff(notes[0], 1, currentSamplePosition + noteDuration);
+                    eventScheduler.scheduleNoteOff(pitch, 1, currentSamplePosition + noteDuration);
                 }
             }
             break;

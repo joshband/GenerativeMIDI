@@ -369,6 +369,20 @@ void AlgorithmicEngine::setGeneratorType(GeneratorType type)
     currentType = type;
 }
 
+void AlgorithmicEngine::setPitchRange(int minPitch, int maxPitch)
+{
+    pitchMin = juce::jlimit(0, 127, minPitch);
+    pitchMax = juce::jlimit(0, 127, maxPitch);
+    if (pitchMin > pitchMax)
+        std::swap(pitchMin, pitchMax);
+}
+
+void AlgorithmicEngine::setVelocityRange(float minVel, float maxVel)
+{
+    velocityMean = (minVel + maxVel) / 2.0f;
+    velocityVariance = (maxVel - minVel) / 4.0f; // Keep most values within range
+}
+
 std::vector<int> AlgorithmicEngine::generateNoteSequence(int length)
 {
     std::vector<int> sequence;
@@ -432,7 +446,7 @@ std::vector<int> AlgorithmicEngine::generateNoteSequence(int length)
         case Probabilistic:
         default:
         {
-            sequence = probabilistic.generateMelody(length, 48, 84);
+            sequence = probabilistic.generateMelody(length, pitchMin, pitchMax);
             break;
         }
     }
@@ -449,6 +463,6 @@ std::vector<float> AlgorithmicEngine::generateVelocitySequence(int length)
 {
     std::vector<float> velocities;
     for (int i = 0; i < length; ++i)
-        velocities.push_back(probabilistic.generateVelocity());
+        velocities.push_back(probabilistic.generateVelocity(velocityMean, velocityVariance));
     return velocities;
 }
