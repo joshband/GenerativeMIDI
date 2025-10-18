@@ -34,6 +34,9 @@ public:
 
     CustomLookAndFeel()
     {
+        // Load UI assets from SynaptikUIToolkit
+        loadUIAssets();
+
         // SYNAPTIK Gilded Steampunk Theme
         // Background: Abyss Navy - deep Victorian void
         setColour(juce::ResizableWindow::backgroundColourId, juce::Colour(ABYSS_NAVY));
@@ -60,6 +63,38 @@ public:
         setColour(juce::ComboBox::outlineColourId, juce::Colour(BRASS_AGED));
     }
 
+    void loadUIAssets()
+    {
+        // Get path to SynaptikUIToolkit assets
+        auto artPath = juce::File::getCurrentWorkingDirectory()
+            .getChildFile("art")
+            .getChildFile("themes")
+            .getChildFile("victorian-steampunk")
+            .getChildFile("ui-elements");
+
+        // Load knob images (128px variants)
+        knobAstrolabe = juce::ImageCache::getFromFile(
+            artPath.getChildFile("knobs").getChildFile("knob_astrolabe_rings_128.png")
+        );
+        knobClock = juce::ImageCache::getFromFile(
+            artPath.getChildFile("knobs").getChildFile("knob_clock_face_128.png")
+        );
+        knobOrnate = juce::ImageCache::getFromFile(
+            artPath.getChildFile("knobs").getChildFile("knob_ornate_filigree_128.png")
+        );
+
+        // Load slider thumb image
+        sliderThumb = juce::ImageCache::getFromFile(
+            artPath.getChildFile("sliders").getChildFile("pointer_aether_staff_128.png")
+        );
+
+        // Check if images loaded successfully
+        if (!knobAstrolabe.isValid())
+        {
+            DBG("Warning: Could not load knob_astrolabe_rings_128.png from " << artPath.getFullPathName());
+        }
+    }
+
     void drawRotarySlider(juce::Graphics& g, int x, int y, int width, int height,
                          float sliderPos, float rotaryStartAngle, float rotaryEndAngle,
                          juce::Slider& slider) override
@@ -67,126 +102,198 @@ public:
         auto radius = juce::jmin(width / 2, height / 2) - 8.0f;
         auto centreX = x + width * 0.5f;
         auto centreY = y + height * 0.5f;
-        auto rx = centreX - radius;
-        auto ry = centreY - radius;
-        auto rw = radius * 2.0f;
         auto angle = rotaryStartAngle + sliderPos * (rotaryEndAngle - rotaryStartAngle);
 
-        // Aether glow (outer radiance)
-        auto glowRadius = radius + 12.0f;
-        juce::ColourGradient aetherGlow(
-            juce::Colour(AETHER_CYAN).withAlpha(0.3f),
-            centreX, centreY,
-            juce::Colour(AMBER_TESLA).withAlpha(0.0f),
-            centreX, centreY - glowRadius,
-            true);
-        g.setGradientFill(aetherGlow);
-        g.fillEllipse(centreX - glowRadius, centreY - glowRadius, glowRadius * 2.0f, glowRadius * 2.0f);
-
-        // Polished gold rim (ornate bezel)
-        g.setColour(slider.findColour(juce::Slider::rotarySliderOutlineColourId));
-        g.drawEllipse(rx - 3, ry - 3, rw + 6, rw + 6, 3.0f);
-
-        // Inner shadow ring (depth)
-        g.setColour(juce::Colour(BRONZE_GOTHIC).withAlpha(0.6f));
-        g.drawEllipse(rx - 1, ry - 1, rw + 2, rw + 2, 2.0f);
-
-        // Aged brass body with metallic gradient
-        juce::ColourGradient brassGrad(
-            juce::Colour(BRASS_AGED).brighter(0.2f), centreX - radius * 0.5f, ry,
-            juce::Colour(BRASS_AGED).darker(0.3f), centreX + radius * 0.5f, ry + rw,
-            false);
-        g.setGradientFill(brassGrad);
-        g.fillEllipse(rx, ry, rw, rw);
-
-        // Verdigris patina accent (aged copper detail)
-        g.setColour(juce::Colour(GREEN_VERDIGRIS).withAlpha(0.15f));
-        g.fillEllipse(rx + rw * 0.6f, ry + rw * 0.1f, rw * 0.3f, rw * 0.3f);
-
-        // Engraved tick marks (12 positions - Victorian clock aesthetic)
-        g.setColour(juce::Colour(BRONZE_GOTHIC));
-        for (int i = 0; i < 12; ++i)
+        // If we have a loaded knob image, use hybrid approach (image + pointer)
+        if (knobAstrolabe.isValid())
         {
-            float tickAngle = i * (juce::MathConstants<float>::twoPi / 12.0f) - juce::MathConstants<float>::halfPi;
-            float x1 = centreX + radius * 0.75f * std::cos(tickAngle);
-            float y1 = centreY + radius * 0.75f * std::sin(tickAngle);
-            float x2 = centreX + radius * 0.88f * std::cos(tickAngle);
-            float y2 = centreY + radius * 0.88f * std::sin(tickAngle);
-            g.drawLine(x1, y1, x2, y2, 2.0f);
+            // Aether glow (outer radiance)
+            auto glowRadius = radius + 12.0f;
+            juce::ColourGradient aetherGlow(
+                juce::Colour(AETHER_CYAN).withAlpha(0.3f),
+                centreX, centreY,
+                juce::Colour(AMBER_TESLA).withAlpha(0.0f),
+                centreX, centreY - glowRadius,
+                true);
+            g.setGradientFill(aetherGlow);
+            g.fillEllipse(centreX - glowRadius, centreY - glowRadius, glowRadius * 2.0f, glowRadius * 2.0f);
+
+            // Draw the actual knob image from SynaptikUIToolkit
+            auto knobSize = radius * 2.0f;
+            g.setOpacity(1.0f);
+            g.drawImageWithin(knobAstrolabe,
+                            static_cast<int>(centreX - knobSize * 0.5f),
+                            static_cast<int>(centreY - knobSize * 0.5f),
+                            static_cast<int>(knobSize),
+                            static_cast<int>(knobSize),
+                            juce::RectanglePlacement::centred);
+
+            // Golden energy arc (value indicator with glow)
+            juce::Path valueArc;
+            valueArc.addCentredArc(centreX, centreY, radius * 0.82f, radius * 0.82f,
+                                  0.0f, rotaryStartAngle, angle, true);
+
+            // Arc glow
+            g.setColour(slider.findColour(juce::Slider::rotarySliderFillColourId).withAlpha(0.4f));
+            g.strokePath(valueArc, juce::PathStrokeType(5.0f));
+
+            // Arc core
+            g.setColour(slider.findColour(juce::Slider::rotarySliderFillColourId));
+            g.strokePath(valueArc, juce::PathStrokeType(2.5f));
+
+            // Glowing aether pointer (energy beam)
+            auto hubRadius = radius * 0.22f;
+            juce::Path pointer;
+            auto pointerLength = radius * 0.68f;
+            auto pointerThickness = 4.0f;
+
+            // Pointer glow trail (wider)
+            pointer.addRoundedRectangle(-pointerThickness * 0.8f, -radius + hubRadius,
+                                       pointerThickness * 1.6f, pointerLength,
+                                       pointerThickness * 0.4f);
+            pointer.applyTransform(juce::AffineTransform::rotation(angle).translated(centreX, centreY));
+            g.setColour(slider.findColour(juce::Slider::thumbColourId).withAlpha(0.5f));
+            g.fillPath(pointer);
+
+            // Pointer core beam
+            juce::Path pointerCore;
+            pointerCore.addRoundedRectangle(-pointerThickness * 0.35f, -radius + hubRadius,
+                                           pointerThickness * 0.7f, pointerLength * 0.95f,
+                                           pointerThickness * 0.35f);
+            pointerCore.applyTransform(juce::AffineTransform::rotation(angle).translated(centreX, centreY));
+            g.setColour(slider.findColour(juce::Slider::thumbColourId));
+            g.fillPath(pointerCore);
+
+            // Pointer tip highlight (bright aether spark)
+            auto tipX = centreX + std::sin(angle) * (radius - hubRadius * 1.2f);
+            auto tipY = centreY - std::cos(angle) * (radius - hubRadius * 1.2f);
+            g.setColour(juce::Colours::white.withAlpha(0.9f));
+            g.fillEllipse(tipX - pointerThickness * 0.5f, tipY - pointerThickness * 0.5f,
+                         pointerThickness, pointerThickness);
         }
+        else
+        {
+            // Fallback: Use original procedural drawing if images not loaded
+            auto rx = centreX - radius;
+            auto ry = centreY - radius;
+            auto rw = radius * 2.0f;
 
-        // Golden energy arc (value indicator with glow)
-        juce::Path valueArc;
-        valueArc.addCentredArc(centreX, centreY, radius * 0.82f, radius * 0.82f,
-                              0.0f, rotaryStartAngle, angle, true);
+            // Aether glow (outer radiance)
+            auto glowRadius = radius + 12.0f;
+            juce::ColourGradient aetherGlow(
+                juce::Colour(AETHER_CYAN).withAlpha(0.3f),
+                centreX, centreY,
+                juce::Colour(AMBER_TESLA).withAlpha(0.0f),
+                centreX, centreY - glowRadius,
+                true);
+            g.setGradientFill(aetherGlow);
+            g.fillEllipse(centreX - glowRadius, centreY - glowRadius, glowRadius * 2.0f, glowRadius * 2.0f);
 
-        // Arc glow
-        g.setColour(slider.findColour(juce::Slider::rotarySliderFillColourId).withAlpha(0.4f));
-        g.strokePath(valueArc, juce::PathStrokeType(5.0f));
+            // Polished gold rim (ornate bezel)
+            g.setColour(slider.findColour(juce::Slider::rotarySliderOutlineColourId));
+            g.drawEllipse(rx - 3, ry - 3, rw + 6, rw + 6, 3.0f);
 
-        // Arc core
-        g.setColour(slider.findColour(juce::Slider::rotarySliderFillColourId));
-        g.strokePath(valueArc, juce::PathStrokeType(2.5f));
+            // Inner shadow ring (depth)
+            g.setColour(juce::Colour(BRONZE_GOTHIC).withAlpha(0.6f));
+            g.drawEllipse(rx - 1, ry - 1, rw + 2, rw + 2, 2.0f);
 
-        // Aether crystal center hub
-        auto hubRadius = radius * 0.22f;
+            // Aged brass body with metallic gradient
+            juce::ColourGradient brassGrad(
+                juce::Colour(BRASS_AGED).brighter(0.2f), centreX - radius * 0.5f, ry,
+                juce::Colour(BRASS_AGED).darker(0.3f), centreX + radius * 0.5f, ry + rw,
+                false);
+            g.setGradientFill(brassGrad);
+            g.fillEllipse(rx, ry, rw, rw);
 
-        // Hub glow
-        juce::ColourGradient hubGlow(
-            juce::Colour(AETHER_CYAN).withAlpha(0.6f), centreX, centreY,
-            juce::Colour(AETHER_CYAN).withAlpha(0.0f), centreX, centreY - hubRadius * 2.5f,
-            true);
-        g.setGradientFill(hubGlow);
-        g.fillEllipse(centreX - hubRadius * 1.8f, centreY - hubRadius * 1.8f,
-                     hubRadius * 3.6f, hubRadius * 3.6f);
+            // Verdigris patina accent (aged copper detail)
+            g.setColour(juce::Colour(GREEN_VERDIGRIS).withAlpha(0.15f));
+            g.fillEllipse(rx + rw * 0.6f, ry + rw * 0.1f, rw * 0.3f, rw * 0.3f);
 
-        // Hub brass ring
-        g.setColour(juce::Colour(GOLD_TEMPLE));
-        g.drawEllipse(centreX - hubRadius, centreY - hubRadius,
-                     hubRadius * 2.0f, hubRadius * 2.0f, 2.0f);
+            // Engraved tick marks (12 positions - Victorian clock aesthetic)
+            g.setColour(juce::Colour(BRONZE_GOTHIC));
+            for (int i = 0; i < 12; ++i)
+            {
+                float tickAngle = i * (juce::MathConstants<float>::twoPi / 12.0f) - juce::MathConstants<float>::halfPi;
+                float x1 = centreX + radius * 0.75f * std::cos(tickAngle);
+                float y1 = centreY + radius * 0.75f * std::sin(tickAngle);
+                float x2 = centreX + radius * 0.88f * std::cos(tickAngle);
+                float y2 = centreY + radius * 0.88f * std::sin(tickAngle);
+                g.drawLine(x1, y1, x2, y2, 2.0f);
+            }
 
-        // Hub copper fill
-        juce::ColourGradient hubGrad(
-            juce::Colour(COPPER_STEAM).brighter(0.1f), centreX, centreY - hubRadius,
-            juce::Colour(COPPER_STEAM).darker(0.2f), centreX, centreY + hubRadius,
-            false);
-        g.setGradientFill(hubGrad);
-        g.fillEllipse(centreX - hubRadius * 0.9f, centreY - hubRadius * 0.9f,
-                     hubRadius * 1.8f, hubRadius * 1.8f);
+            // Golden energy arc (value indicator with glow)
+            juce::Path valueArc;
+            valueArc.addCentredArc(centreX, centreY, radius * 0.82f, radius * 0.82f,
+                                  0.0f, rotaryStartAngle, angle, true);
 
-        // Crystal highlight
-        g.setColour(juce::Colour(AETHER_CYAN).withAlpha(0.7f));
-        g.fillEllipse(centreX - hubRadius * 0.4f, centreY - hubRadius * 0.5f,
-                     hubRadius * 0.8f, hubRadius * 0.8f);
+            // Arc glow
+            g.setColour(slider.findColour(juce::Slider::rotarySliderFillColourId).withAlpha(0.4f));
+            g.strokePath(valueArc, juce::PathStrokeType(5.0f));
 
-        // Glowing aether pointer (energy beam)
-        juce::Path pointer;
-        auto pointerLength = radius * 0.68f;
-        auto pointerThickness = 4.0f;
+            // Arc core
+            g.setColour(slider.findColour(juce::Slider::rotarySliderFillColourId));
+            g.strokePath(valueArc, juce::PathStrokeType(2.5f));
 
-        // Pointer glow trail (wider)
-        pointer.addRoundedRectangle(-pointerThickness * 0.8f, -radius + hubRadius,
-                                   pointerThickness * 1.6f, pointerLength,
-                                   pointerThickness * 0.4f);
-        pointer.applyTransform(juce::AffineTransform::rotation(angle).translated(centreX, centreY));
-        g.setColour(slider.findColour(juce::Slider::thumbColourId).withAlpha(0.5f));
-        g.fillPath(pointer);
+            // Aether crystal center hub
+            auto hubRadius = radius * 0.22f;
 
-        // Pointer core beam
-        juce::Path pointerCore;
-        pointerCore.addRoundedRectangle(-pointerThickness * 0.35f, -radius + hubRadius,
-                                       pointerThickness * 0.7f, pointerLength * 0.95f,
-                                       pointerThickness * 0.35f);
-        pointerCore.applyTransform(juce::AffineTransform::rotation(angle).translated(centreX, centreY));
-        g.setColour(slider.findColour(juce::Slider::thumbColourId));
-        g.fillPath(pointerCore);
+            // Hub glow
+            juce::ColourGradient hubGlow(
+                juce::Colour(AETHER_CYAN).withAlpha(0.6f), centreX, centreY,
+                juce::Colour(AETHER_CYAN).withAlpha(0.0f), centreX, centreY - hubRadius * 2.5f,
+                true);
+            g.setGradientFill(hubGlow);
+            g.fillEllipse(centreX - hubRadius * 1.8f, centreY - hubRadius * 1.8f,
+                         hubRadius * 3.6f, hubRadius * 3.6f);
 
-        // Pointer tip highlight (bright aether spark)
-        auto tipX = centreX + std::sin(angle) * (radius - hubRadius * 1.2f);
-        auto tipY = centreY - std::cos(angle) * (radius - hubRadius * 1.2f);
-        g.setColour(juce::Colours::white.withAlpha(0.9f));
-        g.fillEllipse(tipX - pointerThickness * 0.5f, tipY - pointerThickness * 0.5f,
-                     pointerThickness, pointerThickness);
+            // Hub brass ring
+            g.setColour(juce::Colour(GOLD_TEMPLE));
+            g.drawEllipse(centreX - hubRadius, centreY - hubRadius,
+                         hubRadius * 2.0f, hubRadius * 2.0f, 2.0f);
+
+            // Hub copper fill
+            juce::ColourGradient hubGrad(
+                juce::Colour(COPPER_STEAM).brighter(0.1f), centreX, centreY - hubRadius,
+                juce::Colour(COPPER_STEAM).darker(0.2f), centreX, centreY + hubRadius,
+                false);
+            g.setGradientFill(hubGrad);
+            g.fillEllipse(centreX - hubRadius * 0.9f, centreY - hubRadius * 0.9f,
+                         hubRadius * 1.8f, hubRadius * 1.8f);
+
+            // Crystal highlight
+            g.setColour(juce::Colour(AETHER_CYAN).withAlpha(0.7f));
+            g.fillEllipse(centreX - hubRadius * 0.4f, centreY - hubRadius * 0.5f,
+                         hubRadius * 0.8f, hubRadius * 0.8f);
+
+            // Glowing aether pointer (energy beam)
+            juce::Path pointer;
+            auto pointerLength = radius * 0.68f;
+            auto pointerThickness = 4.0f;
+
+            // Pointer glow trail (wider)
+            pointer.addRoundedRectangle(-pointerThickness * 0.8f, -radius + hubRadius,
+                                       pointerThickness * 1.6f, pointerLength,
+                                       pointerThickness * 0.4f);
+            pointer.applyTransform(juce::AffineTransform::rotation(angle).translated(centreX, centreY));
+            g.setColour(slider.findColour(juce::Slider::thumbColourId).withAlpha(0.5f));
+            g.fillPath(pointer);
+
+            // Pointer core beam
+            juce::Path pointerCore;
+            pointerCore.addRoundedRectangle(-pointerThickness * 0.35f, -radius + hubRadius,
+                                           pointerThickness * 0.7f, pointerLength * 0.95f,
+                                           pointerThickness * 0.35f);
+            pointerCore.applyTransform(juce::AffineTransform::rotation(angle).translated(centreX, centreY));
+            g.setColour(slider.findColour(juce::Slider::thumbColourId));
+            g.fillPath(pointerCore);
+
+            // Pointer tip highlight (bright aether spark)
+            auto tipX = centreX + std::sin(angle) * (radius - hubRadius * 1.2f);
+            auto tipY = centreY - std::cos(angle) * (radius - hubRadius * 1.2f);
+            g.setColour(juce::Colours::white.withAlpha(0.9f));
+            g.fillEllipse(tipX - pointerThickness * 0.5f, tipY - pointerThickness * 0.5f,
+                         pointerThickness, pointerThickness);
+        }
     }
 
     void drawLinearSlider(juce::Graphics& g, int x, int y, int width, int height,
@@ -364,5 +471,11 @@ public:
     }
 
 private:
+    // UI asset images from SynaptikUIToolkit
+    juce::Image knobAstrolabe;
+    juce::Image knobClock;
+    juce::Image knobOrnate;
+    juce::Image sliderThumb;
+
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(CustomLookAndFeel)
 };
