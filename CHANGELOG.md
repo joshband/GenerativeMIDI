@@ -7,6 +7,64 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.0] - 2025-10-18
+
+### Added - MIDI Channel Routing & Enhanced UI
+- **MIDI Channel Routing**
+  - New MIDI Channel selector dropdown (1-16)
+  - All generated MIDI notes now respect selected channel
+  - Allows routing different instances to different instruments/tracks
+  - Parameter: `midiChannel` (1-16, default: 1)
+  - Located in Generator section next to generator type selector
+
+- **Stochastic Engine UI Controls**
+  - Added 3 new rotary knobs for chaos/stochastic parameters:
+    - **Step Size**: Controls randomness magnitude (0.01-1.0)
+    - **Momentum**: Controls inertia/friction (0.0-1.0)
+    - **Time Scale**: Controls evolution speed (0.01-10.0)
+  - Controls only enabled when using stochastic generators (Brownian, Perlin, Drunk Walk, Lorenz)
+  - Automatically grey out at 30% opacity when not relevant
+
+- **Color-Coded Generators**
+  - Generator label now color-codes based on engine type:
+    - **Gold** (GOLD_TEMPLE): Euclidean rhythms
+    - **Copper** (COPPER_STEAM): Polyrhythm engine
+    - **Green Verdigris** (GREEN_VERDIGRIS): Algorithmic generators (Markov, L-System, Cellular, Probabilistic)
+    - **Violet** (VIOLET_ALCHEMY): Stochastic/Chaos generators
+  - Provides instant visual feedback about current generator category
+
+- **Live Playback Visualization**
+  - Pattern Display now shows current playback position in real-time
+  - Current step highlighted with amber/cyan crystal effect
+  - Playhead updates at 30 FPS showing exact sequencer position
+  - Works for Euclidean patterns during live playback
+
+### Changed - Enhanced Dynamic UI
+- **Context-Aware Control States**: Expanded from v0.7.1
+  - Euclidean controls (Steps, Pulses, Rotation): Only enabled for Euclidean generator
+  - Stochastic controls (Step Size, Momentum, Time Scale): Only enabled for stochastic generators
+  - All engine-specific controls now grey out to 30% opacity when disabled
+  - Universal controls (Tempo, Velocity, Pitch, Scale, Swing, Gate, Ratchet) remain always enabled
+
+- **Improved Visual Hierarchy**
+  - Disabled controls more visible (30% vs previous 40%)
+  - Generator-specific sections clearly delineated through color and opacity
+  - Cleaner, more organized control layout
+
+### Technical Details
+- Added `getCurrentStep()` method to PluginProcessor for playback position
+- Pattern visualizer receives step updates via timer callback (30 Hz)
+- MIDI channel parameter integrated into all note scheduling code
+- Enhanced `updateControlsForGeneratorType()` with comprehensive control management
+- All 4 note scheduling locations (Euclidean, Polyrhythm, Algorithmic, Stochastic) now use dynamic channel
+
+### UI Improvements
+- 31 total parameters (added 1: MIDI Channel)
+- 3 new UI controls (stochastic parameters)
+- Color-coded generator label for immediate visual feedback
+- Real-time playback visualization
+- Clean, context-aware control presentation
+
 ## [0.7.1] - 2025-10-18
 
 ### Fixed - Dynamic UI Updates

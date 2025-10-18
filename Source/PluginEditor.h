@@ -61,7 +61,13 @@ private:
     juce::Slider ratchetProbabilitySlider;
     juce::Slider ratchetDecaySlider;
 
+    // Stochastic/Chaos controls
+    juce::Slider stepSizeSlider;
+    juce::Slider momentumSlider;
+    juce::Slider timeScaleSlider;
+
     juce::ComboBox generatorTypeCombo;
+    juce::ComboBox midiChannelCombo;
 
     // Preset controls
     juce::TextButton presetBrowserButton;
@@ -86,6 +92,10 @@ private:
     juce::Label ratchetCountLabel;
     juce::Label ratchetProbabilityLabel;
     juce::Label ratchetDecayLabel;
+    juce::Label midiChannelLabel;
+    juce::Label stepSizeLabel;
+    juce::Label momentumLabel;
+    juce::Label timeScaleLabel;
 
     // Slider attachments
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> tempoAttachment;
@@ -105,9 +115,13 @@ private:
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> ratchetCountAttachment;
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> ratchetProbabilityAttachment;
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> ratchetDecayAttachment;
+    std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> stepSizeAttachment;
+    std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> momentumAttachment;
+    std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> timeScaleAttachment;
     std::unique_ptr<juce::AudioProcessorValueTreeState::ComboBoxAttachment> generatorAttachment;
     std::unique_ptr<juce::AudioProcessorValueTreeState::ComboBoxAttachment> scaleRootAttachment;
     std::unique_ptr<juce::AudioProcessorValueTreeState::ComboBoxAttachment> scaleTypeAttachment;
+    std::unique_ptr<juce::AudioProcessorValueTreeState::ComboBoxAttachment> midiChannelAttachment;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(GenerativeMIDIEditor)
 };

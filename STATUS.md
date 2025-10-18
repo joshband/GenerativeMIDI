@@ -1,9 +1,18 @@
 # GenerativeMIDI - Development Status
 
 **Last Updated**: 2025-10-18
-**Current Version**: v0.7.1
+**Current Version**: v0.8.0
 
 ## ✅ Completed Features
+
+### v0.8.0 - MIDI Channel Routing & Enhanced UI
+- [x] MIDI channel routing (1-16 channels)
+- [x] Stochastic engine UI controls (Step Size, Momentum, Time Scale)
+- [x] Color-coded generator labels (Gold/Copper/Verdigris/Violet)
+- [x] Live playback position visualization in Pattern Display
+- [x] Enhanced dynamic UI with 30% opacity for disabled controls
+- [x] Context-aware control states for all engine types
+- [x] 31 total parameters (added midiChannel)
 
 ### v0.7.1 - Dynamic UI Updates
 - [x] Context-aware control enabling/disabling based on generator type
@@ -89,47 +98,49 @@
 
 ## 🚧 In Progress
 
-**No features currently in progress** - v0.6.0 complete!
+**No features currently in progress** - v0.8.0 complete!
 
 ## 📋 High-Priority Planned Features
 
-### MIDI Channel Routing
+### MIDI Expression Controls
+**Status**: Not Started
+**Priority**: High
+**Complexity**: Medium
+
+**Features**:
+- Poly aftertouch per note
+- Channel pressure (monophonic aftertouch)
+- Pitch bend with range control
+- CC modulation (configurable CC numbers)
+- Per-generator expression profiles
+
+**Implementation**:
+- Expose MIDIGenerator expression capabilities in UI
+- Add expression control panel
+- Create expression presets per generator type
+- UI: Expression section with toggles and amount controls
+
+**Estimated Work**: 3-4 hours
+
+---
+
+### Polyrhythm Layer Controls
 **Status**: Not Started
 **Priority**: Medium
 **Complexity**: Low
 
 **Features**:
-- Global MIDI output channel (1-16)
-- Per-layer channel routing (Polyrhythm mode)
-- MIDI channel parameter automation
+- Visual layer editor showing all polyrhythm layers
+- Per-layer enable/disable toggles
+- Per-layer pitch/velocity adjustment
+- Layer visualization in pattern display
 
 **Implementation**:
-- Add channel parameter to MIDIGenerator
-- Update note creation to use selected channel
-- UI: Channel selector dropdown
+- Add layer control UI panel
+- Expose layer manipulation from PolyrhythmEngine
+- Update pattern visualizer for multi-layer display
 
-**Estimated Work**: 1-2 hours
-
----
-
-### Stochastic/Chaos Generators
-**Status**: Not Started
-**Priority**: Medium
-**Complexity**: High
-
-**Features**:
-- Brownian Motion generator
-- Perlin/Simplex noise
-- Drunk Walk
-- Lorenz/Rössler attractors
-
-**Implementation**:
-- Create `StochasticEngine.h/cpp`
-- Implement noise algorithms
-- Add chaos attractor calculations
-- Add generator type to dropdown
-
-**Estimated Work**: 6-8 hours
+**Estimated Work**: 2-3 hours
 
 ---
 
@@ -148,10 +159,11 @@ See [ENHANCEMENTS.md](ENHANCEMENTS.md) for complete feature roadmap including:
 
 ## 📊 Project Metrics
 
-**Total Files**: 31 source files (+2: StochasticEngine.h/cpp)
-**Lines of Code**: ~8,700+
-**Total Parameters**: 30 (added 4 stochastic parameters)
+**Total Files**: 31 source files (includes StochasticEngine.h/cpp)
+**Lines of Code**: ~8,900+
+**Total Parameters**: 31 (added midiChannel parameter)
 **Generator Types**: 10 (Euclidean, Polyrhythm, 4 Algorithmic, 4 Stochastic/Chaos)
+**UI Controls**: 34 controls (31 parameters + 3 combo boxes)
 **Build Status**: ✅ Passing (macOS)
 **Test Coverage**: Manual testing
 **Documentation**: Comprehensive (README, FEATURES, CHANGELOG, ENHANCEMENTS, STATUS)
@@ -162,42 +174,42 @@ See [ENHANCEMENTS.md](ENHANCEMENTS.md) for complete feature roadmap including:
 
 ### Current Session Progress (2025-10-18)
 - ✅ Completed gate length control (v0.4.0)
-  - Created GateLengthController.h
-  - Added 2 new parameters (gateLength, legatoMode)
-  - Integrated with all 3 generator types
-  - Added UI controls
-  - Build successful
 - ✅ Completed ratcheting feature (v0.5.0)
-  - Created RatchetEngine.h
-  - Added 3 new parameters (ratchetCount, ratchetProbability, ratchetDecay)
-  - Integrated with all 3 generator types
-  - Added UI controls (3 knobs)
-  - Build successful
 - ✅ Completed UI fixes (v0.5.1)
-  - Pulses parameter constraint
-  - Window size optimization
-  - Section label cleanup
-  - Build successful
 - ✅ Completed preset management system (v0.6.0)
-  - Created PresetManager.h/cpp with XML serialization
-  - Created PresetBrowser.h/cpp with full UI
-  - Added 10 factory presets
-  - Integrated into main UI (Presets button + current preset label)
+- ✅ Fixed preset system issues (v0.6.1)
+- ✅ Completed stochastic/chaos generators (v0.7.0)
+  - Created StochasticEngine.h/cpp
+  - Implemented 4 generators: Brownian Motion, Perlin Noise, Drunk Walk, Lorenz Attractor
+  - Added 4 new parameters (stochasticType, stepSize, momentum, timeScale)
+  - Full integration with all existing features
+  - Build successful
+- ✅ Completed dynamic UI updates (v0.7.1)
+  - Context-aware control enabling/disabling
+  - Visual feedback with opacity changes
+  - Dynamic label updates
+  - Build successful
+- ✅ Completed MIDI channel routing & enhanced UI (v0.8.0)
+  - MIDI channel parameter and routing
+  - Stochastic engine UI controls (3 knobs)
+  - Color-coded generator labels
+  - Live playback position visualization
+  - Enhanced dynamic UI with comprehensive control management
   - Build successful
 - ✅ Updated documentation (CHANGELOG.md, STATUS.md)
 
 ### Next Development Session
-1. **MIDI Channel Routing** (Medium Value/Low Complexity)
-   - Add channel parameter to MIDIGenerator
-   - Update note creation to use selected channel
-   - Add UI channel selector dropdown
-   - **Estimated**: 1-2 hours
+1. **MIDI Expression Controls** (High Value/Medium Complexity)
+   - Add UI controls for aftertouch, CC, pitch bend
+   - Integrate MIDIGenerator expression capabilities into UI
+   - Add per-generator expression profiles
+   - **Estimated**: 3-4 hours
 
-3. **Stochastic/Chaos Generators** (High Value/High Complexity)
-   - Create StochasticEngine component
-   - Implement noise algorithms (Brownian, Perlin, Drunk Walk)
-   - Add chaos attractors (Lorenz, Rössler)
-   - **Estimated**: 6-8 hours
+2. **Polyrhythm UI Enhancement** (Medium Value/Low Complexity)
+   - Add layer-specific controls for polyrhythm engine
+   - Show multiple layers visually
+   - Allow layer enable/disable
+   - **Estimated**: 2-3 hours
 
 ---
 

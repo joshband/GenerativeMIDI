@@ -80,6 +80,9 @@ public:
     // Parameter tree
     juce::AudioProcessorValueTreeState& getValueTreeState() { return parameters; }
 
+    // Playback state
+    int getCurrentStep() const { return lastSubdivisionStep; }
+
 private:
     //==============================================================================
     // Core engines
@@ -132,6 +135,9 @@ private:
     static constexpr const char* PARAM_STEP_SIZE = "stepSize";
     static constexpr const char* PARAM_MOMENTUM = "momentum";
     static constexpr const char* PARAM_TIME_SCALE = "timeScale";
+
+    // MIDI routing parameters
+    static constexpr const char* PARAM_MIDI_CHANNEL = "midiChannel";
 
     // Processing state
     int64_t currentSamplePosition = 0;

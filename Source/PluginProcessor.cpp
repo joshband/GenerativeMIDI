@@ -135,6 +135,10 @@ juce::AudioProcessorValueTreeState::ParameterLayout GenerativeMIDIProcessor::cre
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
         PARAM_TIME_SCALE, "Time Scale", 0.01f, 10.0f, 1.0f));
 
+    // MIDI Routing
+    params.push_back(std::make_unique<juce::AudioParameterInt>(
+        PARAM_MIDI_CHANNEL, "MIDI Channel", 1, 16, 1));
+
     return {params.begin(), params.end()};
 }
 
@@ -363,6 +367,9 @@ void GenerativeMIDIProcessor::onSubdivisionHit(int subdivision)
     auto pitchMin = static_cast<int>(parameters.getRawParameterValue(PARAM_PITCH_MIN)->load());
     auto pitchMax = static_cast<int>(parameters.getRawParameterValue(PARAM_PITCH_MAX)->load());
 
+    // Get MIDI channel parameter
+    auto midiChannel = static_cast<int>(parameters.getRawParameterValue(PARAM_MIDI_CHANNEL)->load());
+
     // Get probability/density parameter - applies to ALL generators
     auto density = parameters.getRawParameterValue(PARAM_NOTE_DENSITY)->load();
 
@@ -411,12 +418,12 @@ void GenerativeMIDIProcessor::onSubdivisionHit(int subdivision)
                         int ratchetTimingOffset = timingOffset + ratchetOffsets[ratchetIdx];
 
                         // Schedule note on
-                        eventScheduler.scheduleNoteOn(pitch, ratchetVelocity, 1,
+                        eventScheduler.scheduleNoteOn(pitch, ratchetVelocity, midiChannel,
                             currentSamplePosition + ratchetTimingOffset);
 
                         // Schedule note off using gate length controller
                         int noteDuration = gateLengthController.calculateGateLengthSamples(samplesPerStep);
-                        eventScheduler.scheduleNoteOff(pitch, 1,
+                        eventScheduler.scheduleNoteOff(pitch, midiChannel,
                             currentSamplePosition + ratchetTimingOffset + noteDuration);
                     }
                 }
@@ -536,12 +543,12 @@ void GenerativeMIDIProcessor::onSubdivisionHit(int subdivision)
                         int ratchetTimingOffset = timingOffset + ratchetOffsets[ratchetIdx];
 
                         // Schedule note on
-                        eventScheduler.scheduleNoteOn(pitch, ratchetVelocity, 1,
+                        eventScheduler.scheduleNoteOn(pitch, ratchetVelocity, midiChannel,
                             currentSamplePosition + ratchetTimingOffset);
 
                         // Schedule note off using gate length controller
                         int noteDuration = gateLengthController.calculateGateLengthSamples(samplesPerStep);
-                        eventScheduler.scheduleNoteOff(pitch, 1,
+                        eventScheduler.scheduleNoteOff(pitch, midiChannel,
                             currentSamplePosition + ratchetTimingOffset + noteDuration);
                     }
                 }

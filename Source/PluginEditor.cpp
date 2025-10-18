@@ -48,6 +48,17 @@ GenerativeMIDIEditor::GenerativeMIDIEditor(GenerativeMIDIProcessor& p)
         updateControlsForGeneratorType(generatorTypeCombo.getSelectedId() - 1);
     };
 
+    // MIDI Channel selector
+    addAndMakeVisible(midiChannelLabel);
+    midiChannelLabel.setText("MIDI Ch", juce::dontSendNotification);
+    midiChannelLabel.setJustificationType(juce::Justification::centred);
+
+    addAndMakeVisible(midiChannelCombo);
+    for (int i = 1; i <= 16; ++i)
+        midiChannelCombo.addItem(juce::String(i), i);
+    midiChannelAttachment.reset(new juce::AudioProcessorValueTreeState::ComboBoxAttachment(
+        audioProcessor.getValueTreeState(), "midiChannel", midiChannelCombo));
+
     // Tempo knob
     addAndMakeVisible(tempoSlider);
     tempoSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
@@ -219,6 +230,34 @@ GenerativeMIDIEditor::GenerativeMIDIEditor(GenerativeMIDIProcessor& p)
     addAndMakeVisible(ratchetDecayLabel);
     ratchetDecayLabel.setText("R Decay", juce::dontSendNotification);
     ratchetDecayLabel.setJustificationType(juce::Justification::centred);
+
+    // Stochastic/Chaos controls
+    addAndMakeVisible(stepSizeSlider);
+    stepSizeSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
+    stepSizeSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 60, 20);
+    stepSizeAttachment.reset(new juce::AudioProcessorValueTreeState::SliderAttachment(
+        audioProcessor.getValueTreeState(), "stepSize", stepSizeSlider));
+    addAndMakeVisible(stepSizeLabel);
+    stepSizeLabel.setText("Step Size", juce::dontSendNotification);
+    stepSizeLabel.setJustificationType(juce::Justification::centred);
+
+    addAndMakeVisible(momentumSlider);
+    momentumSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
+    momentumSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 60, 20);
+    momentumAttachment.reset(new juce::AudioProcessorValueTreeState::SliderAttachment(
+        audioProcessor.getValueTreeState(), "momentum", momentumSlider));
+    addAndMakeVisible(momentumLabel);
+    momentumLabel.setText("Momentum", juce::dontSendNotification);
+    momentumLabel.setJustificationType(juce::Justification::centred);
+
+    addAndMakeVisible(timeScaleSlider);
+    timeScaleSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
+    timeScaleSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 60, 20);
+    timeScaleAttachment.reset(new juce::AudioProcessorValueTreeState::SliderAttachment(
+        audioProcessor.getValueTreeState(), "timeScale", timeScaleSlider));
+    addAndMakeVisible(timeScaleLabel);
+    timeScaleLabel.setText("Time Scale", juce::dontSendNotification);
+    timeScaleLabel.setJustificationType(juce::Justification::centred);
 
     // Preset browser button
     addAndMakeVisible(presetBrowserButton);
@@ -434,6 +473,9 @@ void GenerativeMIDIEditor::resized()
     auto generatorArea = controlsSection.removeFromLeft(150);
     generatorLabel.setBounds(generatorArea.removeFromTop(20));
     generatorTypeCombo.setBounds(generatorArea.removeFromTop(30).reduced(10, 0));
+    generatorArea.removeFromTop(5); // Small gap
+    midiChannelLabel.setBounds(generatorArea.removeFromTop(20));
+    midiChannelCombo.setBounds(generatorArea.removeFromTop(30).reduced(10, 0));
 
     controlsSection.removeFromLeft(spacing);
 
@@ -541,6 +583,24 @@ void GenerativeMIDIEditor::resized()
     auto ratchetDecayArea = rangeSection.removeFromLeft(knobSize);
     ratchetDecayLabel.setBounds(ratchetDecayArea.removeFromBottom(20));
     ratchetDecaySlider.setBounds(ratchetDecayArea);
+
+    rangeSection.removeFromLeft(spacing);
+
+    auto stepSizeArea = rangeSection.removeFromLeft(knobSize);
+    stepSizeLabel.setBounds(stepSizeArea.removeFromBottom(20));
+    stepSizeSlider.setBounds(stepSizeArea);
+
+    rangeSection.removeFromLeft(spacing);
+
+    auto momentumArea = rangeSection.removeFromLeft(knobSize);
+    momentumLabel.setBounds(momentumArea.removeFromBottom(20));
+    momentumSlider.setBounds(momentumArea);
+
+    rangeSection.removeFromLeft(spacing);
+
+    auto timeScaleArea = rangeSection.removeFromLeft(knobSize);
+    timeScaleLabel.setBounds(timeScaleArea.removeFromBottom(20));
+    timeScaleSlider.setBounds(timeScaleArea);
 }
 
 void GenerativeMIDIEditor::timerCallback()
@@ -552,8 +612,10 @@ void GenerativeMIDIEditor::timerCallback()
         pattern[i] = euclidean.getStep(i);
 
     patternDisplay.setPattern(pattern);
-    // Note: we'd need to expose lastSubdivisionStep to show current position
-    // For now, pattern display will show the pattern without playhead
+
+    // Update current playback position
+    int currentStep = audioProcessor.getCurrentStep() % euclidean.getSteps();
+    patternDisplay.setCurrentStep(currentStep);
 
     // Update current preset label
     const juce::String& presetName = audioProcessor.getPresetManager().getCurrentPresetName();
@@ -584,14 +646,29 @@ void GenerativeMIDIEditor::updateControlsForGeneratorType(int generatorType)
     pulsesLabel.setEnabled(isEuclidean);
     rotationLabel.setEnabled(isEuclidean);
 
-    // Set alpha for visual feedback
-    float euclideanAlpha = isEuclidean ? 1.0f : 0.4f;
+    float euclideanAlpha = isEuclidean ? 1.0f : 0.3f;
     stepsSlider.setAlpha(euclideanAlpha);
     pulsesSlider.setAlpha(euclideanAlpha);
     rotationSlider.setAlpha(euclideanAlpha);
     stepsLabel.setAlpha(euclideanAlpha);
     pulsesLabel.setAlpha(euclideanAlpha);
     rotationLabel.setAlpha(euclideanAlpha);
+
+    // Stochastic-specific controls (step size, momentum, time scale)
+    stepSizeSlider.setEnabled(isStochastic);
+    momentumSlider.setEnabled(isStochastic);
+    timeScaleSlider.setEnabled(isStochastic);
+    stepSizeLabel.setEnabled(isStochastic);
+    momentumLabel.setEnabled(isStochastic);
+    timeScaleLabel.setEnabled(isStochastic);
+
+    float stochasticAlpha = isStochastic ? 1.0f : 0.3f;
+    stepSizeSlider.setAlpha(stochasticAlpha);
+    momentumSlider.setAlpha(stochasticAlpha);
+    timeScaleSlider.setAlpha(stochasticAlpha);
+    stepSizeLabel.setAlpha(stochasticAlpha);
+    momentumLabel.setAlpha(stochasticAlpha);
+    timeScaleLabel.setAlpha(stochasticAlpha);
 
     // Density control applies to all generators but with different meanings
     densityLabel.setEnabled(true);
@@ -606,6 +683,21 @@ void GenerativeMIDIEditor::updateControlsForGeneratorType(int generatorType)
         densityLabel.setText("Density", juce::dontSendNotification);
     else
         densityLabel.setText("Density", juce::dontSendNotification);
+
+    // Color code generator label based on engine type
+    juce::Colour generatorColor;
+    if (isEuclidean)
+        generatorColor = juce::Colour(CustomLookAndFeel::GOLD_TEMPLE);        // Gold for Euclidean
+    else if (isPolyrhythm)
+        generatorColor = juce::Colour(CustomLookAndFeel::COPPER_STEAM);       // Copper for Polyrhythm
+    else if (isAlgorithmic)
+        generatorColor = juce::Colour(CustomLookAndFeel::GREEN_VERDIGRIS);    // Verdigris for Algorithmic
+    else if (isStochastic)
+        generatorColor = juce::Colour(CustomLookAndFeel::VIOLET_ALCHEMY);     // Violet for Stochastic/Chaos
+    else
+        generatorColor = juce::Colour(CustomLookAndFeel::GOLD_TEMPLE);
+
+    generatorLabel.setColour(juce::Label::textColourId, generatorColor);
 
     // All controls that work across all generator types remain fully enabled
     // (tempo, velocity range, pitch range, scale, swing, humanization, gate length, ratcheting)
