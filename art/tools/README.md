@@ -1,192 +1,147 @@
-# Asset Extraction Tools
+# UI Element Generation Tools
 
-Tools for processing the 147 AI-generated steampunk assets into UI-ready PNG files.
+Hybrid system for generating and processing UI elements for the GenerativeMIDI plugin.
 
----
+## 🚀 Quick Start
 
-## 🛠️ Available Tools
+**See**: [QUICK_START.md](QUICK_START.md) - Get started in 5 minutes!
 
-### 1. Python Script (Recommended)
-**File**: `extract_priority_assets.py`
+## 📚 Documentation
 
-**Requirements**:
-```bash
-pip3 install Pillow
-```
+- **[QUICK_START.md](QUICK_START.md)** - Fast setup and first generation
+- **[HYBRID_GENERATOR_GUIDE.md](HYBRID_GENERATOR_GUIDE.md)** - Complete documentation
 
-**Usage**:
-```bash
-python3 extract_priority_assets.py
-```
+## 🛠️ Tools
 
-**Features**:
-- ✅ No external dependencies (besides Pillow)
-- ✅ Cross-platform (macOS, Windows, Linux)
-- ✅ Customizable background removal threshold
-- ✅ Progress reporting
+### `hybrid_ui_generator.py`
 
-### 2. Bash Script (ImageMagick)
-**File**: `extract_priority_assets.sh`
+Main tool combining ImageMagick and DALL·E for UI element generation.
 
-**Requirements**:
-```bash
-brew install imagemagick  # macOS
-# or
-apt-get install imagemagick  # Linux
-```
+**Features:**
+- ✅ Process existing concept art (FREE)
+- ✅ Generate new elements with DALL·E (PAID)
+- ✅ Automatic multi-size variants (64, 128, 256, 512px)
+- ✅ Transparency and alpha channel processing
+- ✅ Organized output structure
+- ✅ Element cataloging
 
-**Usage**:
-```bash
-./extract_priority_assets.sh
-```
+## 💰 Cost Breakdown
 
-**Features**:
-- ✅ Faster processing (native C implementation)
-- ✅ More accurate color selection
-- ✅ Better edge quality
-- ✅ Unix-style output
+### FREE (ImageMagick)
+- Process existing images: **$0**
+- Resize, transparency, variants: **$0**
+- **Use this first!**
 
----
+### PAID (DALL·E API)
+- Generate new image: **~$0.04** per image
+- Complete UI set (~20 images): **~$0.80**
+- Budget-friendly incremental generation
 
-## 📦 What Gets Extracted
+## 📁 Current Status
 
-Both scripts extract the same 10 priority assets:
-
-**Knobs** (3 assets):
-- knob_ornate_filigree
-- knob_astrolabe_rings
-- knob_clock_face
-
-**Frames** (3 assets):
-- label_brass_plate
-- frame_oval_victorian
-- frame_art_deco_panel
-
-**Buttons** (1 asset):
-- button_cross_ornate
-
-**Sliders** (2 assets):
-- slider_brass_vertical
-- pointer_aether_staff
-
-**Decorative** (1 asset):
-- texture_honeycomb_brass
-
----
-
-## 📐 Output Specifications
-
-Each asset is created in **3 resolutions**:
-
-- **64px** - Small buttons and icons
-- **128px** - Standard UI controls (recommended)
-- **256px** - Large displays and high-DPI screens
-
-**Total Output**: 30+ PNG files
-
----
-
-## 📂 Output Directories
-
-```
-art/
-├── extracted/          # Raw extractions (full resolution with alpha)
-│   ├── knobs/
-│   ├── frames/
-│   └── ...
-│
-└── ui-ready/          # Multi-resolution finals
-    ├── knobs/
-    │   ├── knob_ornate_filigree_64.png
-    │   ├── knob_ornate_filigree_128.png
-    │   └── knob_ornate_filigree_256.png
-    └── ...
-```
-
----
-
-## 🔧 Customizing Extraction
-
-### Add New Assets (Python)
-
-Edit `extract_priority_assets.py`:
-
-```python
-PRIORITY_ASSETS = [
-    # (filename, output_name, category, bg_color, threshold)
-    ("IMG_8XXX.JPG", "new_asset_name", "knobs", (10, 20, 30), 30),
-    # ... add more ...
-]
-```
-
-### Add New Assets (Bash)
-
-Edit `extract_priority_assets.sh`:
+Run this to see what you have:
 
 ```bash
-# Add to extraction section
-extract_asset "IMG_8XXX.JPG" "new_asset_name" "knobs" 15
+python3 art/tools/hybrid_ui_generator.py --status
 ```
 
-### Adjust Background Removal
+**Your Current Inventory:**
+- ✅ 30 UI-ready files
+- ⚠️  Missing: panels (4 variants), indicators (4 variants)
+- 💰 Cost to complete: ~$0.32
 
-**Python** - Change threshold value:
-```python
-("IMG_8150.JPG", "knob_ornate", "knobs", (10, 20, 30), 40)  # Higher = more aggressive
-```
+## 🎨 Supported Elements
 
-**Bash** - Change fuzz percentage:
+1. **Knobs** - Rotary controls (9 files ✅)
+2. **Sliders** - Linear controls (6 files ✅)
+3. **Buttons** - Interactive elements (3 files ⚠️)
+4. **Panels** - Backgrounds & frames (0 files ❌)
+5. **Decorative** - Ornaments (3 files ✅)
+6. **Frames** - Borders & labels (9 files ✅)
+7. **Indicators** - Lights & status (0 files ❌)
+
+## 🔧 Installation
+
+### Required (Already Installed ✅)
+- ImageMagick (`magick`)
+- Python 3 with OpenAI library
+- Pillow for image processing
+
+### Optional (For DALL·E)
+- OpenAI API key from platform.openai.com
+- Credits in your OpenAI account
+
+## 📖 Basic Usage
+
+### Check Status
 ```bash
-extract_asset "IMG_8150.JPG" "knob_ornate" "knobs" 20  # Higher = more aggressive
+python3 art/tools/hybrid_ui_generator.py --status
 ```
 
----
+### Process Existing Images (FREE)
+```bash
+python3 art/tools/hybrid_ui_generator.py --category knobs
+```
 
-## 🎨 Background Colors
+### Generate Missing Elements (PAID)
+```bash
+export OPENAI_API_KEY="sk-your-key-here"
+python3 art/tools/hybrid_ui_generator.py --category panels --use-dalle
+```
 
-Common background colors to remove:
+### Generate Everything Missing
+```bash
+export OPENAI_API_KEY="sk-your-key-here"
+python3 art/tools/hybrid_ui_generator.py --use-dalle
+```
 
-- **Pure Black**: `(0, 0, 0)` - Most panel mockups
-- **Dark Gray**: `(10, 20, 30)` - Some knobs and frames
-- **Light Gray**: `(180, 180, 180)` - Pre-isolated elements
-- **Neutral**: `(170, 170, 170)` - Buttons and decorative
+## 🎯 Recommended Workflow
 
----
+1. **Check status** - See what you have
+2. **Process existing** - Use ImageMagick (FREE)
+3. **Identify gaps** - What's missing?
+4. **Generate needed** - Use DALL·E selectively (PAID)
+5. **Integrate** - Use in JUCE plugin
 
-## ⚡ Batch Processing
+## 📊 Quality Standards
 
-To extract all 147 assets (not just priority 10):
+All generated images include:
+- ✅ Transparent backgrounds
+- ✅ PNG format with alpha channel
+- ✅ 4 size variants (64, 128, 256, 512px)
+- ✅ Victorian steampunk aesthetic
+- ✅ Brass/gold/copper color palette
+- ✅ Professional quality
 
-1. Update the asset list in the script
-2. Categorize by visual inspection
-3. Run extraction
-4. Review output quality
-5. Adjust thresholds as needed
+## 🔗 Integration with JUCE
 
----
+```cpp
+// Load generated assets in your plugin
+auto knobImage = juce::ImageCache::getFromFile(
+    File("art/ui-ready/knobs/large_knob_256.png")
+);
+```
 
-## 🐛 Troubleshooting
+## 💡 Tips
 
-### Assets have jagged edges
-- **Python**: Increase threshold value
-- **Bash**: Increase fuzz percentage
+- Start with FREE ImageMagick processing
+- Generate missing elements incrementally
+- Review quality before mass generation
+- Tweak prompts for better results
+- Budget: ~$0.04 per image
 
-### Too much removed
-- **Python**: Decrease threshold value
-- **Bash**: Decrease fuzz percentage
+## 📝 Files
 
-### Script fails
-- **Python**: Check Pillow installation: `pip3 show Pillow`
-- **Bash**: Check ImageMagick: `magick --version`
+- `hybrid_ui_generator.py` - Main generator script
+- `QUICK_START.md` - Quick setup guide
+- `HYBRID_GENERATOR_GUIDE.md` - Complete documentation
+- `README.md` - This file
 
----
+## 🆘 Help
 
-## 📚 See Also
-
-- [Asset Catalog](../catalog/ASSET_CATALOG.md) - Complete asset reference
-- [Quick Start Guide](../catalog/QUICK_START.md) - Integration tutorial
-- [JUCE Examples](../catalog/JUCE_INTEGRATION_EXAMPLE.cpp) - Code examples
-
----
-
-**Last Updated**: 2025-10-18
+See [HYBRID_GENERATOR_GUIDE.md](HYBRID_GENERATOR_GUIDE.md) for:
+- Troubleshooting
+- Advanced usage
+- Custom prompts
+- Cost management
+- Integration examples
