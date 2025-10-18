@@ -195,6 +195,111 @@ Generation 4: ABAABABA
 
 ---
 
+### 7. Brownian Motion Generator ✨ NEW (v0.7.0)
+
+**What it does:** Simulates random walk with momentum, creating smooth, wandering melodic contours.
+
+**Algorithm:** Random acceleration with momentum damping and boundary bouncing
+
+**Parameters:**
+- **Step Size** (0.01-1.0): Controls randomness magnitude
+- **Momentum** (0.0-1.0): Controls inertia/friction in motion
+- **Time Scale** (0.01-10.0): Controls evolution speed
+- **Density** (0.0-1.0): Note trigger probability
+
+**Characteristics:**
+- Smooth, continuous motion
+- Natural drift and wander
+- Boundary respecting
+- Organic feel
+
+**Musical Applications:**
+- Ambient melodies
+- Smooth bass lines
+- Evolving pad sequences
+- Natural-feeling arpeggios
+
+---
+
+### 8. Perlin Noise Generator ✨ NEW (v0.7.0)
+
+**What it does:** Uses multi-octave Perlin noise for smooth, terrain-like pitch contours.
+
+**Algorithm:** Classic Perlin noise with fade curves, gradient interpolation, 4 octaves
+
+**Parameters:**
+- **Step Size**: Controls terrain smoothness
+- **Momentum**: Octave blending
+- **Time Scale**: Evolution rate through noise field
+- **Density**: Note trigger probability
+
+**Characteristics:**
+- Very smooth transitions
+- Organic, natural randomness
+- No sudden jumps
+- Terrain-like contours
+
+**Musical Applications:**
+- Evolving textures
+- Organic melodies
+- Landscape sonification
+- Generative ambient
+
+---
+
+### 9. Drunk Walk Generator ✨ NEW (v0.7.0)
+
+**What it does:** Discrete random walk with time-stepped movement and smooth interpolation.
+
+**Algorithm:** Random direction changes with discrete steps
+
+**Parameters:**
+- **Step Size**: Size of each discrete step
+- **Momentum**: Step timing smoothness
+- **Time Scale**: How often direction changes
+- **Density**: Note trigger probability
+
+**Characteristics:**
+- Stepwise melodic movement
+- Random direction changes
+- Controllable step size
+- Discrete but smooth
+
+**Musical Applications:**
+- Random melodic walks
+- Jazz-like improvisation
+- Stepwise bass lines
+- Controlled wandering
+
+---
+
+### 10. Lorenz Attractor Generator ✨ NEW (v0.7.0)
+
+**What it does:** Deterministic chaos using the famous Lorenz attractor (butterfly effect).
+
+**Algorithm:** Numerical integration of Lorenz equations (σ=10, ρ=28, β=8/3)
+
+**Parameters:**
+- **Step Size**: Integration step size
+- **Momentum**: Damping factor
+- **Time Scale**: Evolution speed through attractor
+- **Density**: Note trigger probability
+
+**Characteristics:**
+- Never repeating patterns
+- Deterministic chaos
+- Strange attractor behavior
+- Butterfly effect sensitivity
+
+**Musical Applications:**
+- Chaotic sequences
+- Complex polyrhythms
+- Never-repeating melodies
+- Mathematical music
+- Experimental composition
+
+---
+
 ## Musical Expression
 
 ### Scale Quantization ✨ NEW
@@ -379,15 +484,19 @@ Result: Loose, sloppy, experimental jazz
 - **Polyphonic output**: Multiple simultaneous notes
 - **Pitch range**: Full MIDI range (0-127)
 - **Velocity control**: Min/Max range with humanization
-- **Note duration**: Controllable gate length
-- **MIDI channels**: Output to channels 1-16
+- **Note duration**: Controllable gate length (1-200%)
+- **Legato mode**: Overlapping notes with no gaps
+- **Ratcheting**: Probability-based note retriggering (1-16 repeats)
+- **MIDI channels** ✨ NEW (v0.8.0): Route to any MIDI channel (1-16)
 
 ### Expression & Control
 
 - **Velocity**: Dynamic range control with humanization
-- **Polyphonic Aftertouch**: Per-note pressure (future)
-- **Control Change (CC)**: Parameter automation (future)
-- **Pitch Bend**: Micro-tonal control (future)
+- **Gate Length**: 1-200% of step duration
+- **Ratchet Decay**: Exponential velocity falloff for repeats
+- **Polyphonic Aftertouch**: Per-note pressure (available via MIDIGenerator)
+- **Control Change (CC)**: Parameter automation (available via MIDIGenerator)
+- **Pitch Bend**: Micro-tonal control (available via MIDIGenerator)
 
 ### Timing
 
@@ -403,50 +512,81 @@ Result: Loose, sloppy, experimental jazz
 
 ### Design Philosophy
 
-**Vintage Pedal Aesthetic:**
-- Warm orange/tan color scheme (inspired by Boss guitar pedals)
-- Textured, worn surface with scratches
-- Corner screw details
-- Recessed panels with stencil labels
-- Professional yet approachable
+**Gilded Steampunk Victorian Aesthetic:**
+- Brass, gold, and copper color scheme
+- Obsidian glass displays with aether crystal indicators
+- Polished brass bezels and filigree
+- Victorian instrument panel design
+- Gothic industrial aesthetic
 
 ### Layout Sections
 
-#### 1. PATTERN DISPLAY
+#### 1. PATTERN DISPLAY ✨ ENHANCED (v0.8.0)
 - Real-time visualization of active pattern
-- Cyan highlights for active steps
+- **Live playback position** with amber crystal effect
+- Cyan aether crystal highlights for active steps
+- Bronze "dormant" indicators for probability misses
 - Step numbers on 4-beat intervals
-- Current playhead indicator
+- Brass chamber outlines
 
-#### 2. GENERATOR
-- **Generator Type**: Dropdown selector
+#### 2. GENERATOR ✨ ENHANCED (v0.8.0)
+- **Generator Type**: Dropdown selector (10 types)
+- **Color-coded label**: Changes color by engine type
+  - Gold: Euclidean
+  - Copper: Polyrhythm
+  - Green Verdigris: Algorithmic
+  - Violet: Stochastic/Chaos
+- **MIDI Channel**: Channel selector (1-16)
 - **Tempo**: Master BPM control (20-400)
+
+#### 3. EUCLIDEAN CONTROLS (context-aware)
 - **Steps**: Pattern length (1-64)
 - **Pulses**: Active beats (0-64)
 - **Rotation**: Pattern offset (0-64)
-- **Probability**: Note density (0-100%)
+- Auto-disables when not using Euclidean generator
 
-#### 3. EXPRESSION
+#### 4. STOCHASTIC CONTROLS ✨ NEW (v0.8.0)
+- **Step Size**: Randomness magnitude (0.01-1.0)
+- **Momentum**: Inertia/friction (0.0-1.0)
+- **Time Scale**: Evolution speed (0.01-10.0)
+- Auto-enables only for stochastic generators
+
+#### 5. EXPRESSION
 - **Velocity Range**: Min/Max sliders
 - **Pitch Range**: Min/Max sliders (MIDI 0-127)
-- **Scale**: Root and Type dropdowns
-- **Swing**: Groove timing knob
-- **Timing**: Humanization knob
-- **Vel Var**: Velocity randomness knob
+- **Scale**: Root and Type dropdowns (16 scales)
+- **Swing**: Groove timing knob (6 templates)
+- **Timing**: Humanization knob (0-50ms)
+- **Vel Var**: Velocity randomness knob (0-100%)
+
+#### 6. ARTICULATION
+- **Gate Length**: Note duration (1-200%)
+- **Legato**: Overlapping notes toggle
+- **Ratchet**: Number of repeats (1-16)
+- **R Prob**: Ratchet probability (0-100%)
+- **R Decay**: Velocity decay (0-100%)
 
 ### Control Types
 
-- **Rotary Knobs**: Smooth, continuous parameters
-- **Vertical Sliders**: Range controls (min/max pairs)
-- **Dropdown Menus**: Discrete choices (scales, generators)
-- **Text Displays**: Numeric value feedback
+- **Brass Rotary Knobs**: Gilded brass with aether crystal centers
+- **Vertical Sliders**: Art Deco brass rails
+- **Dropdown Menus**: Brass Victorian selectors
+- **Text Displays**: Engraved brass numerals
+
+### Dynamic UI ✨ NEW (v0.7.1 & v0.8.0)
+
+- **Context-Aware Controls**: Auto-enable/disable based on generator type
+- **Visual Feedback**: Disabled controls grey to 30% opacity
+- **Color Coding**: Generator label matches engine category
+- **Real-time Updates**: UI responds instantly to parameter changes
 
 ### Responsiveness
 
-- **Resizable**: 800x500 to 1600x1000 pixels
+- **Resizable**: 1200x500 to 2000x1000 pixels
 - **Touch-optimized**: Works great on iPad/touchscreen
-- **30Hz refresh**: Smooth visual updates
+- **30Hz refresh**: Smooth visual updates and playback visualization
 - **Real-time feedback**: Immediate parameter response
+- **31 parameters**: Full automation support
 
 ---
 

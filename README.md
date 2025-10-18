@@ -7,7 +7,7 @@ An open-source, cross-platform generative MIDI processor supporting Euclidean rh
 
 ## Features
 
-### Generative Engines
+### Generative Engines (10 Total)
 - **Euclidean Rhythm Generator** - Björklund's algorithm for creating perfectly distributed rhythmic patterns
 - **Polyrhythm Engine** - Multi-layer polyrhythmic sequencer with independent timing divisions
 - **Algorithmic Generators**:
@@ -15,8 +15,14 @@ An open-source, cross-platform generative MIDI processor supporting Euclidean rh
   - L-System fractal pattern evolution
   - Cellular Automata (Wolfram rules)
   - Probabilistic note generation
+- **Stochastic/Chaos Generators** (NEW in v0.7.0):
+  - Brownian Motion - Random walk with momentum
+  - Perlin Noise - Smooth natural randomness
+  - Drunk Walk - Discrete random steps
+  - Lorenz Attractor - Deterministic chaos
 
 ### MIDI Capabilities
+- **MIDI Channel Routing** (NEW in v0.8.0) - Route to any MIDI channel (1-16)
 - Full MIDI 1.0 expression support
 - Note generation with velocity control
 - Polyphonic aftertouch
@@ -24,13 +30,28 @@ An open-source, cross-platform generative MIDI processor supporting Euclidean rh
 - Pitch bend
 - Sample-accurate timing
 - Real-time parameter automation
+- Gate length control with legato mode
+- Ratcheting (note retriggering)
+
+### Musical Features
+- 16 scale types (Major, Minor, Modes, Pentatonic, Blues, etc.)
+- Root note selection (C-B)
+- 6 swing groove templates
+- Timing humanization (0-50ms)
+- Velocity humanization (0-100%)
+- Pitch and velocity range control
+- Preset management system
 
 ### User Interface
-- Modern dark theme with custom graphics
-- Rotary knobs with visual feedback
-- Real-time pattern visualization
-- Resizable window (800x500 to 1600x1000)
+- **Gilded Steampunk Victorian Aesthetic** - Brass, gold, copper theme
+- **Color-Coded Generators** (NEW in v0.8.0) - Visual feedback by engine type
+- **Context-Aware Controls** (NEW in v0.7.1) - Relevant controls auto-enable/disable
+- **Live Playback Visualization** (NEW in v0.8.0) - Real-time pattern position display
+- Rotary brass knobs with aether crystal centers
+- Real-time pattern visualization with probability indication
+- Resizable window (1200x500 to 2000x1000)
 - Touch-optimized for iOS/iPadOS
+- 31 parameters with full automation support
 
 ## Platform Support
 

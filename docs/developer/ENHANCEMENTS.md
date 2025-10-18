@@ -9,33 +9,55 @@ This document tracks potential enhancements and feature ideas for the Generative
 - 💡 **Proposed**
 
 ## Version History
-- **v0.3.0** (2025-01-17) - Gilded Steampunk UI redesign complete
-  - Complete visual transformation to brass/gold/copper aesthetic
-  - Victorian instrument-style brass knobs with aether crystal centers
-  - Art Deco panels with ornate brass bezels
-  - Aether crystal pattern visualizer (replacing LED bar)
+
+- **v0.8.0** (2025-10-18) - MIDI Channel Routing & Enhanced UI
+  - MIDI channel routing (1-16 channels)
+  - Stochastic engine UI controls (Step Size, Momentum, Time Scale)
+  - Color-coded generator labels
+  - Live playback position visualization
+  - Enhanced dynamic UI with context-aware controls
+- **v0.7.1** (2025-10-18) - Dynamic UI Updates
+  - Context-aware control enabling/disabling
+  - Visual feedback with opacity changes
+  - Dynamic label updates
+- **v0.7.0** (2025-10-18) - Stochastic & Chaos Generators
+  - 4 new generators: Brownian Motion, Perlin Noise, Drunk Walk, Lorenz Attractor
+  - Full integration with all existing features
+- **v0.6.0** (2025-10-18) - Preset Management System
+  - Complete save/load functionality
+  - Preset browser with category filtering
+- **v0.5.0** (2025-10-18) - Ratcheting & Gate Length
+  - Probability-based note retriggering
+  - Gate length control with legato mode
+- **v0.3.0** (2025-01-17) - Gilded Steampunk UI redesign
+  - Victorian brass/gold/copper aesthetic
+  - Aether crystal pattern visualizer
 - **v0.2.0** (2025-01-17) - Scale Quantization & Humanization
-  - 16 musical scales (Major, Minor variants, Modes, Pentatonic, Blues, etc.)
+  - 16 musical scales
   - Swing engine with groove templates
-  - Timing and velocity humanization
 - **v0.1.0** - Initial release with 6 generator types
 
 ---
 
 ## Engine Enhancements
 
-### 1. Stochastic/Chaos Modes 💡
+### 1. Stochastic/Chaos Modes ✅
+
 Advanced randomization and chaos theory-based generators for organic, evolving patterns.
 
 **Features:**
-- **Brownian Motion Generator** - Random walk with controllable drift and boundaries
-- **Perlin/Simplex Noise** - Smooth organic parameter evolution over time
-- **Drunk Walk** - Step-based random walks with configurable step size
-- **Chaos Attractors** - Lorenz, Rössler attractors mapped to pitch/rhythm space
+
+- ✅ **Brownian Motion Generator** - Random walk with momentum and boundaries (IMPLEMENTED v0.7.0)
+- ✅ **Perlin Noise** - Multi-octave smooth organic randomness (IMPLEMENTED v0.7.0)
+- ✅ **Drunk Walk** - Step-based random walks with configurable step size (IMPLEMENTED v0.7.0)
+- ✅ **Lorenz Attractor** - Deterministic chaos mapped to pitch space (IMPLEMENTED v0.7.0)
+- 📋 **Rössler Attractor** - Alternative chaos attractor with different topology
+- 📋 **Simplex Noise** - Improved Perlin noise with better isotropy
+- ✅ **UI Controls** - Step Size, Momentum, Time Scale parameters (IMPLEMENTED v0.8.0)
 
 **Benefits:** Creates natural-sounding, non-repetitive patterns that evolve organically
 
-**Implementation Complexity:** Medium
+**Implementation Complexity:** Medium (COMPLETED)
 **Musical Impact:** High
 
 ---
@@ -70,28 +92,32 @@ Constrain and guide generated output using music theory principles.
 ---
 
 ### 3. Temporal Manipulation ✅
+
 Control timing, groove, and rhythmic feel of generated patterns.
 
 **Features:**
-- ✅ **Swing/Humanization** - Add timing variations and groove (IMPLEMENTED)
+
+- ✅ **Swing/Humanization** - Add timing variations and groove (IMPLEMENTED v0.2.0)
   - Swing percentage (0-100%)
-  - Micro-timing offsets (+/- milliseconds)
-  - Velocity humanization (random variation within range)
+  - 6 swing groove templates
+  - Micro-timing offsets (0-50ms)
+  - Velocity humanization (0-100%)
   - Timing randomness per step
-- 📋 **Ratcheting** - Repeat notes at subdivisions
-  - Per-step ratchet count (1-16)
-  - Probability-based ratcheting
-- 📋 **Gate Length Control** - Control note duration
-  - Global gate length percentage
-  - Per-step gate length
-  - Legato mode
+- ✅ **Ratcheting** - Repeat notes at subdivisions (IMPLEMENTED v0.5.0)
+  - Ratchet count (1-16 repeats)
+  - Probability-based ratcheting (0-100%)
+  - Exponential velocity decay
+- ✅ **Gate Length Control** - Control note duration (IMPLEMENTED v0.4.0)
+  - Global gate length percentage (1-200%)
+  - Legato mode toggle
+  - Sample-accurate duration
 - 📋 **Tempo Curves** - Dynamic tempo changes
   - Accelerando/ritardando over time
   - Tempo LFO modulation
 
 **Benefits:** Adds human feel and groove, reduces mechanical/robotic sound
 
-**Implementation Complexity:** Medium
+**Implementation Complexity:** Medium (MOSTLY COMPLETED)
 **Musical Impact:** Very High
 
 ---
@@ -180,7 +206,10 @@ Expand MIDI input/output capabilities.
 - **MIDI Learn** - Map hardware controllers to parameters
   - One-click learn mode
   - Save controller mappings
-- **Multiple MIDI Outputs** - Send different layers to different channels
+- ✅ **MIDI Channel Routing** - Send to specific MIDI channels (IMPLEMENTED v0.8.0)
+  - Global channel selector (1-16)
+  - UI integration
+- 📋 **Per-Layer Channel Assignment** - Different channels per polyrhythm layer
   - Per-layer channel assignment
   - Multi-timbral support
 
