@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Markov Chain - Brass Chain Links with Aether Flow -->
+  <title>Markov Chain Generator (Brass)</title>
+
+  <!-- Brass nodes (ornate) -->
+  <g id="node1">
+    <circle cx="6" cy="12" r="3" fill="#1A2F3A" stroke="url(#brassRing)" stroke-width="2"/>
+    <circle cx="6" cy="12" r="1.2" fill="#00CED1" opacity="0.8"/>
+    <circle cx="6.5" cy="11.5" r="0.6" fill="#FFFFFF" opacity="0.6"/>
+  </g>
+
+  <g id="node2">
+    <circle cx="12" cy="6" r="3" fill="#1A2F3A" stroke="url(#brassRing)" stroke-width="2"/>
+    <circle cx="12" cy="6" r="1.2" fill="#00CED1" opacity="0.8"/>
+    <circle cx="12.5" cy="5.5" r="0.6" fill="#FFFFFF" opacity="0.6"/>
+  </g>
+
+  <g id="node3">
+    <circle cx="18" cy="12" r="3" fill="#1A2F3A" stroke="url(#brassRing)" stroke-width="2"/>
+    <circle cx="18" cy="12" r="1.2" fill="#00CED1" opacity="0.8"/>
+    <circle cx="18.5" cy="11.5" r="0.6" fill="#FFFFFF" opacity="0.6"/>
+  </g>
+
+  <g id="node4">
+    <circle cx="12" cy="18" r="3" fill="#1A2F3A" stroke="url(#brassRing)" stroke-width="2"/>
+    <circle cx="12" cy="18" r="1.2" fill="#00CED1" opacity="0.8"/>
+    <circle cx="12.5" cy="17.5" r="0.6" fill="#FFFFFF" opacity="0.6"/>
+  </g>
+
+  <!-- Probability paths (golden traces with aether glow) -->
+  <path d="M 7.5 10.5 L 10.5 7.5" stroke="#9370DB" stroke-width="1.5" opacity="0.7" fill="none"/>
+  <path d="M 13.5 7.5 L 16.5 10.5" stroke="#9370DB" stroke-width="1.5" opacity="0.7" fill="none"/>
+  <path d="M 16.5 13.5 L 13.5 16.5" stroke="#9370DB" stroke-width="1.5" opacity="0.7" fill="none"/>
+  <path d="M 10.5 16.5 L 7.5 13.5" stroke="#9370DB" stroke-width="1.5" opacity="0.7" fill="none"/>
+
+  <!-- Self-loop (brass wire) -->
+  <path d="M 14 5 A 3 3 0 0 1 14 7" stroke="#FFD700" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+
+  <!-- Brass rivets at connection points -->
+  <circle cx="9" cy="9" r="0.8" fill="#B8860B"/>
+  <circle cx="15" cy="9" r="0.8" fill="#B8860B"/>
+  <circle cx="15" cy="15" r="0.8" fill="#B8860B"/>
+  <circle cx="9" cy="15" r="0.8" fill="#B8860B"/>
+
+  <!-- Gradients -->
+  <defs>
+    <linearGradient id="brassRing">
+      <stop offset="0%" stop-color="#FFD700"/>
+      <stop offset="50%" stop-color="#DAA520"/>
+      <stop offset="100%" stop-color="#B8860B"/>
+    </linearGradient>
+  </defs>
+</svg>

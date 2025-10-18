@@ -13,7 +13,13 @@
 #include "Core/EuclideanEngine.h"
 #include "Core/PolyrhythmEngine.h"
 #include "Core/AlgorithmicEngine.h"
+#include "Core/StochasticEngine.h"
 #include "Core/MIDIGenerator.h"
+#include "Core/ScaleQuantizer.h"
+#include "Core/SwingEngine.h"
+#include "Core/GateLengthController.h"
+#include "Core/RatchetEngine.h"
+#include "Core/PresetManager.h"
 #include "DSP/ClockManager.h"
 #include "DSP/EventScheduler.h"
 
@@ -61,9 +67,15 @@ public:
     EuclideanEngine& getEuclideanEngine() { return euclideanEngine; }
     PolyrhythmEngine& getPolyrhythmEngine() { return polyrhythmEngine; }
     AlgorithmicEngine& getAlgorithmicEngine() { return algorithmicEngine; }
+    StochasticEngine& getStochasticEngine() { return stochasticEngine; }
     MIDIGenerator& getMIDIGenerator() { return midiGenerator; }
     ClockManager& getClockManager() { return clockManager; }
     EventScheduler& getEventScheduler() { return eventScheduler; }
+    ScaleQuantizer& getScaleQuantizer() { return scaleQuantizer; }
+    SwingEngine& getSwingEngine() { return swingEngine; }
+    GateLengthController& getGateLengthController() { return gateLengthController; }
+    RatchetEngine& getRatchetEngine() { return ratchetEngine; }
+    PresetManager& getPresetManager() { return presetManager; }
 
     // Parameter tree
     juce::AudioProcessorValueTreeState& getValueTreeState() { return parameters; }
@@ -74,12 +86,20 @@ private:
     EuclideanEngine euclideanEngine;
     PolyrhythmEngine polyrhythmEngine;
     AlgorithmicEngine algorithmicEngine;
+    StochasticEngine stochasticEngine;
     MIDIGenerator midiGenerator;
     ClockManager clockManager;
     EventScheduler eventScheduler;
+    ScaleQuantizer scaleQuantizer;
+    SwingEngine swingEngine;
+    GateLengthController gateLengthController;
+    RatchetEngine ratchetEngine;
 
     // Parameters
     juce::AudioProcessorValueTreeState parameters;
+
+    // Preset management (must be initialized after parameters)
+    PresetManager presetManager;
 
     // Parameter IDs
     static constexpr const char* PARAM_TEMPO = "tempo";
@@ -94,6 +114,24 @@ private:
     static constexpr const char* PARAM_VELOCITY_MAX = "velocityMax";
     static constexpr const char* PARAM_PITCH_MIN = "pitchMin";
     static constexpr const char* PARAM_PITCH_MAX = "pitchMax";
+
+    // Scale and humanization parameters
+    static constexpr const char* PARAM_SCALE_ROOT = "scaleRoot";
+    static constexpr const char* PARAM_SCALE_TYPE = "scaleType";
+    static constexpr const char* PARAM_SWING_AMOUNT = "swingAmount";
+    static constexpr const char* PARAM_TIMING_HUMANIZE = "timingHumanize";
+    static constexpr const char* PARAM_VELOCITY_HUMANIZE = "velocityHumanize";
+    static constexpr const char* PARAM_GATE_LENGTH = "gateLength";
+    static constexpr const char* PARAM_LEGATO_MODE = "legatoMode";
+    static constexpr const char* PARAM_RATCHET_COUNT = "ratchetCount";
+    static constexpr const char* PARAM_RATCHET_PROBABILITY = "ratchetProbability";
+    static constexpr const char* PARAM_RATCHET_DECAY = "ratchetDecay";
+
+    // Stochastic/Chaos parameters
+    static constexpr const char* PARAM_STOCHASTIC_TYPE = "stochasticType";
+    static constexpr const char* PARAM_STEP_SIZE = "stepSize";
+    static constexpr const char* PARAM_MOMENTUM = "momentum";
+    static constexpr const char* PARAM_TIME_SCALE = "timeScale";
 
     // Processing state
     int64_t currentSamplePosition = 0;

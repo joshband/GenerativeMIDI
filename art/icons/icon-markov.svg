@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Markov Chain - Connected Nodes with Arrows -->
+  <title>Markov Chain Generator</title>
+
+  <!-- Nodes -->
+  <circle cx="6" cy="12" r="2.5" fill="#1A1F2E" stroke="#00D4FF" stroke-width="1.5"/>
+  <circle cx="12" cy="6" r="2.5" fill="#1A1F2E" stroke="#00D4FF" stroke-width="1.5"/>
+  <circle cx="18" cy="12" r="2.5" fill="#1A1F2E" stroke="#00D4FF" stroke-width="1.5"/>
+  <circle cx="12" cy="18" r="2.5" fill="#1A1F2E" stroke="#00D4FF" stroke-width="1.5"/>
+
+  <!-- Connecting arrows (probability paths) -->
+  <!-- Node 1 -> Node 2 -->
+  <path d="M 7.5 10.5 L 10.5 7.5" stroke="#9D4EDD" stroke-width="1.5" fill="none" marker-end="url(#arrowhead)"/>
+
+  <!-- Node 2 -> Node 3 -->
+  <path d="M 13.5 7.5 L 16.5 10.5" stroke="#9D4EDD" stroke-width="1.5" fill="none" marker-end="url(#arrowhead)"/>
+
+  <!-- Node 3 -> Node 4 -->
+  <path d="M 16.5 13.5 L 13.5 16.5" stroke="#9D4EDD" stroke-width="1.5" fill="none" marker-end="url(#arrowhead)"/>
+
+  <!-- Node 4 -> Node 1 (loop back) -->
+  <path d="M 10.5 16.5 L 7.5 13.5" stroke="#9D4EDD" stroke-width="1.5" fill="none" marker-end="url(#arrowhead)"/>
+
+  <!-- Self-loop on Node 2 -->
+  <path d="M 14 5 A 3 3 0 0 1 14 7" stroke="#00FFC8" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+
+  <!-- Arrow marker definition -->
+  <defs>
+    <marker id="arrowhead" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+      <polygon points="0 0, 6 3, 0 6" fill="#9D4EDD"/>
+    </marker>
+  </defs>
+
+  <!-- Highlights on nodes -->
+  <circle cx="6" cy="12" r="1" fill="#00FFC8" opacity="0.6"/>
+  <circle cx="18" cy="12" r="1" fill="#00FFC8" opacity="0.6"/>
+</svg>

@@ -7,6 +7,313 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.1] - 2025-10-18
+
+### Fixed - Dynamic UI Updates
+- **Context-Aware Controls**: UI now updates dynamically based on selected generator type
+  - Euclidean-specific controls (Steps, Pulses, Rotation) are disabled/dimmed when not using Euclidean generator
+  - Visual feedback: Disabled controls show at 40% opacity
+  - Density label changes contextually: "Probability" for Euclidean, "Density" for others
+- **Improved UX**: Users immediately see which controls are relevant to current generator
+- **Automatic Updates**: UI updates instantly when changing generator type via dropdown
+
+### Changed
+- Generator type combo box now has onChange callback to trigger UI updates
+- Added `updateControlsForGeneratorType()` method to manage control states
+
+## [0.7.0] - 2025-10-18
+
+### Added - Stochastic & Chaos Generators
+- **StochasticEngine** ([Source/Core/StochasticEngine.h](Source/Core/StochasticEngine.h), [StochasticEngine.cpp](Source/Core/StochasticEngine.cpp))
+  - **Brownian Motion**: Random walk with momentum and boundary bouncing
+  - **Perlin Noise**: Smooth, natural-looking randomness with multi-octave fractal generation
+  - **Drunk Walk**: Discrete step-based random walk with variable step sizes
+  - **Lorenz Attractor**: Deterministic chaos system (butterfly effect) with classic strange attractor behavior
+- **New Generator Types**: Added 4 new generator types to selection (total: 10)
+  - Types 6-9: Brownian, Perlin Noise, Drunk Walk, Lorenz
+  - Accessible via Generator Type dropdown
+- **New Parameters** (4 total):
+  - `stochasticType`: Sub-type selector for stochastic generators (Brownian/Perlin/Drunk/Lorenz)
+  - `stepSize`: Controls randomness magnitude (0.01-1.0, default: 0.1)
+  - `momentum`: Controls inertia/friction in motion (0.0-1.0, default: 0.9)
+  - `timeScale`: Controls evolution speed (0.01-10.0, default: 1.0)
+
+### Technical Details
+- **Brownian Motion**: Uses normal distribution for acceleration, momentum for smoothing, boundary bouncing
+- **Perlin Noise**: Classic Perlin noise with fade curves, gradient interpolation, 4 octaves default
+- **Drunk Walk**: Time-stepped random walk with smooth interpolation between discrete steps
+- **Lorenz Attractor**: Numerical integration of Lorenz equations (σ=10, ρ=28, β=8/3)
+- All generators support:
+  - Scale quantization
+  - Swing and humanization
+  - Gate length control
+  - Ratcheting
+  - Velocity/pitch range mapping
+- Continuous evolution: Engines advance on each subdivision based on time delta
+
+### Use Cases
+- **Brownian**: Smooth, wandering melodies with natural drift
+- **Perlin**: Organic, terrain-like pitch contours
+- **Drunk Walk**: Stepwise melodic movement with random direction changes
+- **Lorenz**: Chaotic, never-repeating patterns with butterfly-effect sensitivity
+
+## [0.6.1] - 2025-10-18
+
+### Fixed
+- Temporarily disabled factory presets initialization due to ValueTree structure issues
+- User presets (save/load/import/export) fully functional
+
+### Known Issues
+- Factory presets disabled pending refactor of initialization code
+- Preset browser starts empty until user creates first preset
+- Will be fixed in v0.6.2
+
+## [0.6.0] - 2025-10-18
+
+### Added - Preset Management System
+- **PresetManager** ([Source/Core/PresetManager.h](Source/Core/PresetManager.h), [PresetManager.cpp](Source/Core/PresetManager.cpp))
+  - Complete preset save/load functionality
+  - XML-based preset storage format (.gmpreset files)
+  - 10 factory presets covering all generator types
+  - User preset directory: `~/Library/Application Support/GenerativeMIDI/Presets` (macOS)
+  - Preset metadata: name, author, category, description
+  - Category-based organization (Euclidean, Polyrhythm, Algorithmic, Rhythmic, Ambient, Experimental)
+- **Preset Browser UI** ([Source/UI/PresetBrowser.h](Source/UI/PresetBrowser.h), [PresetBrowser.cpp](Source/UI/PresetBrowser.cpp))
+  - Modal dialog for browsing and managing presets
+  - Category filtering (dropdown selector)
+  - Preset list with factory/user indicators
+  - Navigation buttons (previous/next)
+  - Save preset dialog with metadata fields
+  - Import/export presets (.gmpreset files)
+  - Delete user presets (factory presets protected)
+  - Auto-refresh for external file changes
+- **Factory Presets** (10 total):
+  1. **Euclidean Basic** - Simple 4-on-16 kick drum pattern
+  2. **Euclidean Complex** - 7-on-23 polyrhythmic pattern with rotation
+  3. **Polyrhythm Layers** - Multi-layer rhythmic textures
+  4. **Markov Melody** - Melodic phrase generation
+  5. **L-System Fractal** - Fractal pattern evolution
+  6. **Cellular Automata** - Emergent Wolfram patterns
+  7. **Probabilistic Sparse** - Ambient sparse textures
+  8. **Ratchet Groove** - Glitchy energetic patterns with ratcheting
+  9. **Ambient Drift** - Slow overlapping soundscapes
+  10. **Percussive Hits** - Short punchy percussion with ratchets
+- **Main UI Integration**:
+  - "Presets" button in title area (top-right)
+  - Current preset label showing loaded preset name
+  - Auto-update preset display in editor timer callback
+
+### Technical Details
+- Preset format: XML with ValueTree state serialization
+- Complete parameter state capture/restore
+- Platform-specific preset directories (macOS/Windows/Linux)
+- Preset navigation with wraparound (next/previous)
+- Import/export for preset sharing
+
+## [0.5.1] - 2025-10-18
+
+### Fixed - UI and Parameter Improvements
+- **Parameter Constraint**: Pulses parameter now automatically constrained to never exceed steps count
+  - Added `juce::jmin(pulses, steps)` validation in [PluginProcessor.cpp](Source/PluginProcessor.cpp:274)
+  - Prevents invalid Euclidean patterns where pulses > steps
+- **UI Layout Fixes** ([PluginEditor.cpp](Source/PluginEditor.cpp)):
+  - Increased default window size from 900×600 to 1400×600 to accommodate all controls
+  - Updated minimum window width from 800px to 1200px
+  - Reduced knob size from 100px to 85px for better space efficiency
+  - Reduced spacing from 20px to 15px for more compact layout
+  - All controls now properly visible on plugin launch
+  - Improved resizing behavior to handle all new controls (gate length + ratcheting)
+- **Section Label Cleanup**:
+  - Removed special character "⬥" from section labels
+  - Labels now display as clean text: "PATTERN DISPLAY", "GENERATOR", "EXPRESSION"
+  - Improved readability and cross-platform compatibility
+
+### Changed
+- Window resize limits updated: 1200×500 minimum, 2000×1000 maximum (from 800×500 to 1600×1000)
+
+## [0.5.0] - 2025-10-18
+
+### Added - Ratcheting (Note Retriggering)
+- **Ratchet Engine** ([Source/Core/RatchetEngine.h](Source/Core/RatchetEngine.h))
+  - Probability-based note retriggering at subdivisions (16th, 32nd, 64th notes)
+  - Configurable ratchet count (1-16 repeats per step)
+  - Exponential velocity decay for natural-sounding repeats
+  - Sample-accurate timing offset calculation
+- **New Parameters** (3 total):
+  - `ratchetCount`: Number of repeats per step (1-16, default: 1)
+  - `ratchetProbability`: Chance of ratcheting occurring (0.0-1.0, default: 0.0)
+  - `ratchetDecay`: Velocity reduction per repeat (0.0-1.0, default: 0.5)
+- **UI Controls**:
+  - Ratchet count rotary knob (brass Victorian aesthetic)
+  - Ratchet probability knob (labeled "R Prob")
+  - Ratchet decay knob (labeled "R Decay")
+  - Placed in Expression section alongside gate length controls
+
+### Changed
+- All 3 generators now support ratcheting:
+  - Euclidean generator: Full ratcheting support
+  - Polyrhythm generator: Full ratcheting support
+  - Algorithmic generators: Full ratcheting support
+- [PluginProcessor.cpp](Source/PluginProcessor.cpp): Integrated ratcheting into `onSubdivisionHit()`
+- Each ratcheted note respects gate length settings
+- Ratchet velocity decay formula: `velocity * (1 - decay)^index`
+
+### Technical Details
+- **Timing Calculation**: `samplesPerRatchet = samplesPerStep / (ratchetCount * subdivisionMultiplier)`
+- **Subdivision Multipliers**: 1 (16th notes), 2 (32nd notes), 4 (64th notes)
+- **Probability Check**: Uses `shouldRatchet()` with random distribution
+- **Compatible with**: All existing features (swing, humanization, scale quantization, gate length)
+
+## [0.4.0] - 2025-01-17
+
+### Added - Gate Length Control
+- **Gate Length Controller** ([Source/Core/GateLengthController.h](Source/Core/GateLengthController.h))
+  - Control note duration as percentage of step duration (1-200%)
+  - Legato mode toggle (notes overlap with no gaps)
+  - Gate length randomization support (0-100%)
+  - Sample-accurate gate length calculation
+- **New Parameters** (2 total):
+  - `gateLength`: Gate length percentage (0.01-2.0, default: 0.8 / 80%)
+  - `legatoMode`: Legato toggle (boolean, default: false)
+- **UI Controls**:
+  - Gate length rotary knob (brass Victorian aesthetic)
+  - Legato mode toggle button
+  - Placed in Expression section alongside humanization controls
+
+### Changed
+- All note-off events now use gate length controller (affects all 6 generator types)
+- Note duration no longer hardcoded at 50% of step duration
+- [PluginProcessor.cpp](Source/PluginProcessor.cpp): Integrated gate length into `onSubdivisionHit()`
+
+## [0.3.0] - 2025-01-17
+
+### Added - Gilded Steampunk Visual Redesign
+- **Complete aesthetic transformation** from neural/cyan to Victorian brass/gold/copper steampunk
+- **New color palette** ([CustomLookAndFeel.h](Source/UI/CustomLookAndFeel.h)):
+  - Foundation metals: Abyss Navy, Aged Brass (#B8860B), Temple Gold (#FFD700), Steam Copper (#B87333), Gothic Bronze, Obsidian Steel
+  - Energy colors: Aether Cyan (#00CED1), Amber Tesla (#FFBF00), Alchemy Violet, Steam Rose, Verdigris Green
+- **Ornate brass rotary knobs** with Victorian instrument aesthetic:
+  - Polished gold rim (ornate bezel)
+  - Aged brass body with metallic gradient
+  - Verdigris patina accents for aged copper detail
+  - Engraved tick marks (12 positions, Victorian clock style)
+  - Golden energy arc value indicator with glow effect
+  - Aether crystal center hub with brass ring and copper fill
+  - Glowing cyan/amber pointer with bright tip highlight
+- **Brass linear sliders** with organ pipe aesthetic:
+  - Brass channel with bronze/obsidian gradient
+  - Amber and cyan energy flow gradient
+  - Copper diamond thumb with golden bezel
+  - Aether crystal highlight
+- **Brass buttons** with mechanical footswitch aesthetic:
+  - Aether glow when active (cyan to amber gradient)
+  - Brass body gradient with horizontal metallic sheen
+  - Brass rim and bronze inner shadow for mechanical depth
+- **Brass dropdown menus** with engraved plate style:
+  - Brass plate background gradient
+  - Brass bezel and golden accent line
+  - Bronze inner shadow
+- **Art Deco brass section panels** ([PluginEditor.cpp](Source/PluginEditor.cpp)):
+  - Aether energy field glow
+  - Obsidian steel panel backgrounds
+  - Polished brass bezel (outer border)
+  - Golden accent line (inner highlight)
+  - Bronze inner shadow for depth
+  - Raised brass label plates with engraved golden text
+  - Changed panel symbols from ◈ (diamond) to ⬥ (lozenge) for Art Deco aesthetic
+- **Victorian steampunk background elements**:
+  - Abyss Navy (#0A1628) deep void background
+  - Brass rivets and ornamental dots with highlights (80 particles)
+  - Art Deco geometric brass inlay lines (30 traces)
+  - Floating aether glow particles (25 energy orbs, subtle cyan)
+  - Victorian brass corner brackets with multi-layer design:
+    - Aether glow (cyan to amber radial gradient)
+    - Brass outer ring
+    - Golden highlight ring
+    - Bronze core
+    - Aether crystal center
+- **Aether crystal pattern visualizer** ([PatternVisualizer.h](Source/UI/PatternVisualizer.h)):
+  - Victorian instrument face display with obsidian glass gradient
+  - Brass bezel shadow and dark glass surface
+  - Polished brass border with golden highlight rim
+  - Aether crystal indicators (replacing LED bars):
+    - Current active: Brilliant amber crystal (amber to copper gradient) with aether glow
+    - Non-current active: Glowing cyan crystal (brighter cyan)
+    - Probability miss: Dim bronze dormant crystal
+    - Current inactive: Brass playhead marker
+    - Dormant: Obsidian steel chamber
+  - Brass chamber outlines (Victorian crystal holders)
+  - Copper engraved numerals for step markers
+  - Brass engraved legend text
+
+### Changed
+- Title text color from cyan (#00FFC8) to polished gold (#FFD700)
+- All UI component color schemes updated to match gilded steampunk aesthetic
+- Pattern visualizer transformed from LED bar to aether crystal display
+
+### Documentation
+- Updated [ENHANCEMENTS.md](ENHANCEMENTS.md) with version history
+- Created comprehensive [conceptArt/GILDED_STEAMPUNK_PALETTE.md](conceptArt/GILDED_STEAMPUNK_PALETTE.md)
+- Created detailed [conceptArt/GILDED_COMPONENTS.md](conceptArt/GILDED_COMPONENTS.md)
+- Created frame-by-frame [conceptArt/ANIMATION_STORYBOARD.md](conceptArt/ANIMATION_STORYBOARD.md)
+
+## [0.2.0] - 2025-01-17
+
+### Added - Scale Quantization & Humanization
+- **Scale Quantization System** ([Source/Core/ScaleQuantizer.h](Source/Core/ScaleQuantizer.h))
+  - 16 musical scales implemented:
+    - Chromatic (all 12 notes)
+    - Major, Natural Minor
+    - Harmonic Minor, Melodic Minor
+    - Modes: Dorian, Phrygian, Lydian, Mixolydian, Locrian
+    - Major Pentatonic, Minor Pentatonic
+    - Blues scale
+    - Whole Tone, Diminished
+    - Harmonic Major
+    - Custom scale support
+  - Root note selection (0-11, C through B)
+  - Octave-aware quantization preserving pitch range
+  - Three quantization modes: nearest, up, down
+- **Swing & Humanization Engine** ([Source/Core/SwingEngine.h](Source/Core/SwingEngine.h))
+  - Swing amount control (0-100%)
+  - Timing randomness (0-50ms Gaussian distribution)
+  - Velocity randomness (0-100% of base velocity)
+  - 6 groove templates:
+    - Classic (50% swing)
+    - HardSwing (66% swing)
+    - Shuffle (60% swing)
+    - Drunk (random swing per step)
+    - Tight (25% swing, minimal humanization)
+    - Loose (50% swing, maximum humanization)
+- **New Parameters** (5 total):
+  - `scaleRoot`: Root note for quantization (0-11, default: 0/C)
+  - `scaleType`: Scale selection (0-16, default: 0/Chromatic)
+  - `swingAmount`: Swing percentage (0.0-1.0, default: 0.0)
+  - `timingHumanize`: Timing variation (0.0-1.0, default: 0.0)
+  - `velocityHumanize`: Velocity variation (0.0-1.0, default: 0.0)
+- **UI Controls** in Expression section:
+  - Scale root dropdown (C, C#, D, D#, E, F, F#, G, G#, A, A#, B)
+  - Scale type dropdown (all 16 scales)
+  - Swing amount rotary knob
+  - Timing humanization rotary knob
+  - Velocity humanization rotary knob
+
+### Changed
+- [PluginProcessor.cpp](Source/PluginProcessor.cpp): All generated pitches now pass through scale quantization
+- [PluginProcessor.cpp](Source/PluginProcessor.cpp): All generated velocities receive humanization
+- [PluginProcessor.cpp](Source/PluginProcessor.cpp): All subdivision hits receive swing timing offsets
+- [PluginEditor.cpp](Source/PluginEditor.cpp): Expression section layout updated to accommodate new controls
+
+### Documentation
+- Created comprehensive [FEATURES.md](FEATURES.md) (60+ pages):
+  - Complete documentation of all 6 generator types
+  - Scale quantization table with all 16 scales
+  - Swing/humanization specifications
+  - 4 complete workflow examples
+  - Tips & tricks, troubleshooting
+
+## [1.0.0] - 2025-10-16
+
 ### Fixed
 - Velocity range parameters (Min/Max) now properly applied to all generated notes across all generator types
 - Pitch range parameters now fully respected in Euclidean generator (was only using min as base + offset)

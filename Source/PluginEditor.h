@@ -13,6 +13,7 @@
 #include "PluginProcessor.h"
 #include "UI/CustomLookAndFeel.h"
 #include "UI/PatternVisualizer.h"
+#include "UI/PresetBrowser.h"
 
 class GenerativeMIDIEditor : public juce::AudioProcessorEditor, private juce::Timer
 {
@@ -25,6 +26,7 @@ public:
 
 private:
     void timerCallback() override;
+    void updateControlsForGeneratorType(int generatorType);
 
     GenerativeMIDIProcessor& audioProcessor;
     CustomLookAndFeel customLookAndFeel;
@@ -43,7 +45,28 @@ private:
     juce::Slider pitchMinSlider;
     juce::Slider pitchMaxSlider;
 
+    // Scale and humanization controls
+    juce::Slider swingSlider;
+    juce::Slider timingHumanizeSlider;
+    juce::Slider velocityHumanizeSlider;
+    juce::ComboBox scaleRootCombo;
+    juce::ComboBox scaleTypeCombo;
+
+    // Gate length controls
+    juce::Slider gateLengthSlider;
+    juce::TextButton legatoButton;
+
+    // Ratchet controls
+    juce::Slider ratchetCountSlider;
+    juce::Slider ratchetProbabilitySlider;
+    juce::Slider ratchetDecaySlider;
+
     juce::ComboBox generatorTypeCombo;
+
+    // Preset controls
+    juce::TextButton presetBrowserButton;
+    juce::Label currentPresetLabel;
+    std::unique_ptr<PresetBrowser> presetBrowser;
 
     // Labels
     juce::Label titleLabel;
@@ -55,6 +78,14 @@ private:
     juce::Label densityLabel;
     juce::Label velocityLabel;
     juce::Label pitchLabel;
+    juce::Label scaleLabel;
+    juce::Label swingLabel;
+    juce::Label timingHumanizeLabel;
+    juce::Label velocityHumanizeLabel;
+    juce::Label gateLengthLabel;
+    juce::Label ratchetCountLabel;
+    juce::Label ratchetProbabilityLabel;
+    juce::Label ratchetDecayLabel;
 
     // Slider attachments
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> tempoAttachment;
@@ -66,7 +97,17 @@ private:
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> velocityMaxAttachment;
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> pitchMinAttachment;
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> pitchMaxAttachment;
+    std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> swingAttachment;
+    std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> timingHumanizeAttachment;
+    std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> velocityHumanizeAttachment;
+    std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> gateLengthAttachment;
+    std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment> legatoAttachment;
+    std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> ratchetCountAttachment;
+    std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> ratchetProbabilityAttachment;
+    std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> ratchetDecayAttachment;
     std::unique_ptr<juce::AudioProcessorValueTreeState::ComboBoxAttachment> generatorAttachment;
+    std::unique_ptr<juce::AudioProcessorValueTreeState::ComboBoxAttachment> scaleRootAttachment;
+    std::unique_ptr<juce::AudioProcessorValueTreeState::ComboBoxAttachment> scaleTypeAttachment;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(GenerativeMIDIEditor)
 };

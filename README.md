@@ -77,7 +77,7 @@ cmake --build . --config Release -j8
 
 ### iOS/iPadOS AUv3
 
-See [BUILDING-iOS.md](BUILDING-iOS.md) for detailed iOS build instructions.
+See [docs/developer/BUILDING-iOS.md](docs/developer/BUILDING-iOS.md) for detailed iOS build instructions.
 
 **Quick start (requires Xcode):**
 ```bash
@@ -208,9 +208,21 @@ clang-format -i Source/**/*.cpp Source/**/*.h
 - [JUCE Framework](https://juce.com) - Cross-platform audio framework
 - [CMake](https://cmake.org) - Build system
 
+## Documentation
+
+Complete documentation is available in [docs/](docs/):
+
+- **[Getting Started](docs/user/GETTING_STARTED.md)** - Quick start for users
+- **[Features Guide](docs/user/FEATURES.md)** - Complete feature reference
+- **[Build Instructions](docs/developer/BUILD.md)** - Developer build guide
+- **[Enhancement Roadmap](docs/developer/ENHANCEMENTS.md)** - Planned features
+- **[UI Specification](docs/design/SYNAPTIK_UI_SPEC.md)** - Design documentation
+- **[Development Sessions](docs/sessions/README.md)** - Day-by-day development logs
+
 ## Support
 
-- 📖 Documentation: [docs/](docs/)
+- 📖 Full Documentation: [docs/](docs/)
+- 🎨 Art Assets: [art/](art/)
 - 🐛 Bug Reports: [GitHub Issues](https://github.com/yourusername/GenerativeMIDI/issues)
 - 💬 Discussions: [GitHub Discussions](https://github.com/yourusername/GenerativeMIDI/discussions)
 

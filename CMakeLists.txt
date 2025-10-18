@@ -41,12 +41,18 @@ set(SOURCE_FILES
     Source/Core/PolyrhythmEngine.h
     Source/Core/AlgorithmicEngine.cpp
     Source/Core/AlgorithmicEngine.h
+    Source/Core/StochasticEngine.cpp
+    Source/Core/StochasticEngine.h
     Source/Core/MIDIGenerator.cpp
     Source/Core/MIDIGenerator.h
     Source/DSP/ClockManager.cpp
     Source/DSP/ClockManager.h
     Source/DSP/EventScheduler.cpp
     Source/DSP/EventScheduler.h
+    Source/Core/PresetManager.cpp
+    Source/Core/PresetManager.h
+    Source/UI/PresetBrowser.cpp
+    Source/UI/PresetBrowser.h
     Source/PluginProcessor.cpp
     Source/PluginProcessor.h
     Source/PluginEditor.cpp
