@@ -63,36 +63,56 @@ public:
         setColour(juce::ComboBox::outlineColourId, juce::Colour(BRASS_AGED));
     }
 
+    juce::Image loadAsset(const juce::String& relativePath)
+    {
+        juce::File projectRoot = juce::File::getCurrentWorkingDirectory();
+
+        // Try common project layouts for SynaptikUIToolkit
+        std::vector<juce::String> possiblePaths = {
+            "../SynaptikUIToolkit/themes/victorian-steampunk/" + relativePath,
+            "../../SynaptikUIToolkit/themes/victorian-steampunk/" + relativePath,
+            "../../../SynaptikUIToolkit/themes/victorian-steampunk/" + relativePath
+        };
+
+        for (const auto& path : possiblePaths)
+        {
+            juce::File assetFile = projectRoot.getChildFile(path);
+            if (assetFile.existsAsFile())
+            {
+                juce::Image img = juce::ImageCache::getFromFile(assetFile);
+                if (img.isValid())
+                {
+                    DBG("Loaded asset: " << relativePath);
+                    return img;
+                }
+            }
+        }
+
+        DBG("Warning: Could not load asset: " << relativePath);
+        return juce::Image();
+    }
+
     void loadUIAssets()
     {
-        // Get path to SynaptikUIToolkit assets
-        auto artPath = juce::File::getCurrentWorkingDirectory()
-            .getChildFile("art")
-            .getChildFile("themes")
-            .getChildFile("victorian-steampunk")
-            .getChildFile("ui-elements");
+        // Load actual knob images from SynaptikUIToolkit (256px for quality)
+        knobOrnate = loadAsset("ui-elements/knobs/img_8150_256.png");
+        knobConcentric = loadAsset("ui-elements/knobs/img_8183_256.png");
+        knobSimple = loadAsset("ui-elements/knobs/img_8200_256.png");
 
-        // Load knob images (128px variants)
-        knobAstrolabe = juce::ImageCache::getFromFile(
-            artPath.getChildFile("knobs").getChildFile("knob_astrolabe_rings_128.png")
-        );
-        knobClock = juce::ImageCache::getFromFile(
-            artPath.getChildFile("knobs").getChildFile("knob_clock_face_128.png")
-        );
-        knobOrnate = juce::ImageCache::getFromFile(
-            artPath.getChildFile("knobs").getChildFile("knob_ornate_filigree_128.png")
-        );
+        // Load slider components
+        sliderVerticalRail = loadAsset("ui-elements/sliders/slider_brass_vertical_256.png");
+        sliderPointer = loadAsset("ui-elements/sliders/pointer_aether_staff_256.png");
 
-        // Load slider thumb image
-        sliderThumb = juce::ImageCache::getFromFile(
-            artPath.getChildFile("sliders").getChildFile("pointer_aether_staff_128.png")
-        );
+        // Load panel backgrounds
+        panelBrass = loadAsset("ui-elements/panels/img_8119_512.png");
+        panelAged = loadAsset("ui-elements/panels/img_8120_512.png");
+        panelVerdigris = loadAsset("ui-elements/panels/img_8138_512.png");
 
-        // Check if images loaded successfully
-        if (!knobAstrolabe.isValid())
-        {
-            DBG("Warning: Could not load knob_astrolabe_rings_128.png from " << artPath.getFullPathName());
-        }
+        // Check if key assets loaded
+        if (knobOrnate.isValid())
+            DBG("Victorian Steampunk UI Assets Loaded Successfully!");
+        else
+            DBG("Warning: Victorian UI assets not found - using procedural fallback");
     }
 
     void drawRotarySlider(juce::Graphics& g, int x, int y, int width, int height,
@@ -105,7 +125,7 @@ public:
         auto angle = rotaryStartAngle + sliderPos * (rotaryEndAngle - rotaryStartAngle);
 
         // If we have a loaded knob image, use hybrid approach (image + pointer)
-        if (knobAstrolabe.isValid())
+        if (knobOrnate.isValid())
         {
             // Aether glow (outer radiance)
             auto glowRadius = radius + 12.0f;
@@ -121,7 +141,7 @@ public:
             // Draw the actual knob image from SynaptikUIToolkit
             auto knobSize = radius * 2.0f;
             g.setOpacity(1.0f);
-            g.drawImageWithin(knobAstrolabe,
+            g.drawImageWithin(knobOrnate,
                             static_cast<int>(centreX - knobSize * 0.5f),
                             static_cast<int>(centreY - knobSize * 0.5f),
                             static_cast<int>(knobSize),
@@ -300,6 +320,59 @@ public:
                          float sliderPos, float minSliderPos, float maxSliderPos,
                          const juce::Slider::SliderStyle style, juce::Slider& slider) override
     {
+        // For vertical sliders with loaded rail image, use image-based rendering
+        if (!slider.isHorizontal() && sliderVerticalRail.isValid())
+        {
+            // Draw brass vertical rail image
+            auto railBounds = juce::Rectangle<float>(static_cast<float>(x), static_cast<float>(y),
+                                                      static_cast<float>(width), static_cast<float>(height));
+            g.setOpacity(0.95f);
+            g.drawImage(sliderVerticalRail, railBounds, juce::RectanglePlacement::centred | juce::RectanglePlacement::stretchToFit);
+            g.setOpacity(1.0f);
+
+            // Aether energy fill (from bottom to current position)
+            juce::Rectangle<float> energyFill(railBounds.getX() + railBounds.getWidth() * 0.35f,
+                                               sliderPos,
+                                               railBounds.getWidth() * 0.3f,
+                                               railBounds.getBottom() - sliderPos);
+
+            juce::ColourGradient energyGrad(
+                juce::Colour(AETHER_CYAN).withAlpha(0.6f),
+                energyFill.getCentreX(), energyFill.getY(),
+                juce::Colour(AMBER_TESLA).withAlpha(0.8f),
+                energyFill.getCentreX(), energyFill.getBottom(),
+                false);
+            g.setGradientFill(energyGrad);
+            g.fillRoundedRectangle(energyFill, 2.0f);
+
+            // Draw aether staff pointer if available
+            if (sliderPointer.isValid())
+            {
+                float thumbHeight = 40.0f;
+                float thumbWidth = width * 1.2f;
+                auto thumbBounds = juce::Rectangle<float>(x + width * 0.5f - thumbWidth * 0.5f,
+                                                           sliderPos - thumbHeight * 0.5f,
+                                                           thumbWidth, thumbHeight);
+
+                // Pointer glow
+                juce::ColourGradient pointerGlow(
+                    juce::Colour(AETHER_CYAN).withAlpha(0.5f),
+                    thumbBounds.getCentreX(), thumbBounds.getCentreY(),
+                    juce::Colour(AETHER_CYAN).withAlpha(0.0f),
+                    thumbBounds.getCentreX(), thumbBounds.getCentreY() - thumbHeight,
+                    true);
+                g.setGradientFill(pointerGlow);
+                g.fillEllipse(thumbBounds.expanded(10.0f));
+
+                // Draw pointer image
+                g.setOpacity(1.0f);
+                g.drawImage(sliderPointer, thumbBounds, juce::RectanglePlacement::centred);
+            }
+
+            return;
+        }
+
+        // Fallback to procedural rendering for horizontal sliders or if images not loaded
         auto trackWidth = juce::jmin(10.0f, slider.isHorizontal() ? height * 0.3f : width * 0.3f);
 
         juce::Rectangle<float> track;
@@ -470,12 +543,21 @@ public:
         return juce::Font(label.getHeight() * 0.7f, juce::Font::bold);
     }
 
+    // Public accessors for panel backgrounds (for use in editor paint())
+    const juce::Image& getPanelBrass() const { return panelBrass; }
+    const juce::Image& getPanelAged() const { return panelAged; }
+    const juce::Image& getPanelVerdigris() const { return panelVerdigris; }
+
 private:
     // UI asset images from SynaptikUIToolkit
-    juce::Image knobAstrolabe;
-    juce::Image knobClock;
     juce::Image knobOrnate;
-    juce::Image sliderThumb;
+    juce::Image knobConcentric;
+    juce::Image knobSimple;
+    juce::Image sliderVerticalRail;
+    juce::Image sliderPointer;
+    juce::Image panelBrass;
+    juce::Image panelAged;
+    juce::Image panelVerdigris;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(CustomLookAndFeel)
 };
