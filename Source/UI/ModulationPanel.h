@@ -2,7 +2,7 @@
   ==============================================================================
     ModulationPanel.h
 
-    Visual modulation source panel with drag-and-drop routing
+    Visual modulation source panel with JUCE drag-and-drop routing
     Shows LFOs, Envelopes, Random sources
 
   ==============================================================================
@@ -15,7 +15,7 @@
 #include "../Modulation/ModulationMatrix.h"
 
 // ============================================================================
-// Modulation Source Button (draggable)
+// Modulation Source Button (draggable using JUCE DragAndDropContainer)
 // ============================================================================
 class ModulationSourceButton : public juce::Component
 {
@@ -46,7 +46,7 @@ public:
 
         // Brass panel background
         juce::ColourGradient panelGrad(
-            juce::Colour(CustomLookAndFeel::BRASS_AGED).brighter(0.1f),
+            juce::Colour(CustomLookAndFeel::BRASS_AGED).brighter(isDragging ? 0.3f : 0.1f),
             bounds.getCentreX(), bounds.getY(),
             juce::Colour(CustomLookAndFeel::BRASS_AGED).darker(0.2f),
             bounds.getCentreX(), bounds.getBottom(),
@@ -55,8 +55,8 @@ public:
         g.fillRoundedRectangle(bounds, 4.0f);
 
         // Brass border
-        g.setColour(juce::Colour(CustomLookAndFeel::GOLD_TEMPLE).withAlpha(0.6f));
-        g.drawRoundedRectangle(bounds, 4.0f, 1.5f);
+        g.setColour(juce::Colour(CustomLookAndFeel::GOLD_TEMPLE).withAlpha(isDragging ? 1.0f : 0.6f));
+        g.drawRoundedRectangle(bounds, 4.0f, isDragging ? 2.5f : 1.5f);
 
         // Source name
         g.setColour(juce::Colour(CustomLookAndFeel::GOLD_TEMPLE));
@@ -95,36 +95,35 @@ public:
         }
     }
 
-    void mouseDown(const juce::MouseEvent& e) override
-    {
-        // Start drag operation
-        isDragging = true;
-        repaint();
-    }
-
     void mouseDrag(const juce::MouseEvent& e) override
     {
-        if (isDragging)
+        if (!isDragging && e.getDistanceFromDragStart() > 5)
         {
-            // Show drag indicator
+            isDragging = true;
+
+            // Start drag using JUCE's drag and drop system
+            auto* container = juce::DragAndDropContainer::findParentDragContainerFor(this);
+            if (container)
+            {
+                // Create drag description with source index
+                juce::var dragDescription;
+                dragDescription = sourceIndex;
+
+                container->startDragging(dragDescription, this);
+            }
+
             repaint();
         }
     }
 
-    void mouseUp(const juce::MouseEvent& e) override
+    void mouseUp(const juce::MouseEvent& /*e*/) override
     {
         isDragging = false;
         repaint();
-
-        // Notify parent of drag completion
-        if (onDragComplete)
-            onDragComplete(sourceIndex, e.getScreenPosition());
     }
 
     int getSourceIndex() const { return sourceIndex; }
     ModulationSource* getSource() const { return source; }
-
-    std::function<void(int, juce::Point<int>)> onDragComplete;
 
 private:
     int sourceIndex;
@@ -135,9 +134,11 @@ private:
 };
 
 // ============================================================================
-// Modulation Panel
+// Modulation Panel (DragAndDropContainer)
 // ============================================================================
-class ModulationPanel : public juce::Component, private juce::Timer
+class ModulationPanel : public juce::Component,
+                        public juce::DragAndDropContainer,
+                        private juce::Timer
 {
 public:
     ModulationPanel(ModulationMatrix& matrix)
@@ -165,7 +166,8 @@ public:
         // Title
         g.setColour(juce::Colour(CustomLookAndFeel::GOLD_TEMPLE));
         g.setFont(juce::Font(14.0f, juce::Font::bold));
-        g.drawText("MODULATION", bounds.reduced(10, 5).removeFromTop(20),
+        g.drawText("MODULATION SOURCES - Drag to Knobs",
+                   bounds.reduced(10, 5).removeFromTop(20),
                    juce::Justification::centredLeft);
     }
 
@@ -197,20 +199,11 @@ public:
             {
                 auto* button = sourceButtons.add(new ModulationSourceButton(i, source));
                 addAndMakeVisible(button);
-
-                button->onDragComplete = [this](int sourceIdx, juce::Point<int> screenPos)
-                {
-                    if (onModulationDragComplete)
-                        onModulationDragComplete(sourceIdx, screenPos);
-                };
             }
         }
 
         resized();
     }
-
-    // Callback for when user drags a modulation source
-    std::function<void(int sourceIndex, juce::Point<int> dropPosition)> onModulationDragComplete;
 
 private:
     void timerCallback() override

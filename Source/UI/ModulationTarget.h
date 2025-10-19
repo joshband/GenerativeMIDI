@@ -2,7 +2,7 @@
   ==============================================================================
     ModulationTarget.h
 
-    Mixin component that makes any control accept drag-and-drop modulation routing
+    Components that accept drag-and-drop modulation routing
     Provides visual feedback for modulation connections
 
   ==============================================================================
@@ -15,21 +15,43 @@
 #include "CustomLookAndFeel.h"
 
 // ============================================================================
-// Modulation Target Component (Mixin)
+// Modulated Slider (extends JUCE Slider + DragAndDropTarget)
 // ============================================================================
-class ModulationTarget
+class ModulatedSlider : public juce::Slider,
+                        public juce::DragAndDropTarget
 {
 public:
-    ModulationTarget(const juce::String& paramID, ModulationMatrix& matrix)
+    ModulatedSlider(const juce::String& paramID, ModulationMatrix& matrix)
         : parameterID(paramID), modMatrix(matrix)
     {
     }
 
-    virtual ~ModulationTarget() = default;
-
-    // Called when a modulation source is dropped on this target
-    void handleModulationDrop(int sourceIndex, juce::Point<int> /*dropPosition*/)
+    // DragAndDropTarget interface
+    bool isInterestedInDragSource(const SourceDetails& dragSourceDetails) override
     {
+        // Accept drags that contain an integer (modulation source index)
+        return dragSourceDetails.description.isInt();
+    }
+
+    void itemDragEnter(const SourceDetails& /*dragSourceDetails*/) override
+    {
+        isDragOver = true;
+        repaint();
+    }
+
+    void itemDragExit(const SourceDetails& /*dragSourceDetails*/) override
+    {
+        isDragOver = false;
+        repaint();
+    }
+
+    void itemDropped(const SourceDetails& dragSourceDetails) override
+    {
+        isDragOver = false;
+
+        // Get modulation source index from drag description
+        int sourceIndex = dragSourceDetails.description;
+
         // Check if connection already exists
         bool exists = false;
         for (const auto& conn : modMatrix.getConnections())
@@ -37,6 +59,7 @@ public:
             if (conn.sourceIndex == sourceIndex && conn.parameterID == parameterID)
             {
                 exists = true;
+                DBG("Connection already exists: Source " << sourceIndex << " -> " << parameterID);
                 break;
             }
         }
@@ -47,67 +70,8 @@ public:
             modMatrix.addConnection(sourceIndex, parameterID, 0.5f);
             DBG("Created modulation connection: Source " << sourceIndex << " -> " << parameterID);
         }
-        else
-        {
-            DBG("Modulation connection already exists");
-        }
-    }
 
-    // Get modulation depth for visual display
-    float getModulationDepth() const
-    {
-        float totalDepth = 0.0f;
-        for (const auto& conn : modMatrix.getConnections())
-        {
-            if (conn.parameterID == parameterID && conn.enabled)
-            {
-                auto* source = modMatrix.getSource(conn.sourceIndex);
-                if (source && source->getEnabled())
-                {
-                    totalDepth += std::abs(conn.depth);
-                }
-            }
-        }
-        return juce::jlimit(0.0f, 1.0f, totalDepth);
-    }
-
-    // Get current modulation value for visual display
-    float getCurrentModulation() const
-    {
-        return modMatrix.calculateModulation(parameterID);
-    }
-
-    // Check if this target has any active modulation
-    bool hasActiveModulation() const
-    {
-        for (const auto& conn : modMatrix.getConnections())
-        {
-            if (conn.parameterID == parameterID && conn.enabled)
-            {
-                auto* source = modMatrix.getSource(conn.sourceIndex);
-                if (source && source->getEnabled())
-                    return true;
-            }
-        }
-        return false;
-    }
-
-    juce::String getParameterID() const { return parameterID; }
-
-protected:
-    juce::String parameterID;
-    ModulationMatrix& modMatrix;
-};
-
-// ============================================================================
-// Modulated Slider (extends JUCE Slider + ModulationTarget)
-// ============================================================================
-class ModulatedSlider : public juce::Slider, public ModulationTarget
-{
-public:
-    ModulatedSlider(const juce::String& paramID, ModulationMatrix& matrix)
-        : ModulationTarget(paramID, matrix)
-    {
+        repaint();
     }
 
     void paint(juce::Graphics& g) override
@@ -115,7 +79,18 @@ public:
         // Draw base slider
         juce::Slider::paint(g);
 
-        // Draw modulation ring if active
+        // Draw drag-over indicator
+        if (isDragOver)
+        {
+            auto bounds = getLocalBounds().toFloat();
+            g.setColour(juce::Colour(CustomLookAndFeel::AETHER_CYAN).withAlpha(0.3f));
+            g.fillRoundedRectangle(bounds, 4.0f);
+
+            g.setColour(juce::Colour(CustomLookAndFeel::AETHER_CYAN));
+            g.drawRoundedRectangle(bounds, 4.0f, 2.0f);
+        }
+
+        // Draw modulation indicator if active
         if (getSliderStyle() == juce::Slider::Rotary && hasActiveModulation())
         {
             drawModulationIndicator(g);
@@ -124,15 +99,15 @@ public:
 
     void mouseDown(const juce::MouseEvent& e) override
     {
-        // Check if this is a modulation drop from ModulationPanel
-        if (e.mods.isAltDown() && e.eventComponent != this)
+        // Right-click to show modulation connections menu
+        if (e.mods.isPopupMenu())
         {
-            // This is a modulation drag-and-drop operation
-            // The actual drop handling is done by the parent component
-            return;
+            showModulationMenu();
         }
-
-        juce::Slider::mouseDown(e);
+        else
+        {
+            juce::Slider::mouseDown(e);
+        }
     }
 
 private:
@@ -179,6 +154,86 @@ private:
                          radius * 2.0f, radius * 2.0f, 1.0f);
         }
     }
+
+    void showModulationMenu()
+    {
+        juce::PopupMenu menu;
+
+        // Show current connections
+        bool hasConnections = false;
+        int menuItemID = 1;
+
+        for (int i = 0; i < modMatrix.getNumConnections(); ++i)
+        {
+            auto* conn = modMatrix.getConnection(i);
+            if (conn && conn->parameterID == parameterID)
+            {
+                auto* source = modMatrix.getSource(conn->sourceIndex);
+                if (source)
+                {
+                    hasConnections = true;
+
+                    juce::PopupMenu connMenu;
+                    connMenu.addItem(menuItemID + 1, "Depth: " + juce::String(conn->depth, 2), false, false);
+                    connMenu.addItem(menuItemID + 2, conn->enabled ? "Disable" : "Enable", true, conn->enabled);
+                    connMenu.addItem(menuItemID + 3, "Remove Connection", true, false);
+
+                    menu.addSubMenu(source->getName(), connMenu);
+                    menuItemID += 10;
+                }
+            }
+        }
+
+        if (!hasConnections)
+        {
+            menu.addItem(1, "No modulation connections", false);
+        }
+
+        menu.addSeparator();
+        menu.addItem(1000, "Drag modulation sources here...", false);
+
+        menu.showMenuAsync(juce::PopupMenu::Options());
+    }
+
+    float getModulationDepth() const
+    {
+        float totalDepth = 0.0f;
+        for (const auto& conn : modMatrix.getConnections())
+        {
+            if (conn.parameterID == parameterID && conn.enabled)
+            {
+                auto* source = modMatrix.getSource(conn.sourceIndex);
+                if (source && source->getEnabled())
+                {
+                    totalDepth += std::abs(conn.depth);
+                }
+            }
+        }
+        return juce::jlimit(0.0f, 1.0f, totalDepth);
+    }
+
+    float getCurrentModulation() const
+    {
+        return modMatrix.calculateModulation(parameterID);
+    }
+
+    bool hasActiveModulation() const
+    {
+        for (const auto& conn : modMatrix.getConnections())
+        {
+            if (conn.parameterID == parameterID && conn.enabled)
+            {
+                auto* source = modMatrix.getSource(conn.sourceIndex);
+                if (source && source->getEnabled())
+                    return true;
+            }
+        }
+        return false;
+    }
+
+    juce::String parameterID;
+    ModulationMatrix& modMatrix;
+    bool isDragOver = false;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(ModulatedSlider)
 };

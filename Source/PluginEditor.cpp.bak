@@ -174,12 +174,11 @@ GenerativeMIDIEditor::GenerativeMIDIEditor(GenerativeMIDIProcessor& p)
         audioProcessor.getValueTreeState(), "scaleType", scaleTypeCombo));
 
     // Swing and humanization controls
-    swingSlider = std::make_unique<ModulatedSlider>("swingAmount", audioProcessor.getModulationMatrix());
-    addAndMakeVisible(swingSlider.get());
-    swingSlider->setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
-    swingSlider->setTextBoxStyle(juce::Slider::TextBoxBelow, false, 60, 20);
+    addAndMakeVisible(swingSlider);
+    swingSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
+    swingSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 60, 20);
     swingAttachment.reset(new juce::AudioProcessorValueTreeState::SliderAttachment(
-        audioProcessor.getValueTreeState(), "swingAmount", *swingSlider));
+        audioProcessor.getValueTreeState(), "swingAmount", swingSlider));
     addAndMakeVisible(swingLabel);
     swingLabel.setText("Swing", juce::dontSendNotification);
     swingLabel.setJustificationType(juce::Justification::centred);
@@ -525,7 +524,7 @@ void GenerativeMIDIEditor::resized()
 
     auto densityArea = controlsSection.removeFromLeft(knobSize);
     densityLabel.setBounds(densityArea.removeFromBottom(20));
-    densitySlider->setBounds(densityArea);
+    densitySlider.setBounds(densityArea);
 
     // Expression & range section (expanded height)
     auto rangeSection = area.removeFromTop(170).reduced(40, 20);
@@ -534,18 +533,18 @@ void GenerativeMIDIEditor::resized()
     auto velocityArea = rangeSection.removeFromLeft(120);
     velocityLabel.setBounds(velocityArea.removeFromTop(20));
     auto vSliders = velocityArea.reduced(10, 0);
-    velocityMinSlider->setBounds(vSliders.removeFromLeft(50));
+    velocityMinSlider.setBounds(vSliders.removeFromLeft(50));
     vSliders.removeFromLeft(10);
-    velocityMaxSlider->setBounds(vSliders);
+    velocityMaxSlider.setBounds(vSliders);
 
     rangeSection.removeFromLeft(40);
 
     auto pitchArea = rangeSection.removeFromLeft(120);
     pitchLabel.setBounds(pitchArea.removeFromTop(20));
     auto pSliders = pitchArea.reduced(10, 0);
-    pitchMinSlider->setBounds(pSliders.removeFromLeft(50));
+    pitchMinSlider.setBounds(pSliders.removeFromLeft(50));
     pSliders.removeFromLeft(10);
-    pitchMaxSlider->setBounds(pSliders);
+    pitchMaxSlider.setBounds(pSliders);
 
     rangeSection.removeFromLeft(40);
 
@@ -561,7 +560,7 @@ void GenerativeMIDIEditor::resized()
     // Humanization knobs
     auto swingArea = rangeSection.removeFromLeft(knobSize);
     swingLabel.setBounds(swingArea.removeFromBottom(20));
-    swingSlider->setBounds(swingArea);
+    swingSlider.setBounds(swingArea);
 
     rangeSection.removeFromLeft(spacing);
 
@@ -668,17 +667,17 @@ void GenerativeMIDIEditor::updateControlsForGeneratorType(int generatorType)
     bool isStochastic = (generatorType >= 6 && generatorType <= 9);
 
     // Euclidean-specific controls (steps, pulses, rotation)
-    if (stepsSlider) stepsSlider->setEnabled(isEuclidean);
-    if (pulsesSlider) pulsesSlider->setEnabled(isEuclidean);
-    if (rotationSlider) rotationSlider->setEnabled(isEuclidean);
+    stepsSlider.setEnabled(isEuclidean);
+    pulsesSlider.setEnabled(isEuclidean);
+    rotationSlider.setEnabled(isEuclidean);
     stepsLabel.setEnabled(isEuclidean);
     pulsesLabel.setEnabled(isEuclidean);
     rotationLabel.setEnabled(isEuclidean);
 
     float euclideanAlpha = isEuclidean ? 1.0f : 0.3f;
-    if (stepsSlider) stepsSlider->setAlpha(euclideanAlpha);
-    if (pulsesSlider) pulsesSlider->setAlpha(euclideanAlpha);
-    if (rotationSlider) rotationSlider->setAlpha(euclideanAlpha);
+    stepsSlider.setAlpha(euclideanAlpha);
+    pulsesSlider.setAlpha(euclideanAlpha);
+    rotationSlider.setAlpha(euclideanAlpha);
     stepsLabel.setAlpha(euclideanAlpha);
     pulsesLabel.setAlpha(euclideanAlpha);
     rotationLabel.setAlpha(euclideanAlpha);
@@ -701,8 +700,8 @@ void GenerativeMIDIEditor::updateControlsForGeneratorType(int generatorType)
 
     // Density control applies to all generators but with different meanings
     densityLabel.setEnabled(true);
-    densitySlider->setEnabled(true);
-    densitySlider->setAlpha(1.0f);
+    densitySlider.setEnabled(true);
+    densitySlider.setAlpha(1.0f);
     densityLabel.setAlpha(1.0f);
 
     // Update label based on generator type

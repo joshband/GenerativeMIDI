@@ -43,19 +43,19 @@ private:
     // Modulation panel
     std::unique_ptr<ModulationPanel> modulationPanel;
 
-    // Parameter attachments for sliders
-    juce::Slider tempoSlider;
-    juce::Slider stepsSlider;
-    juce::Slider pulsesSlider;
-    juce::Slider rotationSlider;
-    juce::Slider densitySlider;
-    juce::Slider velocityMinSlider;
-    juce::Slider velocityMaxSlider;
-    juce::Slider pitchMinSlider;
-    juce::Slider pitchMaxSlider;
+    // Parameter attachments for sliders (modulated sliders for key controls)
+    std::unique_ptr<ModulatedSlider> tempoSlider;
+    std::unique_ptr<ModulatedSlider> stepsSlider;
+    std::unique_ptr<ModulatedSlider> pulsesSlider;
+    std::unique_ptr<ModulatedSlider> rotationSlider;
+    std::unique_ptr<ModulatedSlider> densitySlider;
+    std::unique_ptr<ModulatedSlider> velocityMinSlider;
+    std::unique_ptr<ModulatedSlider> velocityMaxSlider;
+    std::unique_ptr<ModulatedSlider> pitchMinSlider;
+    std::unique_ptr<ModulatedSlider> pitchMaxSlider;
 
     // Scale and humanization controls
-    juce::Slider swingSlider;
+    std::unique_ptr<ModulatedSlider> swingSlider;
     juce::Slider timingHumanizeSlider;
     juce::Slider velocityHumanizeSlider;
     juce::ComboBox scaleRootCombo;
