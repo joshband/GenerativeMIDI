@@ -525,7 +525,7 @@ void GenerativeMIDIEditor::resized()
 
     auto densityArea = controlsSection.removeFromLeft(knobSize);
     densityLabel.setBounds(densityArea.removeFromBottom(20));
-    densitySlider->setBounds(densityArea);
+    if (densitySlider) densitySlider->setBounds(densityArea);
 
     // Expression & range section (expanded height)
     auto rangeSection = area.removeFromTop(170).reduced(40, 20);
@@ -534,18 +534,18 @@ void GenerativeMIDIEditor::resized()
     auto velocityArea = rangeSection.removeFromLeft(120);
     velocityLabel.setBounds(velocityArea.removeFromTop(20));
     auto vSliders = velocityArea.reduced(10, 0);
-    velocityMinSlider->setBounds(vSliders.removeFromLeft(50));
+    if (velocityMinSlider) velocityMinSlider->setBounds(vSliders.removeFromLeft(50));
     vSliders.removeFromLeft(10);
-    velocityMaxSlider->setBounds(vSliders);
+    if (velocityMaxSlider) velocityMaxSlider->setBounds(vSliders);
 
     rangeSection.removeFromLeft(40);
 
     auto pitchArea = rangeSection.removeFromLeft(120);
     pitchLabel.setBounds(pitchArea.removeFromTop(20));
     auto pSliders = pitchArea.reduced(10, 0);
-    pitchMinSlider->setBounds(pSliders.removeFromLeft(50));
+    if (pitchMinSlider) pitchMinSlider->setBounds(pSliders.removeFromLeft(50));
     pSliders.removeFromLeft(10);
-    pitchMaxSlider->setBounds(pSliders);
+    if (pitchMaxSlider) pitchMaxSlider->setBounds(pSliders);
 
     rangeSection.removeFromLeft(40);
 
@@ -561,7 +561,7 @@ void GenerativeMIDIEditor::resized()
     // Humanization knobs
     auto swingArea = rangeSection.removeFromLeft(knobSize);
     swingLabel.setBounds(swingArea.removeFromBottom(20));
-    swingSlider->setBounds(swingArea);
+    if (swingSlider) swingSlider->setBounds(swingArea);
 
     rangeSection.removeFromLeft(spacing);
 
