@@ -315,38 +315,63 @@ void GenerativeMIDIEditor::paint(juce::Graphics& g)
 {
     auto bounds = getLocalBounds().toFloat();
 
-    // SYNAPTIK: Abyss Navy background - Victorian deep void
+    // SYNAPTIK: Aged brass panel background texture
     g.fillAll(juce::Colour(CustomLookAndFeel::ABYSS_NAVY));
 
-    // Brass filigree texture (ornate background pattern)
-    juce::Random r(42); // Consistent seed for repeatable pattern
-
-    // Brass rivets and ornamental dots
-    g.setColour(juce::Colour(CustomLookAndFeel::BRONZE_GOTHIC).withAlpha(0.2f));
-    for (int i = 0; i < 80; ++i)
+    // Draw Victorian brass panel texture as tiled background
+    const auto& panelTexture = customLookAndFeel.getPanelVerdigris();
+    if (panelTexture.isValid())
     {
-        float x = r.nextFloat() * bounds.getWidth();
-        float y = r.nextFloat() * bounds.getHeight();
-        float size = r.nextFloat() * 1.5f + 0.8f;
-        // Brass rivet with highlight
-        g.fillEllipse(x, y, size, size);
-        g.setColour(juce::Colour(CustomLookAndFeel::BRASS_AGED).withAlpha(0.1f));
-        g.fillEllipse(x + size * 0.2f, y + size * 0.2f, size * 0.5f, size * 0.5f);
+        // Tile the aged brass texture
+        int tileWidth = 512;
+        int tileHeight = 512;
+
+        for (int x = 0; x < getWidth(); x += tileWidth)
+        {
+            for (int y = 0; y < getHeight(); y += tileHeight)
+            {
+                g.setOpacity(0.25f);
+                g.drawImage(panelTexture,
+                           x, y, tileWidth, tileHeight,
+                           0, 0, panelTexture.getWidth(), panelTexture.getHeight());
+            }
+        }
+        g.setOpacity(1.0f);
+
+        // Dark overlay for depth and legibility
+        g.setColour(juce::Colour(CustomLookAndFeel::ABYSS_NAVY).withAlpha(0.6f));
+        g.fillAll();
+    }
+    else
+    {
+        // Fallback: procedural brass texture
+        juce::Random r(42);
+
         g.setColour(juce::Colour(CustomLookAndFeel::BRONZE_GOTHIC).withAlpha(0.2f));
+        for (int i = 0; i < 80; ++i)
+        {
+            float x = r.nextFloat() * bounds.getWidth();
+            float y = r.nextFloat() * bounds.getHeight();
+            float size = r.nextFloat() * 1.5f + 0.8f;
+            g.fillEllipse(x, y, size, size);
+            g.setColour(juce::Colour(CustomLookAndFeel::BRASS_AGED).withAlpha(0.1f));
+            g.fillEllipse(x + size * 0.2f, y + size * 0.2f, size * 0.5f, size * 0.5f);
+            g.setColour(juce::Colour(CustomLookAndFeel::BRONZE_GOTHIC).withAlpha(0.2f));
+        }
+
+        g.setColour(juce::Colour(CustomLookAndFeel::BRASS_AGED).withAlpha(0.12f));
+        for (int i = 0; i < 30; ++i)
+        {
+            float x1 = r.nextFloat() * bounds.getWidth();
+            float y1 = r.nextFloat() * bounds.getHeight();
+            float x2 = x1 + r.nextFloat() * 60.0f - 30.0f;
+            float y2 = y1 + r.nextFloat() * 60.0f - 30.0f;
+            g.drawLine(x1, y1, x2, y2, 0.8f);
+        }
     }
 
-    // Art Deco geometric lines (brass inlay)
-    g.setColour(juce::Colour(CustomLookAndFeel::BRASS_AGED).withAlpha(0.12f));
-    for (int i = 0; i < 30; ++i)
-    {
-        float x1 = r.nextFloat() * bounds.getWidth();
-        float y1 = r.nextFloat() * bounds.getHeight();
-        float x2 = x1 + r.nextFloat() * 60.0f - 30.0f;
-        float y2 = y1 + r.nextFloat() * 60.0f - 30.0f;
-        g.drawLine(x1, y1, x2, y2, 0.8f);
-    }
-
-    // Subtle aether glow particles (floating energy)
+    // Aether glow particles (always visible)
+    juce::Random r(42);
     g.setColour(juce::Colour(CustomLookAndFeel::AETHER_CYAN).withAlpha(0.08f));
     for (int i = 0; i < 25; ++i)
     {

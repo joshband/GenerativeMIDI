@@ -108,6 +108,14 @@ public:
         panelAged = loadAsset("ui-elements/panels/img_8120_512.png");
         panelVerdigris = loadAsset("ui-elements/panels/img_8138_512.png");
 
+        // Load decorative frames and ornaments
+        frameArtDeco = loadAsset("ui-elements/frames/frame_art_deco_panel_256.png");
+        labelBrassPlate = loadAsset("ui-elements/frames/label_brass_plate_128.png");
+        cornerOrnament = loadAsset("ui-elements/decorative/img_8121_128.png");
+
+        // Load button assets
+        buttonOrnate = loadAsset("ui-elements/buttons/button_cross_ornate_128.png");
+
         // Check if key assets loaded
         if (knobOrnate.isValid())
             DBG("Victorian Steampunk UI Assets Loaded Successfully!");
@@ -543,10 +551,14 @@ public:
         return juce::Font(label.getHeight() * 0.7f, juce::Font::bold);
     }
 
-    // Public accessors for panel backgrounds (for use in editor paint())
+    // Public accessors for UI assets (for use in editor paint())
     const juce::Image& getPanelBrass() const { return panelBrass; }
     const juce::Image& getPanelAged() const { return panelAged; }
     const juce::Image& getPanelVerdigris() const { return panelVerdigris; }
+    const juce::Image& getFrameArtDeco() const { return frameArtDeco; }
+    const juce::Image& getLabelBrassPlate() const { return labelBrassPlate; }
+    const juce::Image& getCornerOrnament() const { return cornerOrnament; }
+    const juce::Image& getButtonOrnate() const { return buttonOrnate; }
 
 private:
     // UI asset images from SynaptikUIToolkit
@@ -558,6 +570,10 @@ private:
     juce::Image panelBrass;
     juce::Image panelAged;
     juce::Image panelVerdigris;
+    juce::Image frameArtDeco;
+    juce::Image labelBrassPlate;
+    juce::Image cornerOrnament;
+    juce::Image buttonOrnate;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(CustomLookAndFeel)
 };
