@@ -16,10 +16,10 @@ GenerativeMIDIEditor::GenerativeMIDIEditor(GenerativeMIDIProcessor& p)
 {
     setLookAndFeel(&customLookAndFeel);
 
-    // Window size (expanded vertically for expression controls + layer editor)
-    setSize(1400, 750);
+    // Window size (expanded vertically for expression controls + modulation)
+    setSize(1400, 890);
     setResizable(true, true);
-    setResizeLimits(1200, 650, 2000, 1200);
+    setResizeLimits(1200, 800, 2000, 1400);
 
     // Title - SYNAPTIK gilded brass logo
     addAndMakeVisible(titleLabel);
@@ -465,6 +465,7 @@ void GenerativeMIDIEditor::paint(juce::Graphics& g)
     drawBrassPanel(juce::Rectangle<float>(25, 220, getWidth() - 50, 190), "GENERATOR");
     drawBrassPanel(juce::Rectangle<float>(25, 430, getWidth() - 50, 160), "EXPRESSION");
     drawBrassPanel(juce::Rectangle<float>(25, 610, getWidth() - 50, 120), "ADVANCED");
+    drawBrassPanel(juce::Rectangle<float>(25, 750, getWidth() - 50, 120), "MODULATION");
 }
 
 void GenerativeMIDIEditor::resized()
@@ -624,10 +625,10 @@ void GenerativeMIDIEditor::resized()
     timeScaleLabel.setBounds(timeScaleArea.removeFromBottom(20));
     timeScaleSlider.setBounds(timeScaleArea);
 
-    // Modulation panel (bottom section)
+    // Modulation panel (bottom section, compact height)
     if (modulationPanel)
     {
-        auto modulationArea = area.reduced(40, 10);
+        auto modulationArea = area.removeFromTop(120).reduced(40, 10);
         modulationPanel->setBounds(modulationArea);
     }
 }

@@ -19,7 +19,9 @@
 #include "UI/ModulationPanel.h"
 #include "UI/ModulationTarget.h"
 
-class GenerativeMIDIEditor : public juce::AudioProcessorEditor, private juce::Timer
+class GenerativeMIDIEditor : public juce::AudioProcessorEditor,
+                              public juce::DragAndDropContainer,
+                              private juce::Timer
 {
 public:
     GenerativeMIDIEditor(GenerativeMIDIProcessor&);
