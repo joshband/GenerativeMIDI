@@ -16,10 +16,10 @@ GenerativeMIDIEditor::GenerativeMIDIEditor(GenerativeMIDIProcessor& p)
 {
     setLookAndFeel(&customLookAndFeel);
 
-    // Window size (increased to accommodate all controls)
-    setSize(1400, 600);
+    // Window size (expanded vertically for expression controls + layer editor)
+    setSize(1400, 750);
     setResizable(true, true);
-    setResizeLimits(1200, 500, 2000, 1000);
+    setResizeLimits(1200, 650, 2000, 1200);
 
     // Title - SYNAPTIK gilded brass logo
     addAndMakeVisible(titleLabel);
@@ -29,8 +29,13 @@ GenerativeMIDIEditor::GenerativeMIDIEditor(GenerativeMIDIProcessor& p)
     titleLabel.setColour(juce::Label::textColourId, juce::Colour(CustomLookAndFeel::GOLD_TEMPLE));
     titleLabel.setColour(juce::Label::backgroundColourId, juce::Colours::transparentBlack);
 
-    // Pattern visualizer
+    // Pattern display (polyrhythm layer editor commented out for now)
     addAndMakeVisible(patternDisplay);
+
+    // TODO: Polyrhythm layer editor - implement in future version
+    // polyLayerEditor = std::make_unique<PolyrhythmLayerEditor>(audioProcessor.getPolyrhythmEngine());
+    // patternAreaTabs = std::make_unique<PatternAreaTabs>(patternDisplay, *polyLayerEditor);
+    // addAndMakeVisible(patternAreaTabs.get());
 
     // Generator type selector
     addAndMakeVisible(generatorLabel);
@@ -444,7 +449,8 @@ void GenerativeMIDIEditor::paint(juce::Graphics& g)
 
     drawBrassPanel(juce::Rectangle<float>(25, 70, getWidth() - 50, 130), "PATTERN DISPLAY");
     drawBrassPanel(juce::Rectangle<float>(25, 220, getWidth() - 50, 190), "GENERATOR");
-    drawBrassPanel(juce::Rectangle<float>(25, 430, getWidth() - 50, 150), "EXPRESSION");
+    drawBrassPanel(juce::Rectangle<float>(25, 430, getWidth() - 50, 160), "EXPRESSION");
+    drawBrassPanel(juce::Rectangle<float>(25, 610, getWidth() - 50, 120), "ADVANCED");
 }
 
 void GenerativeMIDIEditor::resized()
@@ -507,8 +513,8 @@ void GenerativeMIDIEditor::resized()
     densityLabel.setBounds(densityArea.removeFromBottom(20));
     densitySlider.setBounds(densityArea);
 
-    // Expression & range section (increased height for more controls)
-    auto rangeSection = area.removeFromTop(160).reduced(40, 20);
+    // Expression & range section (expanded height)
+    auto rangeSection = area.removeFromTop(170).reduced(40, 20);
     rangeSection.removeFromTop(20); // Section label
 
     auto velocityArea = rangeSection.removeFromLeft(120);
@@ -566,39 +572,41 @@ void GenerativeMIDIEditor::resized()
     auto legatoArea = rangeSection.removeFromLeft(knobSize);
     legatoButton.setBounds(legatoArea.removeFromTop(50).reduced(5));
 
-    rangeSection.removeFromLeft(spacing);
+    // Advanced section (ratcheting + stochastic controls)
+    auto advancedSection = area.removeFromTop(130).reduced(40, 20);
+    advancedSection.removeFromTop(20); // Section label
 
-    auto ratchetCountArea = rangeSection.removeFromLeft(knobSize);
+    auto ratchetCountArea = advancedSection.removeFromLeft(knobSize);
     ratchetCountLabel.setBounds(ratchetCountArea.removeFromBottom(20));
     ratchetCountSlider.setBounds(ratchetCountArea);
 
-    rangeSection.removeFromLeft(spacing);
+    advancedSection.removeFromLeft(spacing);
 
-    auto ratchetProbArea = rangeSection.removeFromLeft(knobSize);
+    auto ratchetProbArea = advancedSection.removeFromLeft(knobSize);
     ratchetProbabilityLabel.setBounds(ratchetProbArea.removeFromBottom(20));
     ratchetProbabilitySlider.setBounds(ratchetProbArea);
 
-    rangeSection.removeFromLeft(spacing);
+    advancedSection.removeFromLeft(spacing);
 
-    auto ratchetDecayArea = rangeSection.removeFromLeft(knobSize);
+    auto ratchetDecayArea = advancedSection.removeFromLeft(knobSize);
     ratchetDecayLabel.setBounds(ratchetDecayArea.removeFromBottom(20));
     ratchetDecaySlider.setBounds(ratchetDecayArea);
 
-    rangeSection.removeFromLeft(spacing);
+    advancedSection.removeFromLeft(spacing * 2);
 
-    auto stepSizeArea = rangeSection.removeFromLeft(knobSize);
+    auto stepSizeArea = advancedSection.removeFromLeft(knobSize);
     stepSizeLabel.setBounds(stepSizeArea.removeFromBottom(20));
     stepSizeSlider.setBounds(stepSizeArea);
 
-    rangeSection.removeFromLeft(spacing);
+    advancedSection.removeFromLeft(spacing);
 
-    auto momentumArea = rangeSection.removeFromLeft(knobSize);
+    auto momentumArea = advancedSection.removeFromLeft(knobSize);
     momentumLabel.setBounds(momentumArea.removeFromBottom(20));
     momentumSlider.setBounds(momentumArea);
 
-    rangeSection.removeFromLeft(spacing);
+    advancedSection.removeFromLeft(spacing);
 
-    auto timeScaleArea = rangeSection.removeFromLeft(knobSize);
+    auto timeScaleArea = advancedSection.removeFromLeft(knobSize);
     timeScaleLabel.setBounds(timeScaleArea.removeFromBottom(20));
     timeScaleSlider.setBounds(timeScaleArea);
 }
@@ -699,10 +707,17 @@ void GenerativeMIDIEditor::updateControlsForGeneratorType(int generatorType)
 
     generatorLabel.setColour(juce::Label::textColourId, generatorColor);
 
+    // TODO: Polyrhythm layer editor - implement in future version
+    // if (patternAreaTabs)
+    // {
+    //     patternAreaTabs->setPolyrhythmMode(isPolyrhythm);
+    // }
+
     // All controls that work across all generator types remain fully enabled
     // (tempo, velocity range, pitch range, scale, swing, humanization, gate length, ratcheting)
 
-    // Force repaint to show changes
+    // Force repaint and resize to show changes
+    resized();
     repaint();
 }
 
