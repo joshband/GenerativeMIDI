@@ -31,6 +31,31 @@ GenerativeMIDIProcessor::GenerativeMIDIProcessor()
     clockManager.onSubdivisionHit = [this](int subdivision) {
         onSubdivisionHit(subdivision);
     };
+
+    // Initialize modulation sources
+    // LFO 1 - slow sine
+    modulationMatrix.addSource(std::make_unique<LFOModulationSource>(
+        "LFO 1", LFOModulationSource::Waveform::Sine, 0.5, true));
+
+    // LFO 2 - fast triangle
+    modulationMatrix.addSource(std::make_unique<LFOModulationSource>(
+        "LFO 2", LFOModulationSource::Waveform::Triangle, 2.0, true));
+
+    // Random 1 - slow random
+    modulationMatrix.addSource(std::make_unique<RandomModulationSource>(
+        "Random 1", 1.0, false));
+
+    // Random 2 - fast random
+    modulationMatrix.addSource(std::make_unique<RandomModulationSource>(
+        "Random 2", 0.25, false));
+
+    // Envelope 1 - fast attack
+    modulationMatrix.addSource(std::make_unique<EnvelopeModulationSource>(
+        "Envelope 1", 0.05, 0.5, false));
+
+    // Envelope 2 - slow attack
+    modulationMatrix.addSource(std::make_unique<EnvelopeModulationSource>(
+        "Envelope 2", 0.5, 2.0, false));
 }
 
 GenerativeMIDIProcessor::~GenerativeMIDIProcessor()
@@ -334,6 +359,10 @@ void GenerativeMIDIProcessor::processBlock(juce::AudioBuffer<float>& buffer, juc
 
     // Advance clock
     clockManager.advance(buffer.getNumSamples());
+
+    // Advance modulation sources
+    double timeStep = static_cast<double>(buffer.getNumSamples()) / getSampleRate();
+    modulationMatrix.advance(timeStep);
 
     // Generate MIDI events
     processGenerativeOutput(midiMessages, buffer.getNumSamples());

@@ -297,6 +297,17 @@ GenerativeMIDIEditor::GenerativeMIDIEditor(GenerativeMIDIProcessor& p)
     // Initialize UI for current generator type
     updateControlsForGeneratorType(generatorTypeCombo.getSelectedId() - 1);
 
+    // Modulation panel
+    modulationPanel = std::make_unique<ModulationPanel>(audioProcessor.getModulationMatrix());
+    addAndMakeVisible(modulationPanel.get());
+
+    // Setup modulation drag-and-drop callback
+    modulationPanel->onModulationDragComplete = [this](int sourceIndex, juce::Point<int> dropPosition)
+    {
+        // TODO: Find which control was dropped on and create connection
+        DBG("Modulation source " << sourceIndex << " dropped at " << dropPosition.toString());
+    };
+
     // Start timer for pattern updates
     startTimerHz(30);
 }
@@ -609,6 +620,13 @@ void GenerativeMIDIEditor::resized()
     auto timeScaleArea = advancedSection.removeFromLeft(knobSize);
     timeScaleLabel.setBounds(timeScaleArea.removeFromBottom(20));
     timeScaleSlider.setBounds(timeScaleArea);
+
+    // Modulation panel (bottom section)
+    if (modulationPanel)
+    {
+        auto modulationArea = area.reduced(40, 10);
+        modulationPanel->setBounds(modulationArea);
+    }
 }
 
 void GenerativeMIDIEditor::timerCallback()

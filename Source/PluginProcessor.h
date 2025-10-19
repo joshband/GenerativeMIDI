@@ -22,6 +22,7 @@
 #include "Core/PresetManager.h"
 #include "DSP/ClockManager.h"
 #include "DSP/EventScheduler.h"
+#include "Modulation/ModulationMatrix.h"
 
 class GenerativeMIDIProcessor : public juce::AudioProcessor
 {
@@ -76,12 +77,27 @@ public:
     GateLengthController& getGateLengthController() { return gateLengthController; }
     RatchetEngine& getRatchetEngine() { return ratchetEngine; }
     PresetManager& getPresetManager() { return presetManager; }
+    ModulationMatrix& getModulationMatrix() { return modulationMatrix; }
 
     // Parameter tree
     juce::AudioProcessorValueTreeState& getValueTreeState() { return parameters; }
 
     // Playback state
     int getCurrentStep() const { return lastSubdivisionStep; }
+
+    // Helper to get modulated parameter value
+    float getModulatedParameterValue(const juce::String& paramID) const
+    {
+        auto* param = parameters.getRawParameterValue(paramID);
+        if (!param)
+            return 0.0f;
+
+        float baseValue = param->load();
+        float modulation = modulationMatrix.calculateModulation(paramID);
+
+        // Apply modulation (normalized 0-1 range)
+        return juce::jlimit(0.0f, 1.0f, baseValue + modulation);
+    }
 
 private:
     //==============================================================================
@@ -97,6 +113,9 @@ private:
     SwingEngine swingEngine;
     GateLengthController gateLengthController;
     RatchetEngine ratchetEngine;
+
+    // Modulation
+    ModulationMatrix modulationMatrix;
 
     // Parameters
     juce::AudioProcessorValueTreeState parameters;

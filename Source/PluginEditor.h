@@ -16,6 +16,8 @@
 #include "UI/PresetBrowser.h"
 #include "UI/PolyrhythmLayerEditor.h"
 #include "UI/PatternAreaTabs.h"
+#include "UI/ModulationPanel.h"
+#include "UI/ModulationTarget.h"
 
 class GenerativeMIDIEditor : public juce::AudioProcessorEditor, private juce::Timer
 {
@@ -37,6 +39,9 @@ private:
     PatternVisualizer patternDisplay;
     std::unique_ptr<PolyrhythmLayerEditor> polyLayerEditor;
     std::unique_ptr<PatternAreaTabs> patternAreaTabs;
+
+    // Modulation panel
+    std::unique_ptr<ModulationPanel> modulationPanel;
 
     // Parameter attachments for sliders
     juce::Slider tempoSlider;
