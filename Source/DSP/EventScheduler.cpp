@@ -42,6 +42,29 @@ void EventScheduler::scheduleNote(int note, float velocity, int channel, int64_t
     scheduleNoteOff(note, channel, startSample + duration);
 }
 
+void EventScheduler::scheduleAftertouch(int note, float pressure, int channel, int64_t sampleTime)
+{
+    int pressureValue = static_cast<int>(juce::jlimit(0.0f, 1.0f, pressure) * 127.0f);
+    auto message = juce::MidiMessage::aftertouchChange(channel, note, pressureValue);
+    scheduleEvent(message, sampleTime, 7); // Medium priority
+}
+
+void EventScheduler::schedulePitchBend(float bendAmount, int channel, int64_t sampleTime)
+{
+    // Convert -1.0 to +1.0 range to 0-16383 MIDI pitch bend range
+    int bendValue = static_cast<int>((bendAmount + 1.0f) * 0.5f * 16383.0f);
+    bendValue = juce::jlimit(0, 16383, bendValue);
+    auto message = juce::MidiMessage::pitchWheel(channel, bendValue);
+    scheduleEvent(message, sampleTime, 8); // Medium-high priority
+}
+
+void EventScheduler::scheduleCC(int ccNumber, float value, int channel, int64_t sampleTime)
+{
+    int ccValue = static_cast<int>(juce::jlimit(0.0f, 1.0f, value) * 127.0f);
+    auto message = juce::MidiMessage::controllerEvent(channel, ccNumber, ccValue);
+    scheduleEvent(message, sampleTime, 7); // Medium priority
+}
+
 void EventScheduler::processEvents(int64_t currentSample, juce::MidiBuffer& outputBuffer, int bufferSize)
 {
     int64_t endSample = currentSample + bufferSize;

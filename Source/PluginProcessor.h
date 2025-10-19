@@ -139,6 +139,15 @@ private:
     // MIDI routing parameters
     static constexpr const char* PARAM_MIDI_CHANNEL = "midiChannel";
 
+    // MIDI expression parameters
+    static constexpr const char* PARAM_AFTERTOUCH_ENABLE = "aftertouchEnable";
+    static constexpr const char* PARAM_AFTERTOUCH_AMOUNT = "aftertouchAmount";
+    static constexpr const char* PARAM_PITCHBEND_ENABLE = "pitchbendEnable";
+    static constexpr const char* PARAM_PITCHBEND_RANGE = "pitchbendRange";
+    static constexpr const char* PARAM_CC_ENABLE = "ccEnable";
+    static constexpr const char* PARAM_CC_NUMBER = "ccNumber";
+    static constexpr const char* PARAM_CC_AMOUNT = "ccAmount";
+
     // Processing state
     int64_t currentSamplePosition = 0;
     int lastSubdivisionStep = 0;

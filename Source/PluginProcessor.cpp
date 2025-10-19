@@ -139,6 +139,28 @@ juce::AudioProcessorValueTreeState::ParameterLayout GenerativeMIDIProcessor::cre
     params.push_back(std::make_unique<juce::AudioParameterInt>(
         PARAM_MIDI_CHANNEL, "MIDI Channel", 1, 16, 1));
 
+    // MIDI Expression
+    params.push_back(std::make_unique<juce::AudioParameterBool>(
+        PARAM_AFTERTOUCH_ENABLE, "Aftertouch Enable", false));
+
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(
+        PARAM_AFTERTOUCH_AMOUNT, "Aftertouch Amount", 0.0f, 1.0f, 0.5f));
+
+    params.push_back(std::make_unique<juce::AudioParameterBool>(
+        PARAM_PITCHBEND_ENABLE, "Pitch Bend Enable", false));
+
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(
+        PARAM_PITCHBEND_RANGE, "Pitch Bend Range", 1.0f, 24.0f, 2.0f)); // semitones
+
+    params.push_back(std::make_unique<juce::AudioParameterBool>(
+        PARAM_CC_ENABLE, "CC Enable", false));
+
+    params.push_back(std::make_unique<juce::AudioParameterInt>(
+        PARAM_CC_NUMBER, "CC Number", 1, 127, 1)); // CC1 = Modulation Wheel
+
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(
+        PARAM_CC_AMOUNT, "CC Amount", 0.0f, 1.0f, 0.5f));
+
     return {params.begin(), params.end()};
 }
 
@@ -372,6 +394,15 @@ void GenerativeMIDIProcessor::onSubdivisionHit(int subdivision)
 
     // Get probability/density parameter - applies to ALL generators
     auto density = parameters.getRawParameterValue(PARAM_NOTE_DENSITY)->load();
+
+    // Get MIDI expression parameters
+    auto aftertouchEnable = parameters.getRawParameterValue(PARAM_AFTERTOUCH_ENABLE)->load() > 0.5f;
+    auto aftertouchAmount = parameters.getRawParameterValue(PARAM_AFTERTOUCH_AMOUNT)->load();
+    auto pitchbendEnable = parameters.getRawParameterValue(PARAM_PITCHBEND_ENABLE)->load() > 0.5f;
+    auto pitchbendRange = parameters.getRawParameterValue(PARAM_PITCHBEND_RANGE)->load();
+    auto ccEnable = parameters.getRawParameterValue(PARAM_CC_ENABLE)->load() > 0.5f;
+    auto ccNumber = static_cast<int>(parameters.getRawParameterValue(PARAM_CC_NUMBER)->load());
+    auto ccAmount = parameters.getRawParameterValue(PARAM_CC_AMOUNT)->load();
 
     switch (static_cast<int>(generatorType))
     {

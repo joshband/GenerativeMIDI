@@ -42,6 +42,11 @@ public:
     // Note scheduling with duration
     void scheduleNote(int note, float velocity, int channel, int64_t startSample, int64_t duration);
 
+    // Expression scheduling
+    void scheduleAftertouch(int note, float pressure, int channel, int64_t sampleTime);
+    void schedulePitchBend(float bendAmount, int channel, int64_t sampleTime);
+    void scheduleCC(int ccNumber, float value, int channel, int64_t sampleTime);
+
     // Event retrieval
     void processEvents(int64_t currentSample, juce::MidiBuffer& outputBuffer, int bufferSize);
 
