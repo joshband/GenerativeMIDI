@@ -16,10 +16,10 @@ GenerativeMIDIEditor::GenerativeMIDIEditor(GenerativeMIDIProcessor& p)
 {
     setLookAndFeel(&customLookAndFeel);
 
-    // Window size (expanded vertically for expression controls + modulation)
-    setSize(1400, 890);
+    // Window size (modulation panel commented out)
+    setSize(1400, 750);
     setResizable(true, true);
-    setResizeLimits(1200, 800, 2000, 1400);
+    setResizeLimits(1200, 650, 2000, 1200);
 
     // Title - SYNAPTIK gilded brass logo
     addAndMakeVisible(titleLabel);
@@ -43,7 +43,7 @@ GenerativeMIDIEditor::GenerativeMIDIEditor(GenerativeMIDIProcessor& p)
     generatorLabel.setJustificationType(juce::Justification::centred);
 
     addAndMakeVisible(generatorTypeCombo);
-    generatorTypeCombo.addItemList(juce::StringArray{"Euclidean", "Polyrhythm", "Markov", "L-System", "Cellular", "Probabilistic",
+    generatorTypeCombo.addItemList(juce::StringArray{"Euclidean", "Markov", "L-System", "Cellular", "Probabilistic",
                                                       "Brownian", "Perlin Noise", "Drunk Walk", "Lorenz"}, 1);
     generatorAttachment.reset(new juce::AudioProcessorValueTreeState::ComboBoxAttachment(
         audioProcessor.getValueTreeState(), "generatorType", generatorTypeCombo));
@@ -64,92 +64,83 @@ GenerativeMIDIEditor::GenerativeMIDIEditor(GenerativeMIDIProcessor& p)
     midiChannelAttachment.reset(new juce::AudioProcessorValueTreeState::ComboBoxAttachment(
         audioProcessor.getValueTreeState(), "midiChannel", midiChannelCombo));
 
-    // Tempo knob (Modulated slider - supports drag-and-drop modulation)
-    tempoSlider = std::make_unique<ModulatedSlider>("tempo", audioProcessor.getModulationMatrix());
-    addAndMakeVisible(tempoSlider.get());
-    tempoSlider->setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
-    tempoSlider->setTextBoxStyle(juce::Slider::TextBoxBelow, false, 80, 20);
+    // Tempo knob
+    addAndMakeVisible(tempoSlider);
+    tempoSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
+    tempoSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 80, 20);
     tempoAttachment.reset(new juce::AudioProcessorValueTreeState::SliderAttachment(
-        audioProcessor.getValueTreeState(), "tempo", *tempoSlider));
+        audioProcessor.getValueTreeState(), "tempo", tempoSlider));
     addAndMakeVisible(tempoLabel);
     tempoLabel.setText("Tempo", juce::dontSendNotification);
     tempoLabel.setJustificationType(juce::Justification::centred);
 
-    // Euclidean controls (Modulated sliders)
-    stepsSlider = std::make_unique<ModulatedSlider>("euclideanSteps", audioProcessor.getModulationMatrix());
-    addAndMakeVisible(stepsSlider.get());
-    stepsSlider->setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
-    stepsSlider->setTextBoxStyle(juce::Slider::TextBoxBelow, false, 60, 20);
+    // Euclidean controls
+    addAndMakeVisible(stepsSlider);
+    stepsSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
+    stepsSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 60, 20);
     stepsAttachment.reset(new juce::AudioProcessorValueTreeState::SliderAttachment(
-        audioProcessor.getValueTreeState(), "euclideanSteps", *stepsSlider));
+        audioProcessor.getValueTreeState(), "euclideanSteps", stepsSlider));
     addAndMakeVisible(stepsLabel);
     stepsLabel.setText("Steps", juce::dontSendNotification);
     stepsLabel.setJustificationType(juce::Justification::centred);
 
-    pulsesSlider = std::make_unique<ModulatedSlider>("euclideanPulses", audioProcessor.getModulationMatrix());
-    addAndMakeVisible(pulsesSlider.get());
-    pulsesSlider->setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
-    pulsesSlider->setTextBoxStyle(juce::Slider::TextBoxBelow, false, 60, 20);
+    addAndMakeVisible(pulsesSlider);
+    pulsesSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
+    pulsesSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 60, 20);
     pulsesAttachment.reset(new juce::AudioProcessorValueTreeState::SliderAttachment(
-        audioProcessor.getValueTreeState(), "euclideanPulses", *pulsesSlider));
+        audioProcessor.getValueTreeState(), "euclideanPulses", pulsesSlider));
     addAndMakeVisible(pulsesLabel);
     pulsesLabel.setText("Pulses", juce::dontSendNotification);
     pulsesLabel.setJustificationType(juce::Justification::centred);
 
-    rotationSlider = std::make_unique<ModulatedSlider>("euclideanRotation", audioProcessor.getModulationMatrix());
-    addAndMakeVisible(rotationSlider.get());
-    rotationSlider->setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
-    rotationSlider->setTextBoxStyle(juce::Slider::TextBoxBelow, false, 60, 20);
+    addAndMakeVisible(rotationSlider);
+    rotationSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
+    rotationSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 60, 20);
     rotationAttachment.reset(new juce::AudioProcessorValueTreeState::SliderAttachment(
-        audioProcessor.getValueTreeState(), "euclideanRotation", *rotationSlider));
+        audioProcessor.getValueTreeState(), "euclideanRotation", rotationSlider));
     addAndMakeVisible(rotationLabel);
     rotationLabel.setText("Rotation", juce::dontSendNotification);
     rotationLabel.setJustificationType(juce::Justification::centred);
 
-    // Probability control (applies to all generators) - ModulatedSlider
-    densitySlider = std::make_unique<ModulatedSlider>("noteDensity", audioProcessor.getModulationMatrix());
-    addAndMakeVisible(densitySlider.get());
-    densitySlider->setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
-    densitySlider->setTextBoxStyle(juce::Slider::TextBoxBelow, false, 60, 20);
+    // Probability control (applies to all generators)
+    addAndMakeVisible(densitySlider);
+    densitySlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
+    densitySlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 60, 20);
     densityAttachment.reset(new juce::AudioProcessorValueTreeState::SliderAttachment(
-        audioProcessor.getValueTreeState(), "noteDensity", *densitySlider));
+        audioProcessor.getValueTreeState(), "noteDensity", densitySlider));
     addAndMakeVisible(densityLabel);
     densityLabel.setText("Probability", juce::dontSendNotification);
     densityLabel.setJustificationType(juce::Justification::centred);
 
-    // Velocity range sliders - ModulatedSlider
-    velocityMinSlider = std::make_unique<ModulatedSlider>("velocityMin", audioProcessor.getModulationMatrix());
-    addAndMakeVisible(velocityMinSlider.get());
-    velocityMinSlider->setSliderStyle(juce::Slider::LinearVertical);
-    velocityMinSlider->setTextBoxStyle(juce::Slider::TextBoxBelow, false, 50, 20);
+    // Velocity range sliders
+    addAndMakeVisible(velocityMinSlider);
+    velocityMinSlider.setSliderStyle(juce::Slider::LinearVertical);
+    velocityMinSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 50, 20);
     velocityMinAttachment.reset(new juce::AudioProcessorValueTreeState::SliderAttachment(
-        audioProcessor.getValueTreeState(), "velocityMin", *velocityMinSlider));
+        audioProcessor.getValueTreeState(), "velocityMin", velocityMinSlider));
 
-    velocityMaxSlider = std::make_unique<ModulatedSlider>("velocityMax", audioProcessor.getModulationMatrix());
-    addAndMakeVisible(velocityMaxSlider.get());
-    velocityMaxSlider->setSliderStyle(juce::Slider::LinearVertical);
-    velocityMaxSlider->setTextBoxStyle(juce::Slider::TextBoxBelow, false, 50, 20);
+    addAndMakeVisible(velocityMaxSlider);
+    velocityMaxSlider.setSliderStyle(juce::Slider::LinearVertical);
+    velocityMaxSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 50, 20);
     velocityMaxAttachment.reset(new juce::AudioProcessorValueTreeState::SliderAttachment(
-        audioProcessor.getValueTreeState(), "velocityMax", *velocityMaxSlider));
+        audioProcessor.getValueTreeState(), "velocityMax", velocityMaxSlider));
 
     addAndMakeVisible(velocityLabel);
     velocityLabel.setText("Velocity Range", juce::dontSendNotification);
     velocityLabel.setJustificationType(juce::Justification::centred);
 
-    // Pitch range sliders - ModulatedSlider
-    pitchMinSlider = std::make_unique<ModulatedSlider>("pitchMin", audioProcessor.getModulationMatrix());
-    addAndMakeVisible(pitchMinSlider.get());
-    pitchMinSlider->setSliderStyle(juce::Slider::LinearVertical);
-    pitchMinSlider->setTextBoxStyle(juce::Slider::TextBoxBelow, false, 50, 20);
+    // Pitch range sliders
+    addAndMakeVisible(pitchMinSlider);
+    pitchMinSlider.setSliderStyle(juce::Slider::LinearVertical);
+    pitchMinSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 50, 20);
     pitchMinAttachment.reset(new juce::AudioProcessorValueTreeState::SliderAttachment(
-        audioProcessor.getValueTreeState(), "pitchMin", *pitchMinSlider));
+        audioProcessor.getValueTreeState(), "pitchMin", pitchMinSlider));
 
-    pitchMaxSlider = std::make_unique<ModulatedSlider>("pitchMax", audioProcessor.getModulationMatrix());
-    addAndMakeVisible(pitchMaxSlider.get());
-    pitchMaxSlider->setSliderStyle(juce::Slider::LinearVertical);
-    pitchMaxSlider->setTextBoxStyle(juce::Slider::TextBoxBelow, false, 50, 20);
+    addAndMakeVisible(pitchMaxSlider);
+    pitchMaxSlider.setSliderStyle(juce::Slider::LinearVertical);
+    pitchMaxSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 50, 20);
     pitchMaxAttachment.reset(new juce::AudioProcessorValueTreeState::SliderAttachment(
-        audioProcessor.getValueTreeState(), "pitchMax", *pitchMaxSlider));
+        audioProcessor.getValueTreeState(), "pitchMax", pitchMaxSlider));
 
     addAndMakeVisible(pitchLabel);
     pitchLabel.setText("Pitch Range", juce::dontSendNotification);
@@ -174,12 +165,11 @@ GenerativeMIDIEditor::GenerativeMIDIEditor(GenerativeMIDIProcessor& p)
         audioProcessor.getValueTreeState(), "scaleType", scaleTypeCombo));
 
     // Swing and humanization controls
-    swingSlider = std::make_unique<ModulatedSlider>("swingAmount", audioProcessor.getModulationMatrix());
-    addAndMakeVisible(swingSlider.get());
-    swingSlider->setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
-    swingSlider->setTextBoxStyle(juce::Slider::TextBoxBelow, false, 60, 20);
+    addAndMakeVisible(swingSlider);
+    swingSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
+    swingSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 60, 20);
     swingAttachment.reset(new juce::AudioProcessorValueTreeState::SliderAttachment(
-        audioProcessor.getValueTreeState(), "swingAmount", *swingSlider));
+        audioProcessor.getValueTreeState(), "swingAmount", swingSlider));
     addAndMakeVisible(swingLabel);
     swingLabel.setText("Swing", juce::dontSendNotification);
     swingLabel.setJustificationType(juce::Justification::centred);
@@ -307,9 +297,9 @@ GenerativeMIDIEditor::GenerativeMIDIEditor(GenerativeMIDIProcessor& p)
     // Initialize UI for current generator type
     updateControlsForGeneratorType(generatorTypeCombo.getSelectedId() - 1);
 
-    // Modulation panel (DragAndDropContainer for modulation routing)
-    modulationPanel = std::make_unique<ModulationPanel>(audioProcessor.getModulationMatrix());
-    addAndMakeVisible(modulationPanel.get());
+    // Modulation panel (COMMENTED OUT - not working correctly)
+    // modulationPanel = std::make_unique<ModulationPanel>(audioProcessor.getModulationMatrix());
+    // addAndMakeVisible(modulationPanel.get());
 
     // Start timer for pattern updates
     startTimerHz(30);
@@ -465,7 +455,7 @@ void GenerativeMIDIEditor::paint(juce::Graphics& g)
     drawBrassPanel(juce::Rectangle<float>(25, 220, getWidth() - 50, 190), "GENERATOR");
     drawBrassPanel(juce::Rectangle<float>(25, 430, getWidth() - 50, 160), "EXPRESSION");
     drawBrassPanel(juce::Rectangle<float>(25, 610, getWidth() - 50, 120), "ADVANCED");
-    drawBrassPanel(juce::Rectangle<float>(25, 750, getWidth() - 50, 120), "MODULATION");
+    // drawBrassPanel(juce::Rectangle<float>(25, 750, getWidth() - 50, 120), "MODULATION");  // Commented out
 }
 
 void GenerativeMIDIEditor::resized()
@@ -502,31 +492,31 @@ void GenerativeMIDIEditor::resized()
 
     auto tempoArea = controlsSection.removeFromLeft(knobSize);
     tempoLabel.setBounds(tempoArea.removeFromBottom(20));
-    if (tempoSlider) tempoSlider->setBounds(tempoArea);
+    tempoSlider.setBounds(tempoArea);
 
     controlsSection.removeFromLeft(spacing);
 
     auto stepsArea = controlsSection.removeFromLeft(knobSize);
     stepsLabel.setBounds(stepsArea.removeFromBottom(20));
-    if (stepsSlider) stepsSlider->setBounds(stepsArea);
+    stepsSlider.setBounds(stepsArea);
 
     controlsSection.removeFromLeft(spacing);
 
     auto pulsesArea = controlsSection.removeFromLeft(knobSize);
     pulsesLabel.setBounds(pulsesArea.removeFromBottom(20));
-    if (pulsesSlider) pulsesSlider->setBounds(pulsesArea);
+    pulsesSlider.setBounds(pulsesArea);
 
     controlsSection.removeFromLeft(spacing);
 
     auto rotationArea = controlsSection.removeFromLeft(knobSize);
     rotationLabel.setBounds(rotationArea.removeFromBottom(20));
-    if (rotationSlider) rotationSlider->setBounds(rotationArea);
+    rotationSlider.setBounds(rotationArea);
 
     controlsSection.removeFromLeft(spacing);
 
     auto densityArea = controlsSection.removeFromLeft(knobSize);
     densityLabel.setBounds(densityArea.removeFromBottom(20));
-    if (densitySlider) densitySlider->setBounds(densityArea);
+    densitySlider.setBounds(densityArea);
 
     // Expression & range section (expanded height)
     auto rangeSection = area.removeFromTop(170).reduced(40, 20);
@@ -535,18 +525,18 @@ void GenerativeMIDIEditor::resized()
     auto velocityArea = rangeSection.removeFromLeft(120);
     velocityLabel.setBounds(velocityArea.removeFromTop(20));
     auto vSliders = velocityArea.reduced(10, 0);
-    if (velocityMinSlider) velocityMinSlider->setBounds(vSliders.removeFromLeft(50));
+    velocityMinSlider.setBounds(vSliders.removeFromLeft(50));
     vSliders.removeFromLeft(10);
-    if (velocityMaxSlider) velocityMaxSlider->setBounds(vSliders);
+    velocityMaxSlider.setBounds(vSliders);
 
     rangeSection.removeFromLeft(40);
 
     auto pitchArea = rangeSection.removeFromLeft(120);
     pitchLabel.setBounds(pitchArea.removeFromTop(20));
     auto pSliders = pitchArea.reduced(10, 0);
-    if (pitchMinSlider) pitchMinSlider->setBounds(pSliders.removeFromLeft(50));
+    pitchMinSlider.setBounds(pSliders.removeFromLeft(50));
     pSliders.removeFromLeft(10);
-    if (pitchMaxSlider) pitchMaxSlider->setBounds(pSliders);
+    pitchMaxSlider.setBounds(pSliders);
 
     rangeSection.removeFromLeft(40);
 
@@ -562,7 +552,7 @@ void GenerativeMIDIEditor::resized()
     // Humanization knobs
     auto swingArea = rangeSection.removeFromLeft(knobSize);
     swingLabel.setBounds(swingArea.removeFromBottom(20));
-    if (swingSlider) swingSlider->setBounds(swingArea);
+    swingSlider.setBounds(swingArea);
 
     rangeSection.removeFromLeft(spacing);
 
@@ -625,27 +615,62 @@ void GenerativeMIDIEditor::resized()
     timeScaleLabel.setBounds(timeScaleArea.removeFromBottom(20));
     timeScaleSlider.setBounds(timeScaleArea);
 
-    // Modulation panel (bottom section, compact height)
-    if (modulationPanel)
-    {
-        auto modulationArea = area.removeFromTop(120).reduced(40, 10);
-        modulationPanel->setBounds(modulationArea);
-    }
+    // Modulation panel (COMMENTED OUT - not working correctly)
+    // if (modulationPanel)
+    // {
+    //     auto modulationArea = area.removeFromTop(120).reduced(40, 10);
+    //     modulationPanel->setBounds(modulationArea);
+    // }
 }
 
 void GenerativeMIDIEditor::timerCallback()
 {
-    // Update pattern visualizer
-    auto& euclidean = audioProcessor.getEuclideanEngine();
-    std::vector<bool> pattern(euclidean.getSteps());
-    for (int i = 0; i < euclidean.getSteps(); ++i)
-        pattern[i] = euclidean.getStep(i);
+    // Update pattern visualizer based on active generator
+    int generatorType = generatorTypeCombo.getSelectedId() - 1;
 
-    patternDisplay.setPattern(pattern);
+    // Set accent color based on generator type
+    juce::Colour visualizerColor;
+    bool isEuclidean = (generatorType == 0);
+    bool isAlgorithmic = (generatorType >= 1 && generatorType <= 4);
+    bool isStochastic = (generatorType >= 5 && generatorType <= 8);
 
-    // Update current playback position
-    int currentStep = audioProcessor.getCurrentStep() % euclidean.getSteps();
-    patternDisplay.setCurrentStep(currentStep);
+    if (isEuclidean)
+        visualizerColor = juce::Colour(CustomLookAndFeel::GOLD_TEMPLE);        // Gold for Euclidean
+    else if (isAlgorithmic)
+        visualizerColor = juce::Colour(CustomLookAndFeel::GREEN_VERDIGRIS);    // Verdigris for Algorithmic
+    else if (isStochastic)
+        visualizerColor = juce::Colour(CustomLookAndFeel::VIOLET_ALCHEMY);     // Violet for Stochastic
+    else
+        visualizerColor = juce::Colour(CustomLookAndFeel::AMBER_TESLA);
+
+    patternDisplay.setAccentColor(visualizerColor);
+
+    if (generatorType == 0)  // Euclidean
+    {
+        auto& euclidean = audioProcessor.getEuclideanEngine();
+        std::vector<bool> pattern(euclidean.getSteps());
+        for (int i = 0; i < euclidean.getSteps(); ++i)
+            pattern[i] = euclidean.getStep(i);
+
+        patternDisplay.setPattern(pattern);
+
+        // Update current playback position
+        int currentStep = audioProcessor.getCurrentStep() % euclidean.getSteps();
+        patternDisplay.setCurrentStep(currentStep);
+    }
+    else  // Algorithmic or Stochastic generators
+    {
+        // For non-Euclidean generators, show a simple visualization of activity
+        // Create a 16-step pattern showing current playback position
+        std::vector<bool> pattern(16, false);
+
+        // Mark current step as active
+        int currentStep = audioProcessor.getCurrentStep() % 16;
+        pattern[currentStep] = true;
+
+        patternDisplay.setPattern(pattern);
+        patternDisplay.setCurrentStep(currentStep);
+    }
 
     // Update current preset label
     const juce::String& presetName = audioProcessor.getPresetManager().getCurrentPresetName();
@@ -657,29 +682,27 @@ void GenerativeMIDIEditor::timerCallback()
 
 void GenerativeMIDIEditor::updateControlsForGeneratorType(int generatorType)
 {
-    // Generator types:
+    // Generator types (Polyrhythm removed):
     // 0 = Euclidean
-    // 1 = Polyrhythm
-    // 2-5 = Algorithmic (Markov, L-System, Cellular, Probabilistic)
-    // 6-9 = Stochastic (Brownian, Perlin, Drunk Walk, Lorenz)
+    // 1-4 = Algorithmic (Markov, L-System, Cellular, Probabilistic)
+    // 5-8 = Stochastic (Brownian, Perlin, Drunk Walk, Lorenz)
 
     bool isEuclidean = (generatorType == 0);
-    bool isPolyrhythm = (generatorType == 1);
-    bool isAlgorithmic = (generatorType >= 2 && generatorType <= 5);
-    bool isStochastic = (generatorType >= 6 && generatorType <= 9);
+    bool isAlgorithmic = (generatorType >= 1 && generatorType <= 4);
+    bool isStochastic = (generatorType >= 5 && generatorType <= 8);
 
     // Euclidean-specific controls (steps, pulses, rotation)
-    if (stepsSlider) stepsSlider->setEnabled(isEuclidean);
-    if (pulsesSlider) pulsesSlider->setEnabled(isEuclidean);
-    if (rotationSlider) rotationSlider->setEnabled(isEuclidean);
+    stepsSlider.setEnabled(isEuclidean);
+    pulsesSlider.setEnabled(isEuclidean);
+    rotationSlider.setEnabled(isEuclidean);
     stepsLabel.setEnabled(isEuclidean);
     pulsesLabel.setEnabled(isEuclidean);
     rotationLabel.setEnabled(isEuclidean);
 
     float euclideanAlpha = isEuclidean ? 1.0f : 0.3f;
-    if (stepsSlider) stepsSlider->setAlpha(euclideanAlpha);
-    if (pulsesSlider) pulsesSlider->setAlpha(euclideanAlpha);
-    if (rotationSlider) rotationSlider->setAlpha(euclideanAlpha);
+    stepsSlider.setAlpha(euclideanAlpha);
+    pulsesSlider.setAlpha(euclideanAlpha);
+    rotationSlider.setAlpha(euclideanAlpha);
     stepsLabel.setAlpha(euclideanAlpha);
     pulsesLabel.setAlpha(euclideanAlpha);
     rotationLabel.setAlpha(euclideanAlpha);
@@ -702,8 +725,8 @@ void GenerativeMIDIEditor::updateControlsForGeneratorType(int generatorType)
 
     // Density control applies to all generators but with different meanings
     densityLabel.setEnabled(true);
-    densitySlider->setEnabled(true);
-    densitySlider->setAlpha(1.0f);
+    densitySlider.setEnabled(true);
+    densitySlider.setAlpha(1.0f);
     densityLabel.setAlpha(1.0f);
 
     // Update label based on generator type
@@ -718,8 +741,6 @@ void GenerativeMIDIEditor::updateControlsForGeneratorType(int generatorType)
     juce::Colour generatorColor;
     if (isEuclidean)
         generatorColor = juce::Colour(CustomLookAndFeel::GOLD_TEMPLE);        // Gold for Euclidean
-    else if (isPolyrhythm)
-        generatorColor = juce::Colour(CustomLookAndFeel::COPPER_STEAM);       // Copper for Polyrhythm
     else if (isAlgorithmic)
         generatorColor = juce::Colour(CustomLookAndFeel::GREEN_VERDIGRIS);    // Verdigris for Algorithmic
     else if (isStochastic)
@@ -728,12 +749,6 @@ void GenerativeMIDIEditor::updateControlsForGeneratorType(int generatorType)
         generatorColor = juce::Colour(CustomLookAndFeel::GOLD_TEMPLE);
 
     generatorLabel.setColour(juce::Label::textColourId, generatorColor);
-
-    // TODO: Polyrhythm layer editor - implement in future version
-    // if (patternAreaTabs)
-    // {
-    //     patternAreaTabs->setPolyrhythmMode(isPolyrhythm);
-    // }
 
     // All controls that work across all generator types remain fully enabled
     // (tempo, velocity range, pitch range, scale, swing, humanization, gate length, ratcheting)

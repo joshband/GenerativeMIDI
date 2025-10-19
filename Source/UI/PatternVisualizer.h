@@ -36,6 +36,12 @@ public:
         repaint();
     }
 
+    void setAccentColor(juce::Colour color)
+    {
+        accentColor = color;
+        repaint();
+    }
+
     void setProbabilityMiss(int step, bool missed)
     {
         if (step >= 0 && step < probabilityMisses.size())
@@ -108,11 +114,11 @@ public:
                 }
                 else if (isCurrent)
                 {
-                    // Current active step - brilliant amber crystal (playing now)
+                    // Current active step - brilliant colored crystal (playing now)
                     juce::ColourGradient crystalGrad(
-                        juce::Colour(CustomLookAndFeel::AMBER_TESLA),
+                        accentColor.brighter(0.2f),
                         x + w * 0.5f, y,
-                        juce::Colour(CustomLookAndFeel::COPPER_STEAM),
+                        accentColor.darker(0.1f),
                         x + w * 0.5f, y + ledHeight,
                         false);
                     g.setGradientFill(crystalGrad);
@@ -120,9 +126,9 @@ public:
 
                     // Aether glow (energy radiance)
                     juce::ColourGradient aetherGlow(
-                        juce::Colour(CustomLookAndFeel::AETHER_CYAN).withAlpha(0.5f),
+                        accentColor.withAlpha(0.5f),
                         x + w * 0.5f, y + ledHeight * 0.5f,
-                        juce::Colour(CustomLookAndFeel::AMBER_TESLA).withAlpha(0.0f),
+                        accentColor.withAlpha(0.0f),
                         x + w * 0.5f, y,
                         true);
                     g.setGradientFill(aetherGlow);
@@ -135,11 +141,11 @@ public:
                 }
                 else
                 {
-                    // Non-current active step - glowing cyan crystal (will play)
+                    // Non-current active step - glowing crystal (will play)
                     juce::ColourGradient crystalGrad(
-                        juce::Colour(CustomLookAndFeel::AETHER_CYAN).brighter(0.1f),
+                        accentColor.withAlpha(0.8f).brighter(0.1f),
                         x + w * 0.5f, y,
-                        juce::Colour(CustomLookAndFeel::AETHER_CYAN).darker(0.2f),
+                        accentColor.withAlpha(0.8f).darker(0.2f),
                         x + w * 0.5f, y + ledHeight * 0.7f,
                         false);
                     g.setGradientFill(crystalGrad);
@@ -203,6 +209,7 @@ private:
     std::vector<bool> pattern;
     std::vector<bool> probabilityMisses; // Track which steps were scheduled but missed due to probability
     int currentStep = 0;
+    juce::Colour accentColor = juce::Colour(CustomLookAndFeel::AMBER_TESLA); // Default accent color
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(PatternVisualizer)
 };

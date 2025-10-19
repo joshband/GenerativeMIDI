@@ -16,11 +16,11 @@
 #include "UI/PresetBrowser.h"
 #include "UI/PolyrhythmLayerEditor.h"
 #include "UI/PatternAreaTabs.h"
-#include "UI/ModulationPanel.h"
-#include "UI/ModulationTarget.h"
+// #include "UI/ModulationPanel.h"
+// #include "UI/ModulationTarget.h"
 
 class GenerativeMIDIEditor : public juce::AudioProcessorEditor,
-                              public juce::DragAndDropContainer,
+                              // public juce::DragAndDropContainer,  // Commented out with modulation
                               private juce::Timer
 {
 public:
@@ -42,22 +42,22 @@ private:
     std::unique_ptr<PolyrhythmLayerEditor> polyLayerEditor;
     std::unique_ptr<PatternAreaTabs> patternAreaTabs;
 
-    // Modulation panel
-    std::unique_ptr<ModulationPanel> modulationPanel;
+    // Modulation panel (COMMENTED OUT - not working correctly)
+    // std::unique_ptr<ModulationPanel> modulationPanel;
 
-    // Parameter attachments for sliders (modulated sliders for key controls)
-    std::unique_ptr<ModulatedSlider> tempoSlider;
-    std::unique_ptr<ModulatedSlider> stepsSlider;
-    std::unique_ptr<ModulatedSlider> pulsesSlider;
-    std::unique_ptr<ModulatedSlider> rotationSlider;
-    std::unique_ptr<ModulatedSlider> densitySlider;
-    std::unique_ptr<ModulatedSlider> velocityMinSlider;
-    std::unique_ptr<ModulatedSlider> velocityMaxSlider;
-    std::unique_ptr<ModulatedSlider> pitchMinSlider;
-    std::unique_ptr<ModulatedSlider> pitchMaxSlider;
+    // Parameter sliders (reverted to standard sliders)
+    juce::Slider tempoSlider;
+    juce::Slider stepsSlider;
+    juce::Slider pulsesSlider;
+    juce::Slider rotationSlider;
+    juce::Slider densitySlider;
+    juce::Slider velocityMinSlider;
+    juce::Slider velocityMaxSlider;
+    juce::Slider pitchMinSlider;
+    juce::Slider pitchMaxSlider;
 
     // Scale and humanization controls
-    std::unique_ptr<ModulatedSlider> swingSlider;
+    juce::Slider swingSlider;
     juce::Slider timingHumanizeSlider;
     juce::Slider velocityHumanizeSlider;
     juce::ComboBox scaleRootCombo;
