@@ -1,14 +1,23 @@
 # Generative MIDI
 
-A powerful open-source generative MIDI processor with 10 algorithmic engines for creating Euclidean rhythms, polyrhythmic sequences, and complex algorithmic patterns. Available as AU, VST3, and standalone application for macOS.
+Generative MIDI is an open-source algorithmic MIDI processor with 10 engines for Euclidean rhythms, polyrhythms, stochastic melody, and deterministic chaos. It is built with JUCE/C++ as a macOS AU/VST3 plugin and standalone app, with iOS/iPadOS AUv3 support in progress.
 
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20iOS%20%7C%20iPadOS-lightgrey.svg)](https://github.com/joshband/GenerativeMIDI/releases)
 [![Release](https://img.shields.io/github/v/release/joshband/GenerativeMIDI)](https://github.com/joshband/GenerativeMIDI/releases/latest)
 
-![Generative MIDI Interface](docs/design/screenshots/main-interface.png)
-
 ---
+
+## Why It Matters
+
+This project demonstrates end-to-end creative software delivery: real-time MIDI generation, plugin packaging, cross-platform build planning, UI asset systems, user documentation, and release-oriented engineering hygiene.
+
+Portfolio highlights:
+
+- Production-oriented C++/JUCE plugin architecture.
+- Algorithmic music systems translated into usable DAW workflows.
+- Public release packaging for AU, VST3, and standalone macOS builds.
+- Documentation structure for users, developers, design, and deployment.
 
 ## 🎵 Quick Start
 
@@ -149,14 +158,11 @@ A powerful open-source generative MIDI processor with 10 algorithmic engines for
 git clone https://github.com/joshband/GenerativeMIDI.git
 cd GenerativeMIDI
 
-# Link JUCE (adjust path to your JUCE installation)
-ln -s ~/JUCE JUCE
-
 # Create build directory
 mkdir build && cd build
 
 # Configure
-cmake .. -DCMAKE_BUILD_TYPE=Release
+cmake .. -DCMAKE_BUILD_TYPE=Release -DJUCE_DIR="$HOME/JUCE"
 
 # Build (use -j8 for parallel build)
 cmake --build . --config Release -j8
@@ -226,8 +232,8 @@ Complete documentation is available in the [docs/](docs/) directory:
 - **Sample Rates:** 44.1, 48, 88.2, 96 kHz
 - **MIDI Channels:** 1-16
 - **Buffer Size:** Adaptive (32-2048 samples)
-- **Latency:** < 5ms typical
-- **CPU Usage:** < 5% on modern hardware
+- **Latency:** Designed for low-latency MIDI generation
+- **CPU Usage:** Designed for lightweight real-time use
 - **Memory:** ~10MB RAM
 
 ---
@@ -261,7 +267,7 @@ ctest
 clang-format -i Source/**/*.cpp Source/**/*.h
 ```
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines.
+Please include build notes, tested host/OS versions, and screenshots or recordings for UI-facing changes.
 
 ---
 
@@ -301,11 +307,11 @@ Free to use, modify, and distribute for personal and commercial projects.
 
 ## 💬 Support
 
-- 📖 **Documentation:** [docs/](docs/)
-- 🐛 **Bug Reports:** [GitHub Issues](https://github.com/joshband/GenerativeMIDI/issues)
-- 💡 **Feature Requests:** [GitHub Discussions](https://github.com/joshband/GenerativeMIDI/discussions)
-- 📥 **Latest Release:** [Download here](https://github.com/joshband/GenerativeMIDI/releases/latest)
+- **Documentation:** [docs/](docs/)
+- **Bug Reports:** [GitHub Issues](https://github.com/joshband/GenerativeMIDI/issues)
+- **Feature Requests:** [GitHub Discussions](https://github.com/joshband/GenerativeMIDI/discussions)
+- **Latest Release:** [Download here](https://github.com/joshband/GenerativeMIDI/releases/latest)
 
 ---
 
-**Made with ❤️ for the open-source music community**
+Built for the open-source music community.

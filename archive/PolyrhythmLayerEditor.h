@@ -12,7 +12,7 @@
 
 #include <juce_audio_processors/juce_audio_processors.h>
 #include "CustomLookAndFeel.h"
-#include "../Core/PolyrhythmEngine.h"
+#include "Core/PolyrhythmEngine.h"
 
 class PolyrhythmLayerRow : public juce::Component
 {

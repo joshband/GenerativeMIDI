@@ -1,6 +1,6 @@
 # GenerativeMIDI Documentation
 
-Complete documentation for the GenerativeMIDI plugin - a generative MIDI processor with Euclidean rhythms, polyrhythms, and algorithmic pattern generation.
+Complete documentation for the GenerativeMIDI plugin: a generative MIDI processor with Euclidean rhythms, polyrhythms, stochastic generation, and algorithmic pattern systems.
 
 ---
 
@@ -25,8 +25,6 @@ Complete documentation for the GenerativeMIDI plugin - a generative MIDI process
 - **[UI Specification](design/SYNAPTIK_UI_SPEC.md)** - Complete UI design specification
 - **[Color Palettes](design/COLOR_PALETTE.md)** - Color system and usage guidelines
 - **[Component Specs](design/COMPONENT_SPECS.md)** - Individual component specifications
-- **[Project Summary](design/PROJECT_SUMMARY.md)** - High-level project overview
-- **[UI Specification](design/SYNAPTIK_UI_SPEC.md)** - Complete UI design specification
 - **[Project Summary](design/PROJECT_SUMMARY.md)** - High-level project overview
 
 ### Deployment
@@ -71,4 +69,4 @@ GenerativeMIDI/
 
 ---
 
-**Last Updated**: 2025-10-18
+**Last Updated**: 2026-05-19

@@ -5,13 +5,14 @@
 This is the fastest way to build the plugin:
 
 ```bash
-cd /Users/noisebox/Repos/GenerativeMIDI
+git clone https://github.com/joshband/GenerativeMIDI.git
+cd GenerativeMIDI
 
 # Create build directory
 mkdir build && cd build
 
 # Configure (Release build)
-cmake .. -DCMAKE_BUILD_TYPE=Release
+cmake .. -DCMAKE_BUILD_TYPE=Release -DJUCE_DIR="$HOME/JUCE"
 
 # Build
 cmake --build . --config Release
@@ -36,8 +37,7 @@ open -a ~/JUCE/Projucer.app GenerativeMIDI.jucer
 ### 2. Configure JUCE Module Paths
 In Projucer:
 - Click "File" → "Global Paths..."
-- Set "Path to JUCE" to `/Users/noisebox/JUCE`
-- Or use the symlink that's already created in the project
+- Set "Path to JUCE" to your local JUCE checkout, such as `~/JUCE`
 
 ### 3. Save and Open in Xcode
 - Click "File" → "Save Project and Open in IDE..." (or Cmd+P)
@@ -52,13 +52,12 @@ In Projucer:
 
 ### Error: JUCE not found
 ```bash
-cd /Users/noisebox/Repos/GenerativeMIDI
-ln -s ~/JUCE JUCE
+cmake .. -DCMAKE_BUILD_TYPE=Release -DJUCE_DIR="$HOME/JUCE"
 ```
 
 ### Error: Missing module paths in Projucer
 - Open Projucer's global settings
-- Set JUCE path to `/Users/noisebox/JUCE`
+- Set JUCE path to your local JUCE checkout
 - Resave the project
 
 ### Compiler Errors
@@ -94,7 +93,7 @@ For development with debugging symbols:
 
 ```bash
 mkdir build-debug && cd build-debug
-cmake .. -DCMAKE_BUILD_TYPE=Debug
+cmake .. -DCMAKE_BUILD_TYPE=Debug -DJUCE_DIR="$HOME/JUCE"
 cmake --build . --config Debug
 ```
 

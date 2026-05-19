@@ -3,6 +3,7 @@ build/
 build_ios/
 builds/
 Builds/
+JUCE/
 
 # CMake
 CMakeCache.txt

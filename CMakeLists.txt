@@ -9,11 +9,16 @@ project(GenerativeMIDI VERSION 1.0.0)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# Add JUCE - using symlink to ~/JUCE
-if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/JUCE/CMakeLists.txt")
-    add_subdirectory(JUCE)
+# Add JUCE. Prefer -DJUCE_DIR=/path/to/JUCE for portable builds, while
+# still supporting a local JUCE symlink for developer convenience.
+set(JUCE_DIR "" CACHE PATH "Path to a JUCE checkout")
+
+if(JUCE_DIR AND EXISTS "${JUCE_DIR}/CMakeLists.txt")
+    add_subdirectory("${JUCE_DIR}" "${CMAKE_BINARY_DIR}/JUCE")
+elseif(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/JUCE/CMakeLists.txt")
+    add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/JUCE")
 else()
-    message(FATAL_ERROR "JUCE not found. Please run: ln -s ~/JUCE JUCE")
+    message(FATAL_ERROR "JUCE not found. Configure with -DJUCE_DIR=/path/to/JUCE or create a local JUCE symlink.")
 endif()
 
 # Create the plugin target
@@ -61,6 +66,14 @@ set(SOURCE_FILES
 
 # Add source files to the plugin
 target_sources(GenerativeMIDI PRIVATE ${SOURCE_FILES})
+
+target_include_directories(GenerativeMIDI
+    PRIVATE
+        archive
+        archive/modulation_v1
+        Source
+        Source/UI
+)
 
 # Compiler definitions
 target_compile_definitions(GenerativeMIDI

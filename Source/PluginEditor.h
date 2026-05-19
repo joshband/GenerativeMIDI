@@ -14,7 +14,7 @@
 #include "UI/CustomLookAndFeel.h"
 #include "UI/PatternVisualizer.h"
 #include "UI/PresetBrowser.h"
-#include "UI/PolyrhythmLayerEditor.h"
+#include "PolyrhythmLayerEditor.h"
 #include "UI/PatternAreaTabs.h"
 // #include "UI/ModulationPanel.h"
 // #include "UI/ModulationTarget.h"

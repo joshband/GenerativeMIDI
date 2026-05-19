@@ -24,7 +24,6 @@ jobs:
     - name: Install JUCE
       run: |
         git clone --depth 1 --branch develop https://github.com/juce-framework/JUCE.git ~/JUCE
-        ln -sf ~/JUCE JUCE
 
     - name: Generate Xcode Project
       run: |
@@ -33,7 +32,8 @@ jobs:
         cmake .. -G Xcode \
           -DCMAKE_SYSTEM_NAME=iOS \
           -DCMAKE_OSX_SYSROOT=iphoneos \
-          -DCMAKE_OSX_DEPLOYMENT_TARGET=13.0
+          -DCMAKE_OSX_DEPLOYMENT_TARGET=13.0 \
+          -DJUCE_DIR="$HOME/JUCE"
 
     - name: Build for iOS
       run: |
@@ -43,7 +43,7 @@ jobs:
           -destination 'generic/platform=iOS' \
           CODE_SIGN_IDENTITY="" \
           CODE_SIGNING_REQUIRED=NO \
-          build || true
+          build
 
     - name: Upload Artifacts
       uses: actions/upload-artifact@v4
@@ -67,13 +67,12 @@ jobs:
     - name: Install JUCE
       run: |
         git clone --depth 1 --branch develop https://github.com/juce-framework/JUCE.git ~/JUCE
-        ln -sf ~/JUCE JUCE
 
     - name: Build Plugins
       run: |
         mkdir -p build
         cd build
-        cmake .. -DCMAKE_BUILD_TYPE=Release
+        cmake .. -DCMAKE_BUILD_TYPE=Release -DJUCE_DIR="$HOME/JUCE"
         cmake --build . --config Release
 
     - name: Upload Artifacts
