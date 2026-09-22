@@ -8,6 +8,7 @@
 #include <catch2/catch_approx.hpp>
 
 #include "Core/EuclideanEngine.h"
+#include "Core/PolyrhythmEngine.h"
 #include "Core/ScaleQuantizer.h"
 #include "Core/GeneratorTypeMapping.h"
 #include "Core/StochasticEngine.h"
@@ -66,31 +67,70 @@ TEST_CASE("ScaleQuantizer major keeps C in C major", "[scale]")
     REQUIRE(quantizer.quantize(60) == 60); // C
 }
 
-TEST_CASE("GeneratorTypeMapping indices cover nine UI generators", "[mapping]")
+TEST_CASE("GeneratorTypeMapping indices cover ten UI generators", "[mapping]")
 {
-    REQUIRE(GeneratorTypeMapping::kCount == 9);
-    REQUIRE(GeneratorTypeMapping::isAlgorithmic(1));
-    REQUIRE(GeneratorTypeMapping::isAlgorithmic(4));
+    REQUIRE(GeneratorTypeMapping::kCount == 10);
+    REQUIRE(GeneratorTypeMapping::isPolyrhythm(1));
+    REQUIRE_FALSE(GeneratorTypeMapping::isPolyrhythm(0));
+    REQUIRE(GeneratorTypeMapping::isAlgorithmic(2));
+    REQUIRE(GeneratorTypeMapping::isAlgorithmic(5));
     REQUIRE_FALSE(GeneratorTypeMapping::isAlgorithmic(0));
-    REQUIRE(GeneratorTypeMapping::isStochastic(5));
-    REQUIRE(GeneratorTypeMapping::isStochastic(8));
-    REQUIRE_FALSE(GeneratorTypeMapping::isStochastic(4));
+    REQUIRE_FALSE(GeneratorTypeMapping::isAlgorithmic(1));
+    REQUIRE(GeneratorTypeMapping::isStochastic(6));
+    REQUIRE(GeneratorTypeMapping::isStochastic(9));
+    REQUIRE_FALSE(GeneratorTypeMapping::isStochastic(5));
 }
 
 TEST_CASE("GeneratorTypeMapping algorithmic enums", "[mapping]")
 {
-    REQUIRE(GeneratorTypeMapping::toAlgorithmic(1) == AlgorithmicEngine::Markov);
-    REQUIRE(GeneratorTypeMapping::toAlgorithmic(2) == AlgorithmicEngine::LSystem);
-    REQUIRE(GeneratorTypeMapping::toAlgorithmic(3) == AlgorithmicEngine::CellularAutomatonType);
-    REQUIRE(GeneratorTypeMapping::toAlgorithmic(4) == AlgorithmicEngine::Probabilistic);
+    REQUIRE(GeneratorTypeMapping::toAlgorithmic(2) == AlgorithmicEngine::Markov);
+    REQUIRE(GeneratorTypeMapping::toAlgorithmic(3) == AlgorithmicEngine::LSystem);
+    REQUIRE(GeneratorTypeMapping::toAlgorithmic(4) == AlgorithmicEngine::CellularAutomatonType);
+    REQUIRE(GeneratorTypeMapping::toAlgorithmic(5) == AlgorithmicEngine::Probabilistic);
 }
 
 TEST_CASE("GeneratorTypeMapping stochastic enums", "[mapping]")
 {
-    REQUIRE(GeneratorTypeMapping::toStochastic(5) == StochasticEngine::GeneratorType::BrownianMotion);
-    REQUIRE(GeneratorTypeMapping::toStochastic(6) == StochasticEngine::GeneratorType::PerlinNoise);
-    REQUIRE(GeneratorTypeMapping::toStochastic(7) == StochasticEngine::GeneratorType::DrunkWalk);
-    REQUIRE(GeneratorTypeMapping::toStochastic(8) == StochasticEngine::GeneratorType::LorenzAttractor);
+    REQUIRE(GeneratorTypeMapping::toStochastic(6) == StochasticEngine::GeneratorType::BrownianMotion);
+    REQUIRE(GeneratorTypeMapping::toStochastic(7) == StochasticEngine::GeneratorType::PerlinNoise);
+    REQUIRE(GeneratorTypeMapping::toStochastic(8) == StochasticEngine::GeneratorType::DrunkWalk);
+    REQUIRE(GeneratorTypeMapping::toStochastic(9) == StochasticEngine::GeneratorType::LorenzAttractor);
+}
+
+TEST_CASE("PolyrhythmEngine seeds audible default layer", "[polyrhythm]")
+{
+    PolyrhythmEngine engine;
+    REQUIRE(engine.getNumLayers() == 1);
+
+    auto* layer = engine.getLayer(0);
+    REQUIRE(layer != nullptr);
+    REQUIRE(layer->enabled);
+    REQUIRE(layer->length == 16);
+    REQUIRE(static_cast<int>(layer->pattern.size()) == 16);
+
+    int activeSteps = 0;
+    for (bool step : layer->pattern)
+        if (step)
+            ++activeSteps;
+
+    REQUIRE(activeSteps > 0);
+}
+
+TEST_CASE("PolyrhythmEngine addLayer seeds distinct pattern", "[polyrhythm]")
+{
+    PolyrhythmEngine engine;
+    const int second = engine.addLayer();
+    REQUIRE(second == 1);
+    REQUIRE(engine.getNumLayers() == 2);
+
+    auto* layer = engine.getLayer(1);
+    REQUIRE(layer != nullptr);
+
+    int activeSteps = 0;
+    for (bool step : layer->pattern)
+        if (step)
+            ++activeSteps;
+    REQUIRE(activeSteps > 0);
 }
 
 TEST_CASE("ClockManager samples per beat at 120 BPM 48kHz", "[clock]")
@@ -162,7 +202,7 @@ namespace
             params.push_back(std::make_unique<juce::AudioParameterInt>("euclideanRotation", "Euclidean Rotation", 0, 64, 0));
             params.push_back(std::make_unique<juce::AudioParameterChoice>(
                 "generatorType", "Generator Type",
-                juce::StringArray{"Euclidean", "Markov", "L-System", "Cellular", "Probabilistic",
+                juce::StringArray{"Euclidean", "Polyrhythm", "Markov", "L-System", "Cellular", "Probabilistic",
                                   "Brownian", "Perlin Noise", "Drunk Walk", "Lorenz"},
                 0));
             params.push_back(std::make_unique<juce::AudioParameterFloat>("noteDensity", "Note Density", 0.0f, 1.0f, 0.5f));
@@ -225,9 +265,9 @@ TEST_CASE("PresetManager initializes non-zero factory presets", "[preset]")
     REQUIRE(gen != nullptr);
     REQUIRE(static_cast<int>(gen->load()) == 0);
 
-    // Load Brownian Drift and confirm generatorType index 5
+    // Load Brownian Drift and confirm generatorType index 6
     REQUIRE(manager.loadPresetByName("Brownian Drift"));
-    REQUIRE(static_cast<int>(gen->load()) == 5);
+    REQUIRE(static_cast<int>(gen->load()) == 6);
 
     // Factory ValueTrees must carry PARAM children with remapped IDs
     const PresetManager::Preset* brownianPtr = nullptr;
@@ -241,7 +281,7 @@ TEST_CASE("PresetManager initializes non-zero factory presets", "[preset]")
     REQUIRE(brownianPtr->state.getChildWithProperty("id", "generatorType").isValid());
     REQUIRE(brownianPtr->state.getChildWithProperty("id", "stepSize").isValid());
     REQUIRE((float) brownianPtr->state.getChildWithProperty("id", "generatorType").getProperty("value")
-            == Catch::Approx(5.0f));
+            == Catch::Approx(6.0f));
 }
 
 namespace
@@ -294,13 +334,13 @@ TEST_CASE("PresetManager factory loadPreset round-trips key params", "[preset]")
     const FactoryExpectation expected[] = {
         { "Euclidean Basic", 0 },
         { "Euclidean Complex", 0 },
-        { "Brownian Drift", 5 },
-        { "Markov Melody", 1 },
-        { "L-System Fractal", 2 },
-        { "Cellular Automata", 3 },
-        { "Probabilistic Sparse", 4 },
+        { "Brownian Drift", 6 },
+        { "Markov Melody", 2 },
+        { "L-System Fractal", 3 },
+        { "Cellular Automata", 4 },
+        { "Probabilistic Sparse", 5 },
         { "Ratchet Groove", 0 },
-        { "Ambient Drift", 4 },
+        { "Ambient Drift", 5 },
         { "Percussive Hits", 0 },
     };
 

@@ -15,15 +15,21 @@
 namespace GeneratorTypeMapping
 {
     constexpr int kEuclidean = 0;
-    constexpr int kMarkov = 1;
-    constexpr int kLSystem = 2;
-    constexpr int kCellular = 3;
-    constexpr int kProbabilistic = 4;
-    constexpr int kBrownian = 5;
-    constexpr int kPerlin = 6;
-    constexpr int kDrunkWalk = 7;
-    constexpr int kLorenz = 8;
-    constexpr int kCount = 9;
+    constexpr int kPolyrhythm = 1;
+    constexpr int kMarkov = 2;
+    constexpr int kLSystem = 3;
+    constexpr int kCellular = 4;
+    constexpr int kProbabilistic = 5;
+    constexpr int kBrownian = 6;
+    constexpr int kPerlin = 7;
+    constexpr int kDrunkWalk = 8;
+    constexpr int kLorenz = 9;
+    constexpr int kCount = 10;
+
+    inline bool isPolyrhythm(int index)
+    {
+        return index == kPolyrhythm;
+    }
 
     inline bool isAlgorithmic(int index)
     {

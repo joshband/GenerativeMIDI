@@ -19,6 +19,19 @@ int PolyrhythmEngine::addLayer()
 {
     PolyrhythmLayer layer;
     layer.resize(16);
+
+    // Seed an audible sparse default so selecting Polyrhythm / adding a layer
+    // produces MIDI without requiring step editing (MVP). Pattern editing UI TBD.
+    const int layerIndex = static_cast<int>(layers.size());
+    layer.division = juce::jlimit(1, 32, 3 + layerIndex); // distinct divisions per layer
+    for (int i = 0; i < layer.length; ++i)
+    {
+        const bool hit = (i % juce::jmax(2, layer.division) == 0);
+        layer.pattern[static_cast<size_t>(i)] = hit;
+        layer.velocities[static_cast<size_t>(i)] = 0.8f;
+        layer.pitches[static_cast<size_t>(i)] = 48 + (layerIndex * 7) + (i % 12);
+    }
+
     layers.push_back(layer);
     return layers.size() - 1;
 }

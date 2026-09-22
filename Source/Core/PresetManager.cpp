@@ -319,7 +319,8 @@ juce::File PresetManager::getDefaultPresetDirectory() const
 }
 
 // Factory Preset Implementations
-// Generator indices: 0 Euclidean, 1–4 algorithmic, 5–8 stochastic (see GeneratorTypeMapping.h).
+// Generator indices: 0 Euclidean, 1 Polyrhythm, 2–5 algorithmic, 6–9 stochastic
+// (see GeneratorTypeMapping.h).
 // JUCE 8 APVTS stores denormalised (actual) values in PARAM children — not normalised [0,1].
 
 juce::ValueTree PresetManager::makeFactoryParamTree() const
@@ -387,7 +388,7 @@ PresetManager::Preset PresetManager::createEuclideanComplexPreset()
 PresetManager::Preset PresetManager::createBrownianPreset()
 {
     auto state = makeFactoryParamTree();
-    setFactoryParam(state, "generatorType", 5.0f); // Brownian
+    setFactoryParam(state, "generatorType", 6.0f); // Brownian
     setFactoryParam(state, "tempo", 130.0f);
     setFactoryParam(state, "noteDensity", 0.55f);
     setFactoryParam(state, "stepSize", 0.15f);
@@ -410,7 +411,7 @@ PresetManager::Preset PresetManager::createBrownianPreset()
 PresetManager::Preset PresetManager::createMarkovMelodyPreset()
 {
     auto state = makeFactoryParamTree();
-    setFactoryParam(state, "generatorType", 1.0f); // Markov
+    setFactoryParam(state, "generatorType", 2.0f); // Markov
     setFactoryParam(state, "tempo", 95.0f);
     setFactoryParam(state, "noteDensity", 0.65f);
     setFactoryParam(state, "velocityMin", 75.0f / 127.0f);
@@ -432,7 +433,7 @@ PresetManager::Preset PresetManager::createMarkovMelodyPreset()
 PresetManager::Preset PresetManager::createLSystemPreset()
 {
     auto state = makeFactoryParamTree();
-    setFactoryParam(state, "generatorType", 2.0f); // L-System
+    setFactoryParam(state, "generatorType", 3.0f); // L-System
     setFactoryParam(state, "tempo", 110.0f);
     setFactoryParam(state, "noteDensity", 0.5f);
     setFactoryParam(state, "velocityMin", 65.0f / 127.0f);
@@ -453,7 +454,7 @@ PresetManager::Preset PresetManager::createLSystemPreset()
 PresetManager::Preset PresetManager::createCellularPreset()
 {
     auto state = makeFactoryParamTree();
-    setFactoryParam(state, "generatorType", 3.0f); // Cellular
+    setFactoryParam(state, "generatorType", 4.0f); // Cellular
     setFactoryParam(state, "tempo", 125.0f);
     setFactoryParam(state, "noteDensity", 0.45f);
     setFactoryParam(state, "velocityMin", 70.0f / 127.0f);
@@ -474,7 +475,7 @@ PresetManager::Preset PresetManager::createCellularPreset()
 PresetManager::Preset PresetManager::createProbabilisticPreset()
 {
     auto state = makeFactoryParamTree();
-    setFactoryParam(state, "generatorType", 4.0f); // Probabilistic
+    setFactoryParam(state, "generatorType", 5.0f); // Probabilistic
     setFactoryParam(state, "tempo", 100.0f);
     setFactoryParam(state, "noteDensity", 0.35f);
     setFactoryParam(state, "velocityMin", 50.0f / 127.0f);
@@ -521,7 +522,7 @@ PresetManager::Preset PresetManager::createRatchetGroovePreset()
 PresetManager::Preset PresetManager::createAmbientPreset()
 {
     auto state = makeFactoryParamTree();
-    setFactoryParam(state, "generatorType", 4.0f); // Probabilistic sparse
+    setFactoryParam(state, "generatorType", 5.0f); // Probabilistic sparse
     setFactoryParam(state, "tempo", 60.0f);
     setFactoryParam(state, "noteDensity", 0.2f);
     setFactoryParam(state, "velocityMin", 40.0f / 127.0f);

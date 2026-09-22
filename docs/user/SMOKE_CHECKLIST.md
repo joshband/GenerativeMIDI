@@ -14,7 +14,7 @@ Use this after a local CMake build (or a known-good binary) to confirm the live 
 
 ---
 
-## 1. All 9 generators produce MIDI (Standalone)
+## 1. All 10 generators produce MIDI (Standalone — `feature/polyrhythm-ui`)
 
 Open **Generative MIDI.app**. Standalone has no host playhead — generation should run without pressing DAW play.
 
@@ -23,16 +23,17 @@ For each generator in the dropdown, confirm notes emit (audible and/or MIDI moni
 | # | Generator | Pass? | Notes |
 |---|-----------|-------|-------|
 | 0 | Euclidean | ☐ | |
-| 1 | Markov | ☐ | |
-| 2 | L-System | ☐ | |
-| 3 | Cellular | ☐ | |
-| 4 | Probabilistic | ☐ | |
-| 5 | Brownian | ☐ | |
-| 6 | Perlin | ☐ | |
-| 7 | Drunk Walk | ☐ | |
-| 8 | Lorenz | ☐ | |
+| 1 | Polyrhythm | ☐ | Experimental MVP — default layers should emit; pitch/vel row sliders are not wired |
+| 2 | Markov | ☐ | |
+| 3 | L-System | ☐ | |
+| 4 | Cellular | ☐ | |
+| 5 | Probabilistic | ☐ | |
+| 6 | Brownian | ☐ | |
+| 7 | Perlin | ☐ | |
+| 8 | Drunk Walk | ☐ | |
+| 9 | Lorenz | ☐ | |
 
-**Out of scope:** Polyrhythm is deferred from the UI / APVTS choice list (engine retained only).
+**Honesty:** On master (pre-merge) the UI still lists **9** generators and omits Polyrhythm. This checklist matches the polyrhythm feature branch.
 
 **Hints if silent:** density / pulses > 0; tempo sane; MIDI channel matches the instrument; velocity range not zeroed.
 

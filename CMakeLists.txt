@@ -53,6 +53,7 @@ set(SOURCE_FILES
     Source/Core/PresetManager.h
     Source/UI/PresetBrowser.cpp
     Source/UI/PresetBrowser.h
+    Source/UI/PolyrhythmLayerEditor.h
     Source/PluginProcessor.cpp
     Source/PluginProcessor.h
     Source/PluginEditor.cpp
@@ -107,6 +108,7 @@ enable_testing()
 add_executable(GenerativeMIDITests
     Tests/EngineTests.cpp
     Source/Core/EuclideanEngine.cpp
+    Source/Core/PolyrhythmEngine.cpp
     Source/Core/StochasticEngine.cpp
     Source/Core/PresetManager.cpp
     Source/DSP/ClockManager.cpp
