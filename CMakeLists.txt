@@ -16,6 +16,15 @@ else()
     message(FATAL_ERROR "JUCE not found. Please run: ln -s ~/JUCE JUCE")
 endif()
 
+# Plugin formats: AU/AUv3 are Apple-only; Windows/Linux get VST3 + Standalone.
+if(CMAKE_SYSTEM_NAME STREQUAL "iOS")
+    set(GENERATIVE_MIDI_FORMATS AUv3)
+elseif(APPLE)
+    set(GENERATIVE_MIDI_FORMATS AU AUv3 VST3 Standalone)
+else()
+    set(GENERATIVE_MIDI_FORMATS VST3 Standalone)
+endif()
+
 # Create the plugin target
 juce_add_plugin(GenerativeMIDI
     COMPANY_NAME "OpenSource"
@@ -27,7 +36,7 @@ juce_add_plugin(GenerativeMIDI
     COPY_PLUGIN_AFTER_BUILD TRUE
     PLUGIN_MANUFACTURER_CODE Osrc
     PLUGIN_CODE Gmid
-    FORMATS AU AUv3 VST3 Standalone
+    FORMATS ${GENERATIVE_MIDI_FORMATS}
     PRODUCT_NAME "Generative MIDI"
     BUNDLE_ID "com.opensource.generativemidi"
     IPHONE_SCREEN_ORIENTATIONS UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait

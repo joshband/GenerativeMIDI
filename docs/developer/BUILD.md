@@ -49,7 +49,7 @@ From the build directory (after configure):
 ctest --output-on-failure
 ```
 
-CI also runs the macOS/iOS build workflow (`.github/workflows/ci.yml`).
+CI runs macOS, iOS, Windows, and Linux jobs (including pluginval on VST3). See [CI.md](CI.md).
 
 ## Projucer path (deprecated)
 
@@ -151,13 +151,14 @@ cmake --build . --config Release
 ### Windows (cross-compile or native)
 
 - Use Visual Studio 2022
-- Build VST3 and Standalone
-- AU/AUv3 not available
+- CMake selects **VST3** and **Standalone** only (AU/AUv3 are Apple-only)
+- Covered in CI (`build-windows`); see [CI.md](CI.md)
 
 ### Linux
 
-- Use CMake directly
-- VST3 and Standalone supported
+- Use CMake directly; install ALSA/X11/FreeType (and optional JACK) headers
+- CMake selects **VST3** and **Standalone**
+- Covered in CI (`build-linux`); see [CI.md](CI.md)
 
 ## Next Steps
 
