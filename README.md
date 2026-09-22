@@ -86,7 +86,7 @@ Repository → **Settings** → **Pages** → Build and deployment → Source: *
 - **16 Scale Types** - Major, Minor, Modes, Pentatonic, Blues, Whole Tone, Chromatic
 - **MIDI Channel Routing** - Route to any MIDI channel (1-16)
 - **Swing & Humanization** - 6 swing groove templates, timing & velocity humanization
-- **Full MIDI Expression** - Velocity, aftertouch, CC, pitch bend
+- **MIDI Expression** - Velocity always; aftertouch / CC / pitch bend UI is STATUS roadmap (not claimed complete)
 - **Gate & Ratcheting** - Gate length control with legato mode, note retriggering
 - **Real-time Visualization** - Live playback position and pattern display
 - **31 Parameters** - Full DAW automation support
@@ -97,7 +97,7 @@ Repository → **Settings** → **Pages** → Build and deployment → Source: *
 - **Color-Coded Generators** - Visual feedback by engine type
 - **Context-Aware Controls** - Relevant controls auto-enable/disable
 - **Resizable Window** - 1200x500 to 2000x1000 pixels
-- **Touch-Optimized** - Ready for iOS/iPadOS
+- **iOS / AUv3** - Configured build target with docs; not store-ready
 
 ---
 
