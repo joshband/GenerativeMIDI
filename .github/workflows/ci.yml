@@ -10,6 +10,10 @@ on:
 permissions:
   contents: read
 
+env:
+  JUCE_VERSION: "8.0.15"
+  PLUGINVAL_VERSION: "v1.0.4"
+
 jobs:
   build-ios:
     name: Build iOS/iPadOS AUv3
@@ -28,7 +32,7 @@ jobs:
 
     - name: Install JUCE
       run: |
-        git clone --depth 1 --branch 8.0.15 https://github.com/juce-framework/JUCE.git ~/JUCE
+        git clone --depth 1 --branch "${JUCE_VERSION}" https://github.com/juce-framework/JUCE.git ~/JUCE
         ln -sf ~/JUCE JUCE
 
     - name: Generate Xcode Project
@@ -74,7 +78,7 @@ jobs:
 
     - name: Install JUCE
       run: |
-        git clone --depth 1 --branch 8.0.15 https://github.com/juce-framework/JUCE.git ~/JUCE
+        git clone --depth 1 --branch "${JUCE_VERSION}" https://github.com/juce-framework/JUCE.git ~/JUCE
         ln -sf ~/JUCE JUCE
 
     - name: Build Plugins
@@ -89,9 +93,187 @@ jobs:
         cd build
         ctest --output-on-failure -C Release
 
+    - name: Download pluginval
+      run: |
+        curl -fsSL "https://github.com/Tracktion/pluginval/releases/download/${PLUGINVAL_VERSION}/pluginval_macOS.zip" -o pluginval.zip
+        unzip -q pluginval.zip
+        chmod +x pluginval.app/Contents/MacOS/pluginval
+
+    - name: Validate VST3 with pluginval
+      run: |
+        VST3_PATH="build/GenerativeMIDI_artefacts/Release/VST3/Generative MIDI.vst3"
+        test -d "${VST3_PATH}"
+        mkdir -p pluginval-logs
+        # MIDI-effect VST3: validate in-process; skip GUI (headless CI).
+        # AU is not run here — see docs/developer/CI.md (auval / host registration limits).
+        ./pluginval.app/Contents/MacOS/pluginval \
+          --validate-in-process \
+          --strictness-level 5 \
+          --skip-gui-tests \
+          --output-dir pluginval-logs \
+          "${VST3_PATH}"
+
+    - name: Upload pluginval logs
+      if: always()
+      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+      with:
+        name: pluginval-logs-macOS
+        path: pluginval-logs/
+        if-no-files-found: warn
+
     - name: Upload Artifacts
       uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
       with:
         name: GenerativeMIDI-macOS
         path: build/GenerativeMIDI_artefacts/Release/**/*
+        if-no-files-found: error
+
+  build-windows:
+    name: Build Windows VST3
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      with:
+        submodules: recursive
+
+    - name: Install JUCE
+      shell: bash
+      run: |
+        git clone --depth 1 --branch "${JUCE_VERSION}" https://github.com/juce-framework/JUCE.git ~/JUCE
+        ln -sf ~/JUCE JUCE
+
+    - name: Configure
+      shell: bash
+      run: |
+        mkdir -p build
+        cmake -S . -B build -G "Visual Studio 17 2022" -A x64
+
+    - name: Build Plugins
+      shell: bash
+      run: cmake --build build --config Release
+
+    - name: Run unit tests
+      shell: bash
+      run: |
+        cd build
+        ctest --output-on-failure -C Release
+
+    - name: Download pluginval
+      shell: bash
+      run: |
+        curl -fsSL "https://github.com/Tracktion/pluginval/releases/download/${PLUGINVAL_VERSION}/pluginval_Windows.zip" -o pluginval.zip
+        unzip -q pluginval.zip
+
+    - name: Validate VST3 with pluginval
+      shell: bash
+      run: |
+        VST3_PATH="build/GenerativeMIDI_artefacts/Release/VST3/Generative MIDI.vst3"
+        test -d "${VST3_PATH}"
+        mkdir -p pluginval-logs
+        ./pluginval.exe \
+          --validate-in-process \
+          --strictness-level 5 \
+          --skip-gui-tests \
+          --output-dir pluginval-logs \
+          "${VST3_PATH}"
+
+    - name: Upload pluginval logs
+      if: always()
+      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+      with:
+        name: pluginval-logs-Windows
+        path: pluginval-logs/
+        if-no-files-found: warn
+
+    - name: Upload Artifacts
+      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+      with:
+        name: GenerativeMIDI-Windows
+        path: |
+          build/GenerativeMIDI_artefacts/Release/VST3/**
+          build/GenerativeMIDI_artefacts/Release/Standalone/**
+        if-no-files-found: error
+
+  build-linux:
+    name: Build Linux VST3
+    runs-on: ubuntu-22.04
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      with:
+        submodules: recursive
+
+    - name: Install build dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y --no-install-recommends \
+          build-essential \
+          cmake \
+          pkg-config \
+          libasound2-dev \
+          libfreetype6-dev \
+          libx11-dev \
+          libxcomposite-dev \
+          libxcursor-dev \
+          libxext-dev \
+          libxinerama-dev \
+          libxrandr-dev \
+          libglu1-mesa-dev \
+          libjack-jackd2-dev
+
+    - name: Install JUCE
+      run: |
+        git clone --depth 1 --branch "${JUCE_VERSION}" https://github.com/juce-framework/JUCE.git ~/JUCE
+        ln -sf ~/JUCE JUCE
+
+    - name: Configure
+      run: |
+        mkdir -p build
+        cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+
+    - name: Build Plugins
+      run: cmake --build build --config Release -j"$(nproc)"
+
+    - name: Run unit tests
+      run: |
+        cd build
+        ctest --output-on-failure -C Release
+
+    - name: Download pluginval
+      run: |
+        curl -fsSL "https://github.com/Tracktion/pluginval/releases/download/${PLUGINVAL_VERSION}/pluginval_Linux.zip" -o pluginval.zip
+        unzip -q pluginval.zip
+        chmod +x pluginval
+
+    - name: Validate VST3 with pluginval
+      run: |
+        VST3_PATH="build/GenerativeMIDI_artefacts/Release/VST3/Generative MIDI.vst3"
+        test -d "${VST3_PATH}"
+        mkdir -p pluginval-logs
+        # Headless Linux: no display; skip GUI tests.
+        ./pluginval \
+          --validate-in-process \
+          --strictness-level 5 \
+          --skip-gui-tests \
+          --output-dir pluginval-logs \
+          "${VST3_PATH}"
+
+    - name: Upload pluginval logs
+      if: always()
+      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+      with:
+        name: pluginval-logs-Linux
+        path: pluginval-logs/
+        if-no-files-found: warn
+
+    - name: Upload Artifacts
+      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+      with:
+        name: GenerativeMIDI-Linux
+        path: |
+          build/GenerativeMIDI_artefacts/Release/VST3/**
+          build/GenerativeMIDI_artefacts/Release/Standalone/**
         if-no-files-found: error
