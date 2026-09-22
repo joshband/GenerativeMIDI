@@ -103,7 +103,7 @@
             <tbody>
               <tr>
                 <td>STATUS.md</td>
-                <td>v0.8.0 honest snapshot: 9 UI generators, 10 factory presets, Catch2/CI, roadmap</td>
+                <td>v0.8.0 honest snapshot: 9 UI generators, 10 factory presets, MIDI expression note-on emit, Catch2/CI</td>
                 <td><a href="https://github.com/joshband/GenerativeMIDI/blob/master/STATUS.md" rel="noopener noreferrer">blob</a></td>
               </tr>
               <tr>
@@ -113,7 +113,7 @@
               </tr>
               <tr>
                 <td>Tests/EngineTests.cpp</td>
-                <td>Catch2 suite (12+ cases): engines, mapping, clock, factory-preset smoke</td>
+                <td>Catch2 suite (14 cases): engines, mapping, clock, factory round-trip + import hardening</td>
                 <td><a href="https://github.com/joshband/GenerativeMIDI/blob/master/Tests/EngineTests.cpp" rel="noopener noreferrer">blob</a></td>
               </tr>
               <tr>
@@ -191,9 +191,9 @@
       <div class="section__inner">
         <p class="section__label">Roadmap</p>
         <h2 class="section__title" id="next-title">What’s next</h2>
-        <p>From STATUS high-priority items — planned, not shipped:</p>
+        <p>From STATUS — deferred depth, not missing basics:</p>
         <ul>
-          <li><strong>MIDI expression controls</strong> — aftertouch, channel pressure, pitch bend, CC surfaces in the UI.</li>
+          <li><strong>MIDI expression depth</strong> — EXPRESSION UI + note-on AT/PB/CC emit shipped (static PB offset); continuous CC/PB modulation and MPE remain deferred.</li>
           <li><strong>Polyrhythm layer controls</strong> — per-layer enable and visualization when Polyrhythm returns to the editor.</li>
         </ul>
         <p>No App Store timeline is implied. See STATUS.md and ENHANCEMENTS.md for the longer backlog.</p>
