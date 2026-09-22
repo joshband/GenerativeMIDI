@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Engineering · Josh Band · Generative MIDI</title>
+  <meta name="description" content="Engineering case study: architecture, realtime boundaries, parameter bridging, and on-disk proof for Generative MIDI.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Karla:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/site.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="site-nav">
+    <a class="site-nav__mark" href="index.html">Josh Band · Generative MIDI</a>
+    <nav aria-label="Primary">
+      <ul class="site-nav__links">
+        <li><a href="index.html">Home</a></li>
+        <li><a href="engineering.html" aria-current="page">Engineering</a></li>
+        <li><a href="https://github.com/joshband/GenerativeMIDI" rel="noopener noreferrer">GitHub</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <header class="page-intro">
+    <div class="page-intro__inner">
+      <p class="section__label">Case study</p>
+      <h1>Engineering</h1>
+      <p>A generative MIDI effect that owns timing-safe generation across multiple algorithmic engines, wrapped for real hosts, with decisions and evidence kept on disk.</p>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="section section--narrow" data-reveal aria-labelledby="thesis-title">
+      <div class="section__inner">
+        <p class="section__label">Problem</p>
+        <h2 class="section__title" id="thesis-title">Problem / thesis</h2>
+        <p>MIDI FX plugins fail employers’ diligence when the story stops at “clever UI.” The hard part is a coherent system: engines that generate musical events, a processor that bridges parameters safely, format wrappers that load in real DAWs, and records that show what was verified versus deferred.</p>
+        <p>Generative MIDI is that full stack for a macOS MIDI effect — development status <strong>v0.8.0</strong> per STATUS.md — built so architecture and proof are drillable without a scavenger hunt.</p>
+      </div>
+    </section>
+
+    <section class="section" data-reveal aria-labelledby="arch-title">
+      <div class="section__inner">
+        <p class="section__label">Architecture</p>
+        <h2 class="section__title" id="arch-title">Architecture</h2>
+        <p class="section__lead">Layers from host boundary inward: format clients, PluginProcessor (APVTS + lifecycle), core engines and MIDI scheduling, then editor/UI.</p>
+        <ul>
+          <li><strong>Core engines</strong> — Euclidean, Algorithmic (Markov, L-System, Cellular, Probabilistic), Stochastic (Brownian, Perlin, Drunk Walk, Lorenz); Polyrhythm retained in core.</li>
+          <li><strong>MIDI path</strong> — MIDIGenerator, clock/event scheduling, gate and ratchet controllers.</li>
+          <li><strong>PluginProcessor</strong> — parameters (31), generator dispatch, host callbacks.</li>
+          <li><strong>Formats</strong> — AU, VST3, Standalone build-verified; AUv3 configured in CMake with iOS documentation.</li>
+          <li><strong>Editor</strong> — LookAndFeel / steampunk craft; bitmap UI path documented; Polyrhythm not in current dropdown.</li>
+        </ul>
+        <figure class="diagram">
+          <img src="assets/signal-path.svg" width="920" height="160" alt="Illustrative signal path from DAW host through format wrapper, processor, engines, to MIDI out">
+          <figcaption>Illustrative signal path — not a measured trace.</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section class="section" data-reveal aria-labelledby="hard-title">
+      <div class="section__inner">
+        <p class="section__label">Hard parts</p>
+        <h2 class="section__title" id="hard-title">Where the work concentrates</h2>
+        <ul class="hard-parts">
+          <li>
+            <h3>Realtime / scheduling</h3>
+            <p>Note generation must respect host block timing. Gate length and ratchet features are described in STATUS with sample-accurate intent; verification today is manual testing plus successful format builds — not a published latency bench suite.</p>
+          </li>
+          <li>
+            <h3>Parameter bridging</h3>
+            <p>APVTS choices drive engines and UI. Live boundary: the processor parameter list still includes Polyrhythm as a generator choice, while the editor combo exposes nine generators without Polyrhythm — a mismatch that belongs on the honesty ledger until reconciled.</p>
+          </li>
+          <li>
+            <h3>Bypass / lifecycle</h3>
+            <p>JUCE plugin client lifecycle (prepare, process, editor attach) plus COPY_PLUGIN_AFTER_BUILD install paths. Host integration is evidenced by build artifacts and developer build docs, not by claiming every DAW certified.</p>
+          </li>
+          <li>
+            <h3>Measurement contracts</h3>
+            <p>On-disk contracts are STATUS.md, BUILD_VERIFICATION.md, and CHANGELOG — not invented coverage percentages. Prefer “build passed / feature listed” over marketing metrics.</p>
+          </li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="section" data-reveal aria-labelledby="proof-title">
+      <div class="section__inner">
+        <p class="section__label">Proof</p>
+        <h2 class="section__title" id="proof-title">Proof table</h2>
+        <p class="section__lead">Links open the repository evidence on GitHub (<code>master</code>).</p>
+        <div class="table-wrap">
+          <table class="proof-table">
+            <thead>
+              <tr>
+                <th scope="col">Evidence</th>
+                <th scope="col">What it shows</th>
+                <th scope="col">Link</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>STATUS.md</td>
+                <td>v0.8.0 feature checklist, 31 parameters, manual testing note, roadmap</td>
+                <td><a href="https://github.com/joshband/GenerativeMIDI/blob/master/STATUS.md" rel="noopener noreferrer">blob</a></td>
+              </tr>
+              <tr>
+                <td>BUILD_VERIFICATION.md</td>
+                <td>macOS AU / VST3 / Standalone build pass after submodule migration</td>
+                <td><a href="https://github.com/joshband/GenerativeMIDI/blob/master/BUILD_VERIFICATION.md" rel="noopener noreferrer">blob</a></td>
+              </tr>
+              <tr>
+                <td>CHANGELOG.md</td>
+                <td>Versioned behavior history (Keep a Changelog)</td>
+                <td><a href="https://github.com/joshband/GenerativeMIDI/blob/master/CHANGELOG.md" rel="noopener noreferrer">blob</a></td>
+              </tr>
+              <tr>
+                <td>CMakeLists.txt</td>
+                <td>Plugin formats: AU, AUv3, VST3, Standalone; manufacturer codes</td>
+                <td><a href="https://github.com/joshband/GenerativeMIDI/blob/master/CMakeLists.txt" rel="noopener noreferrer">blob</a></td>
+              </tr>
+              <tr>
+                <td>docs/developer/BUILD.md</td>
+                <td>Build and install instructions for developers</td>
+                <td><a href="https://github.com/joshband/GenerativeMIDI/blob/master/docs/developer/BUILD.md" rel="noopener noreferrer">blob</a></td>
+              </tr>
+              <tr>
+                <td>docs/design/SYNAPTIK_UI_SPEC.md</td>
+                <td>UI specification / craft direction</td>
+                <td><a href="https://github.com/joshband/GenerativeMIDI/blob/master/docs/design/SYNAPTIK_UI_SPEC.md" rel="noopener noreferrer">blob</a></td>
+              </tr>
+              <tr>
+                <td>docs/sessions/</td>
+                <td>Day-by-day implementation logs</td>
+                <td><a href="https://github.com/joshband/GenerativeMIDI/blob/master/docs/sessions/README.md" rel="noopener noreferrer">blob</a></td>
+              </tr>
+              <tr>
+                <td>REPOSITORY_AUDIT_2025-10-18.md</td>
+                <td>Archive decisions (modulation, polyrhythm UI), active structure</td>
+                <td><a href="https://github.com/joshband/GenerativeMIDI/blob/master/REPOSITORY_AUDIT_2025-10-18.md" rel="noopener noreferrer">blob</a></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" data-reveal aria-labelledby="decisions-title">
+      <div class="section__inner">
+        <p class="section__label">Decisions</p>
+        <h2 class="section__title" id="decisions-title">Selected design-decision highlights</h2>
+        <ul class="decisions">
+          <li>
+            <strong>Procedural LookAndFeel vs bitmap path</strong>
+            <span>Victorian steampunk craft started as custom drawing; bitmap UI infrastructure and Synaptik asset specs document the next craft layer without claiming finished product polish.</span>
+          </li>
+          <li>
+            <strong>SynaptikUIToolkit as git submodule</strong>
+            <span>Shared UI toolkit lives in <code>art/</code> as a submodule; build verification records that formats still built after the migration.</span>
+          </li>
+          <li>
+            <strong>Modulation system archived</strong>
+            <span>Incomplete modulation v1 moved under <code>archive/</code> rather than left half-wired in the editor — honesty over feature theater.</span>
+          </li>
+          <li>
+            <strong>Polyrhythm deferred from UI</strong>
+            <span>Engine and parameter choice retained; editor dropdown currently lists nine generators. Boundary is explicit until UI and params are reconciled.</span>
+          </li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="section section--narrow" data-reveal aria-labelledby="next-title">
+      <div class="section__inner">
+        <p class="section__label">Roadmap</p>
+        <h2 class="section__title" id="next-title">What’s next</h2>
+        <p>From STATUS high-priority items — planned, not shipped:</p>
+        <ul>
+          <li><strong>MIDI expression controls</strong> — aftertouch, channel pressure, pitch bend, CC surfaces in the UI.</li>
+          <li><strong>Polyrhythm layer controls</strong> — per-layer enable and visualization when Polyrhythm returns to the editor.</li>
+        </ul>
+        <p>No App Store timeline is implied. See STATUS.md and ENHANCEMENTS.md for the longer backlog.</p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="site-footer__inner">
+      <p>Josh Band · Generative MIDI · Engineering</p>
+      <p><a href="index.html">Home</a> · <a href="https://github.com/joshband/GenerativeMIDI" rel="noopener noreferrer">Source</a></p>
+    </div>
+  </footer>
+
+  <script src="assets/site.js" defer></script>
+</body>
+</html>
