@@ -8,7 +8,7 @@ Workflow: [`.github/workflows/ci.yml`](../../.github/workflows/ci.yml)
 |-----|--------|--------------|
 | **Build iOS/iPadOS AUv3** | `macos-latest` | CMake iOS + `xcodebuild` AUv3; uploads `.app` |
 | **Build macOS Plugins** | `macos-latest` | AU / AUv3 / VST3 / Standalone, `ctest`, **pluginval** on VST3 |
-| **Build Windows VST3** | `windows-latest` | VST3 + Standalone (VS 2022), `ctest`, **pluginval** on VST3 |
+| **Build Windows VST3** | `windows-2022` | VST3 + Standalone (VS 2022), `ctest`, **pluginval** on VST3 |
 | **Build Linux VST3** | `ubuntu-22.04` | VST3 + Standalone, `ctest`, **pluginval** on VST3 |
 
 Pinned toolchain:
@@ -39,7 +39,7 @@ Logs upload as `pluginval-logs-{macOS,Windows,Linux}` (warn if empty so a failed
 
 1. **MIDI effect + pluginval:** Strictness >5 or GUI tests may flake on MIDI-only buses; raise carefully.
 2. **Linux WebKit / ALSA:** Browser module is disabled (`JUCE_WEB_BROWSER=0`); audio deps are apt-installed for JUCE. JACK is optional runtime. pkg-config may still warn about missing `libcurl` / WebKit / GTK — harmless with those flags off.
-3. **Windows + Visual Studio discovery:** Configure/build use the default PowerShell shell. Running `cmake -G "Visual Studio 17 2022"` from Git Bash often fails with “could not find any instance of Visual Studio.” JUCE is cloned into `./JUCE` (no symlink) so Windows does not depend on `ln`.
+3. **Windows runner + VS discovery:** Job pins `windows-2022` because `windows-latest` may ship Visual Studio 2026 only (CMake `-G "Visual Studio 17 2022"` then fails). Configure/build use PowerShell — Git Bash often cannot find VS either. JUCE is cloned into `./JUCE` (no symlink).
 4. **Windows artifact paths:** Multi-config VS layout under `build/GenerativeMIDI_artefacts/Release/…`.
 5. **iOS signing:** Unsigned CI build (`CODE_SIGNING_REQUIRED=NO`) — device/TestFlight needs local signing.
 6. **COPY_PLUGIN_AFTER_BUILD:** May attempt user plugin folders on the runner; CI still consumes in-tree artefacts for upload/pluginval.

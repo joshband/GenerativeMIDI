@@ -128,7 +128,8 @@ jobs:
 
   build-windows:
     name: Build Windows VST3
-    runs-on: windows-latest
+    # Pin windows-2022: windows-latest may be VS 2026-only, which breaks -G "Visual Studio 17 2022".
+    runs-on: windows-2022
 
     steps:
     - name: Checkout code
