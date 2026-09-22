@@ -165,6 +165,17 @@ juce::AudioProcessorValueTreeState::ParameterLayout GenerativeMIDIProcessor::cre
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
         PARAM_CC_AMOUNT, "CC Amount", 0.0f, 1.0f, 0.5f));
 
+    // Modulation v2 MVP: one LFO → velocity (see docs/developer/MODULATION_V2.md)
+    params.push_back(std::make_unique<juce::AudioParameterBool>(
+        PARAM_MOD_LFO_ENABLE, "Mod LFO Enable", false));
+
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(
+        PARAM_MOD_LFO_RATE, "Mod LFO Rate",
+        juce::NormalisableRange<float>(0.01f, 20.0f, 0.01f, 0.4f), 1.0f));
+
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(
+        PARAM_MOD_LFO_DEPTH, "Mod LFO Depth", 0.0f, 1.0f, 0.25f));
+
     return {params.begin(), params.end()};
 }
 
@@ -233,6 +244,7 @@ void GenerativeMIDIProcessor::changeProgramName(int index, const juce::String& n
 void GenerativeMIDIProcessor::prepareToPlay(double sampleRate, int samplesPerBlock)
 {
     clockManager.setSampleRate(sampleRate);
+    modLfo.reset();
 
     // Update parameters from value tree
     auto tempo = parameters.getRawParameterValue(PARAM_TEMPO)->load();
@@ -335,7 +347,18 @@ void GenerativeMIDIProcessor::processBlock(juce::AudioBuffer<float>& buffer, juc
     }
 
     if (shouldAdvance)
+    {
         clockManager.advance(buffer.getNumSamples());
+
+        // Modulation v2: advance LFO in wall-clock time (RT-safe)
+        const double sr = getSampleRate();
+        if (sr > 0.0)
+        {
+            const float rate = parameters.getRawParameterValue(PARAM_MOD_LFO_RATE)->load();
+            modLfo.setRateHz(rate);
+            modLfo.advance(static_cast<double>(buffer.getNumSamples()) / sr);
+        }
+    }
 
     // Generate MIDI events
     processGenerativeOutput(midiMessages, buffer.getNumSamples());
@@ -406,9 +429,16 @@ void GenerativeMIDIProcessor::onSubdivisionHit(int subdivision)
     const int ccNumber = static_cast<int>(parameters.getRawParameterValue(PARAM_CC_NUMBER)->load());
     const float ccAmount = parameters.getRawParameterValue(PARAM_CC_AMOUNT)->load();
 
+    const bool modLfoEnable = parameters.getRawParameterValue(PARAM_MOD_LFO_ENABLE)->load() > 0.5f;
+    const float modLfoDepth = parameters.getRawParameterValue(PARAM_MOD_LFO_DEPTH)->load();
+    const float modLfoValue = modLfo.getBipolar();
+
     auto scheduleNote = [&](int pitch, float velocity, int stepForSwing)
     {
         velocity = swingEngine.humanizeVelocity(velocity);
+        if (modLfoEnable && modLfoDepth > 0.0f)
+            velocity = ModLfo::applyToUnipolar(velocity, modLfoValue, modLfoDepth);
+
         const int timingOffset = swingEngine.calculateTotalTimingOffset(
             stepForSwing, samplesPerStep, getSampleRate());
         const bool useRatcheting = ratchetEngine.shouldRatchet();

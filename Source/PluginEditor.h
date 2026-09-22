@@ -66,6 +66,11 @@ private:
     juce::Slider ccNumberSlider;
     juce::Slider ccAmountSlider;
 
+    // Modulation v2 MVP (LFO → velocity)
+    juce::TextButton modLfoEnableButton;
+    juce::Slider modLfoRateSlider;
+    juce::Slider modLfoDepthSlider;
+
     // Ratchet controls
     juce::Slider ratchetCountSlider;
     juce::Slider ratchetProbabilitySlider;
@@ -103,6 +108,8 @@ private:
     juce::Label pitchbendRangeLabel;
     juce::Label ccNumberLabel;
     juce::Label ccAmountLabel;
+    juce::Label modLfoRateLabel;
+    juce::Label modLfoDepthLabel;
     juce::Label ratchetCountLabel;
     juce::Label ratchetProbabilityLabel;
     juce::Label ratchetDecayLabel;
@@ -133,6 +140,9 @@ private:
     std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment> ccEnableAttachment;
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> ccNumberAttachment;
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> ccAmountAttachment;
+    std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment> modLfoEnableAttachment;
+    std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> modLfoRateAttachment;
+    std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> modLfoDepthAttachment;
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> ratchetCountAttachment;
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> ratchetProbabilityAttachment;
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> ratchetDecayAttachment;

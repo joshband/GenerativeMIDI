@@ -12,6 +12,8 @@
 #include "Core/GeneratorTypeMapping.h"
 #include "Core/StochasticEngine.h"
 #include "DSP/ClockManager.h"
+#include "Modulation/ModLfo.h"
+#include "Modulation/ModulationDestination.h"
 
 TEST_CASE("EuclideanEngine pulse count matches requested pulses", "[euclidean]")
 {
@@ -396,4 +398,26 @@ TEST_CASE("PresetManager importPreset rejects unsafe or invalid files", "[preset
         REQUIRE(manager.getNumPresets() == baselineCount);
         file.deleteFile();
     }
+}
+
+TEST_CASE("ModLfo bipolar sine stays in range and advances", "[modulation]")
+{
+    ModLfo lfo;
+    lfo.setRateHz(1.0f);
+    lfo.reset();
+
+    REQUIRE(lfo.getBipolar() == Catch::Approx(0.0f).margin(1.0e-5f));
+
+    // Advance a quarter period at 1 Hz → ~+1
+    lfo.advance(0.25);
+    REQUIRE(lfo.getBipolar() == Catch::Approx(1.0f).margin(0.02f));
+
+    // Half period from start → ~0 (after another quarter)
+    lfo.advance(0.25);
+    REQUIRE(lfo.getBipolar() == Catch::Approx(0.0f).margin(0.02f));
+
+    REQUIRE(ModLfo::applyToUnipolar(0.5f, 1.0f, 0.25f) == Catch::Approx(0.75f));
+    REQUIRE(ModLfo::applyToUnipolar(0.1f, -1.0f, 0.5f) == Catch::Approx(0.0f));
+    REQUIRE(kModulationDestinationCount >= 2);
+    REQUIRE(static_cast<int>(ModulationDestination::Velocity) == 0);
 }
