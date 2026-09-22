@@ -1,5 +1,9 @@
 # Quick Start Guide for Reaper
 
+## Agent / QA automation
+
+For Cursor agents: TwelveTake REAPER MCP setup and GenerativeMIDI transport-gate helpers live under [`docs/qa/reaper/MCP_SETUP.md`](../qa/reaper/MCP_SETUP.md) (not required for normal music use).
+
 ## Fixed Issues ✅
 
 The plugin has been updated to properly output MIDI. The issue was that generated MIDI events weren't being copied to the output buffer.

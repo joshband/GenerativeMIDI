@@ -1,0 +1,16 @@
+Generator combo menu items (Debug Standalone rebuilt 2026-09-22 18:23:48)
+Evidence: docs/qa/logs/standalone_generator_menu.png
+Source: Source/PluginEditor.cpp addItemList (10 gens)
+
+1. Euclidean (selected)
+2. Polyrhythm   <<< PRESENT after rebuild (was missing on stale 14:40 Debug binary)
+3. Markov
+4. L-System
+5. Cellular
+6. Probabilistic
+7. Brownian
+8. Perlin Noise
+9. Drunk Walk
+10. Lorenz
+
+Root cause of earlier miss: CMAKE_BUILD_TYPE was Release; Debug Standalone artefact was stale (mtime Sep 22 14:40).

@@ -1,0 +1,17 @@
+=== Phase C REAPER ===
+total 0
+drwxr-xr-x@  3 artbox  admin   96 Sep 13 09:58 .
+drwxrwxr-x  27 root    admin  864 Sep 22 17:58 ..
+drwxr-xr-x@ 11 artbox  admin  352 Sep 13 09:59 Contents
+12222 /Applications/REAPER.app/Contents/MacOS/REAPER
+REAPER_AX_OK windows=3
+REAPER binary present; Lua probe path: docs/qa/reaper/transport_gate_probe.lua
+Agent cannot auto-insert Generative MIDI FX without Reaper MCP; documenting operator-assisted path.
+-rw-r--r--@ 1 artbox  staff  889327 Sep 22 18:27 docs/qa/logs/reaper_launched.png
+
+=== Phase C summary 2026-09-22T22:28:17Z ===
+REAPER: installed and launched (AX OK, windows>=1)
+Screenshot: docs/qa/logs/reaper_launched.png
+transport_gate_probe.lua: NOT auto-executed with Generative MIDI on track (no Reaper MCP / FX insert automation)
+Status: PARTIAL — host present + script ready; play/stop MIDI gate remains operator-assisted
+Code-path gate still documented in PluginProcessor processBlock playhead check

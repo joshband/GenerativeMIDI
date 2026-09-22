@@ -126,6 +126,8 @@ Debug builds include:
 - Assertions enabled
 - Easier to debug with LLDB/GDB
 
+**Single-config caveat:** On macOS with Ninja/Makefiles, `CMAKE_BUILD_TYPE` is fixed at configure time. If you configure `Release` then later only rebuild the Debug Standalone target, you can keep a **stale** Debug `.app` while Release artefacts update. Prefer separate trees (`build-debug/` / `build-release/`) or reconfigure with `-DCMAKE_BUILD_TYPE=Debug` before UI smoke. Host QA used this when the Polyrhythm menu looked missing until Debug Standalone was force-rebuilt.
+
 ## Clean Build
 
 ```bash

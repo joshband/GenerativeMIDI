@@ -1,2 +1,5 @@
-Generative MIDI
-AX_ERROR -25211: osascript is not allowed assistive access.
+windows=1
+buttons=minimisecloseOptionsPresetsLegatoATPBCC
+popups=missing valuemissing valuemissing valuemissing value
+checkboxes=
+labels_sample=S Y N A P T I KNo PresetGeneratorMIDI ChTempoStepsPulsesRotationProbabilityVelocity RangePitch RangeScaleSwingTimingVel Var

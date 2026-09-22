@@ -1,0 +1,2 @@
+513:525: execution error: System Events got an error: Can’t get pop up button 1 of window "Generative MIDI" of application process "Generative MIDI". Invalid index. (-1719)
+291:296: execution error: System Events got an error: Can’t get pop up button 1 of window 1 of process "Generative MIDI". Invalid index. (-1719)

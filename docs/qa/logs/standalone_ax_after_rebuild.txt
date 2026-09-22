@@ -1,0 +1,19 @@
+windows=1
+window=Generative MIDI
+popup_buttons=4
+popup[1] value=Euclidean desc=
+popup[2] value=1 desc=
+popup[3] value=C desc=
+popup[4] value=Chromatic desc=
+buttons=9
+button[1]=minimise
+button[2]=close
+button[3]=Options
+button[4]=Presets
+button[5]=Legato
+button[6]=AT
+button[7]=PB
+button[8]=CC
+button[9]=LFO
+all_popup_values=Euclidean1CChromatic
+OK popups=4 nested=4

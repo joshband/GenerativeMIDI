@@ -1,0 +1,13 @@
+popup1 value=[Euclidean] desc=[] pos=205393
+popup2 value=[1] desc=[] pos=205448
+popup3 value=[C] desc=[] pos=520593
+popup4 value=[Chromatic] desc=[] pos=520623
+button1 name=[minimise] pos=1493107
+button2 name=[close] pos=1524107
+button3 name=[Options] pos=162112
+button4 name=[Presets] pos=1360148
+button5 name=[Legato] pos=1085578
+button6 name=[AT] pos=197701
+button7 name=[PB] pos=344701
+button8 name=[CC] pos=491701
+

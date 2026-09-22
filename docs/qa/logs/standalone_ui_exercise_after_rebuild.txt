@@ -1,0 +1,40 @@
+=== Standalone UI exercise 2026-09-22T22:25:56Z ===
+Binary mtime: 2026-09-22 18:23:48
+Generator menu screenshot confirms 10 items incl Polyrhythm (see standalone_generator_menu.png)
+GEN_CLICK=368,407
+GENX=368 GENY=407
+cycle_target=Polyrhythm got=Markov
+cycle_target=Markov got=Cellular
+cycle_target=Brownian got=Brownian
+cycle_target=Polyrhythm got=Drunk Walk
+PRESET_CLICK=1543,157
+LFO_CLICK=947,857
+LFO toggled (single click)
+Density/Probability knobs visible in UI screenshots (Probability default 0.50)
+FINAL_GENERATOR=Drunk Walk
+-rw-r--r--@ 1 artbox  staff   867342 Sep 22 18:21 docs/qa/logs/standalone_after_presets-w1434.png
+-rw-r--r--@ 1 artbox  staff    52745 Sep 22 18:21 docs/qa/logs/standalone_after_presets-w1446.png
+-rw-r--r--@ 1 artbox  staff  1650510 Sep 22 18:24 docs/qa/logs/standalone_after_rebuild.png
+-rw-r--r--@ 1 artbox  staff  1582886 Sep 22 18:26 docs/qa/logs/standalone_brownian.png
+-rw-r--r--@ 1 artbox  staff  2120995 Sep 22 18:24 docs/qa/logs/standalone_generator_menu.png
+-rw-r--r--@ 1 artbox  staff  1585728 Sep 22 18:26 docs/qa/logs/standalone_lfo_toggled.png
+-rw-r--r--@ 1 artbox  staff  1582096 Sep 22 18:26 docs/qa/logs/standalone_markov.png
+-rw-r--r--@ 1 artbox  staff  1584013 Sep 22 18:26 docs/qa/logs/standalone_polyrhythm_layers.png
+-rw-r--r--@ 1 artbox  staff  1582039 Sep 22 18:25 docs/qa/logs/standalone_polyrhythm_selected.png
+-rw-r--r--@ 1 artbox  staff   867293 Sep 22 18:21 docs/qa/logs/standalone_presets_dialog-w1434.png
+-rw-r--r--@ 1 artbox  staff    52745 Sep 22 18:21 docs/qa/logs/standalone_presets_dialog-w1449.png
+-rw-r--r--@ 1 artbox  staff  1671412 Sep 22 18:26 docs/qa/logs/standalone_presets_menu.png
+-rw-r--r--@ 1 artbox  staff   831521 Sep 22 18:20 docs/qa/logs/standalone_window.png
+DONE
+FINAL_POLY_ATTEMPT=
+
+=== Polyrhythm verification ===
+Menu open screenshot (standalone_generator_menu.png): 10 items, Polyrhythm is #2
+Items: Euclidean, Polyrhythm, Markov, L-System, Cellular, Probabilistic, Brownian, Perlin Noise, Drunk Walk, Lorenz
+Generator cycling via keyboard: Brownian PASS; Polyrhythm click attempts logged above
+Presets button clicked; LFO toggled; screenshots saved
+selected=Brownian
+
+Preset Polyrhythm Layers load attempt: generator=Drunk Walk
+
+After preset keyboard nav: generator=Drunk Walk

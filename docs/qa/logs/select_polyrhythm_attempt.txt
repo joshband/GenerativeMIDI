@@ -1,0 +1,6 @@
+before=Euclidean
+path1 err -1719: System Events got an error: Can’t get pop up button 1 of window "Generative MIDI" of application process "Generative MIDI". Invalid index.
+after=AX_UNAVAILABLE
+FINAL=Euclidean
+
+PYTHON_SELECT=FAILED (menu presence still proven by standalone_generator_menu.png)

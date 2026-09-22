@@ -72,11 +72,11 @@
         <ul class="hard-parts">
           <li>
             <h3>Realtime / scheduling</h3>
-            <p>Note generation must respect host block timing. Gate length and ratchet features are described in STATUS with sample-accurate intent. Steady-state hot path is allocation-hardened (Euclidean regen, ratchet offsets, algorithmic single-note, EventScheduler pre-reserved queue; over-capacity schedules dropped). Residual risk called out in STATUS: trained Markov map-key vector on lookup. Engine behavior is covered by Catch2 / <code>ctest</code> in CI (<strong>14</strong> tests); host timing still relies on historical format builds and the manual <a href="https://github.com/joshband/GenerativeMIDI/blob/master/docs/user/SMOKE_CHECKLIST.md" rel="noopener noreferrer">smoke checklist</a> — not a published latency bench suite.</p>
+            <p>Note generation must respect host block timing. Gate length and ratchet features are described in STATUS with sample-accurate intent. Steady-state hot path is allocation-hardened (Euclidean regen, ratchet offsets, algorithmic single-note, EventScheduler pre-reserved queue; over-capacity schedules dropped). Residual risk called out in STATUS: trained Markov map-key vector on lookup. Engine behavior is covered by Catch2 / <code>ctest</code> in CI (<strong>20</strong> tests); host transport gating is exercised via REAPER + TwelveTake MCP and the manual <a href="https://github.com/joshband/GenerativeMIDI/blob/master/docs/user/SMOKE_CHECKLIST.md" rel="noopener noreferrer">smoke checklist</a> — not a published latency bench suite.</p>
           </li>
           <li>
             <h3>Parameter bridging</h3>
-            <p>APVTS choices drive engines and UI. The live generator choice list matches the editor: <strong>nine</strong> generators (Euclidean + 4 algorithmic + 4 stochastic). Polyrhythm remains in core sources only — deferred from APVTS and the dropdown (no UI/param mismatch claim).</p>
+            <p>APVTS choices drive engines and UI. The live generator choice list matches the editor: <strong>ten</strong> generators (Euclidean, experimental Polyrhythm, 4 algorithmic, 4 stochastic). Session migration bumps older 9-choice layouts to the current map.</p>
           </li>
           <li>
             <h3>Bypass / lifecycle</h3>
@@ -84,7 +84,7 @@
           </li>
           <li>
             <h3>Measurement contracts</h3>
-            <p>On-disk contracts are STATUS.md, BUILD_VERIFICATION.md, CHANGELOG, CI (<code>.github/workflows/ci.yml</code> + Catch2 / <code>ctest</code> ×14), and the manual <a href="https://github.com/joshband/GenerativeMIDI/blob/master/docs/user/SMOKE_CHECKLIST.md" rel="noopener noreferrer">SMOKE_CHECKLIST</a> — not invented coverage percentages. Prefer “build passed / tests ran / feature listed / smoke steps exercised” over marketing metrics.</p>
+            <p>On-disk contracts are STATUS.md, BUILD_VERIFICATION.md, CHANGELOG, CI (<code>.github/workflows/ci.yml</code> + Catch2 / <code>ctest</code> ×20), <a href="https://github.com/joshband/GenerativeMIDI/blob/master/docs/qa/QA_FINDINGS_v0.8.0.md" rel="noopener noreferrer">QA findings</a>, and the manual <a href="https://github.com/joshband/GenerativeMIDI/blob/master/docs/user/SMOKE_CHECKLIST.md" rel="noopener noreferrer">SMOKE_CHECKLIST</a> — not invented coverage percentages. Prefer “build passed / tests ran / feature listed / smoke steps exercised” over marketing metrics.</p>
           </li>
         </ul>
       </div>
@@ -107,23 +107,33 @@
             <tbody>
               <tr>
                 <td>STATUS.md</td>
-                <td>v0.8.0 honest snapshot: 9 UI generators, 10 factory presets, MIDI expression note-on emit, realtime hot-path notes, Catch2/CI</td>
+                <td>v0.8.0 honest snapshot: 10 UI generators (incl. experimental Polyrhythm), 11 factory presets, MIDI expression note-on emit, realtime hot-path notes, Catch2/CI, Host/UI smoke</td>
                 <td><a href="https://github.com/joshband/GenerativeMIDI/blob/master/STATUS.md" rel="noopener noreferrer">blob</a></td>
               </tr>
               <tr>
                 <td>.github/workflows/ci.yml</td>
-                <td>Canonical CI: macOS plugin build + <code>ctest</code> (14); iOS AUv3 build job</td>
+                <td>Canonical CI: macOS plugin build + <code>ctest</code> (20); iOS AUv3 build job; pluginval VST3</td>
                 <td><a href="https://github.com/joshband/GenerativeMIDI/blob/master/.github/workflows/ci.yml" rel="noopener noreferrer">blob</a></td>
               </tr>
               <tr>
                 <td>Tests/EngineTests.cpp</td>
-                <td>Catch2 suite (20+ cases): engines, mapping, migration, clock, factory round-trip, import hardening, ModLfo, polyrhythm rate</td>
+                <td>Catch2 suite (20 cases): engines, mapping, migration, clock, factory round-trip, import hardening, ModLfo, polyrhythm rate</td>
                 <td><a href="https://github.com/joshband/GenerativeMIDI/blob/master/Tests/EngineTests.cpp" rel="noopener noreferrer">blob</a></td>
               </tr>
               <tr>
                 <td>docs/user/SMOKE_CHECKLIST.md</td>
                 <td>Manual Standalone/DAW smoke: 10 generators, factories, expression, LFO, channel routing (not automated UI tests)</td>
                 <td><a href="https://github.com/joshband/GenerativeMIDI/blob/master/docs/user/SMOKE_CHECKLIST.md" rel="noopener noreferrer">blob</a></td>
+              </tr>
+              <tr>
+                <td>docs/qa/QA_FINDINGS_v0.8.0.md</td>
+                <td>Host/UI campaign: ctest/auval/pluginval, Standalone Polyrhythm menu proof, REAPER transport gate via TwelveTake MCP</td>
+                <td><a href="https://github.com/joshband/GenerativeMIDI/blob/master/docs/qa/QA_FINDINGS_v0.8.0.md" rel="noopener noreferrer">blob</a></td>
+              </tr>
+              <tr>
+                <td>docs/qa/reaper/MCP_SETUP.md</td>
+                <td>TwelveTake REAPER MCP install + GenerativeMIDI transport-gate helpers (agent Host QA)</td>
+                <td><a href="https://github.com/joshband/GenerativeMIDI/blob/master/docs/qa/reaper/MCP_SETUP.md" rel="noopener noreferrer">blob</a></td>
               </tr>
               <tr>
                 <td>BUILD_VERIFICATION.md</td>

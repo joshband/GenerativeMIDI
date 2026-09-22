@@ -57,6 +57,8 @@ See [PRESET_GUIDE.md](PRESET_GUIDE.md). Indices match the **10-generator** APVTS
 | **DAW — Play** | Notes generate while host is playing | ☐ | |
 | **DAW — Stop** | New notes stop while host is stopped | ☐ | |
 
+**Agent path (REAPER):** With TwelveTake MCP configured ([MCP_SETUP.md](../qa/reaper/MCP_SETUP.md)), create a clean project, insert Generative MIDI + ReaSynth ([FX_NAMES.md](../qa/reaper/FX_NAMES.md)), play ~3s, stop. Or run [`create_transport_gate_session.lua`](../qa/reaper/create_transport_gate_session.lua) then [`transport_gate_probe.lua`](../qa/reaper/transport_gate_probe.lua). Latest campaign results: [SMOKE_CHECKLIST_RESULTS.md](../qa/logs/SMOKE_CHECKLIST_RESULTS.md).
+
 ---
 
 ## 4. MIDI expression: AT / PB / CC on note-on (static PB — not MPE)

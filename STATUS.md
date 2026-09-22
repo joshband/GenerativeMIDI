@@ -70,6 +70,7 @@ Full router / multi-source panel — not part of current LFO MVP.
 
 - Prefer CMake; initialize `art/` with `git submodule update --init --recursive`.
 - **Realtime**: Euclidean regen, ratchet, algorithmic single-note, EventScheduler steady-state path allocation-free (queue pre-reserved). Residual: trained Markov map-key vector. Polyrhythm uses shared `scheduleNote` (expression intact).
+- **Host/UI smoke (2026-09-22):** Phase A green (ctest/auval/pluginval). Phase B: Debug Standalone rebuilt; generator menu shows **10 items including Polyrhythm** (earlier miss = stale Debug binary under `CMAKE_BUILD_TYPE=Release`). Phase C: TwelveTake REAPER MCP — insert Generative MIDI VST3 + ReaSynth, play/stop **PASS**. Details: [`docs/qa/QA_FINDINGS_v0.8.0.md`](docs/qa/QA_FINDINGS_v0.8.0.md); MCP setup: [`docs/qa/reaper/MCP_SETUP.md`](docs/qa/reaper/MCP_SETUP.md).
 
 **License**: MIT  
 **Repository**: https://github.com/joshband/GenerativeMIDI

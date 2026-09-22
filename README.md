@@ -183,6 +183,8 @@ Complete documentation is available in the [docs/](docs/) directory:
 - **[Preset Guide](docs/user/PRESET_GUIDE.md)** - Creating and managing presets
 - **[Smoke Checklist](docs/user/SMOKE_CHECKLIST.md)** - Manual Standalone/DAW smoke (v0.8.0)
 - **[REAPER Quick Start](docs/user/REAPER_QUICK_START.md)** - REAPER-specific setup
+- **[QA Findings v0.8.0](docs/qa/QA_FINDINGS_v0.8.0.md)** - Host/UI verification scorecard
+- **[REAPER MCP setup](docs/qa/reaper/MCP_SETUP.md)** - TwelveTake MCP for agent transport-gate QA
 
 ### Developer Documentation
 - **[Build Instructions](docs/developer/BUILD.md)** - Detailed build guide

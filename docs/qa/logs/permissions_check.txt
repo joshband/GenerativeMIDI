@@ -1,0 +1,11 @@
+=== Permissions check 2026-09-22T22:23:12Z ===
+Screen Recording: OK (screencapture exit 0, file written)
+Accessibility (System Events): OK
+Note: earlier -25211 may have been agent-specific; current shell can AX.
+
+=== Rebuild confirmation ===
+CMAKE_BUILD_TYPE was Release (cause of stale Debug Standalone).
+Reconfigured Debug; GenerativeMIDI_Standalone linked 2026-09-22 18:23:48
+2026-09-22 18:23:33 Source/PluginEditor.cpp
+2026-09-22 18:23:37 build/CMakeFiles/GenerativeMIDI.dir/Source/PluginEditor.cpp.o
+2026-09-22 18:23:48 build/GenerativeMIDI_artefacts/Debug/Standalone/Generative MIDI.app/Contents/MacOS/Generative MIDI

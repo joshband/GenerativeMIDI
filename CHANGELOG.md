@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Host/UI QA campaign artefacts under `docs/qa/` (findings, smoke results, Standalone/REAPER evidence).
+- TwelveTake REAPER MCP setup docs and transport-gate helpers (`docs/qa/reaper/`) for agent-driven Play/Stop verification.
+
+### Changed
+- GitHub Pages `docs/index.html` / `docs/engineering.html` proof table aligned with 10 UI generators, 20 `ctest` cases, and REAPER MCP Host QA evidence.
+
 ## [0.8.0] - 2025-10-18
 
 ### Added - MIDI Channel Routing & Enhanced UI

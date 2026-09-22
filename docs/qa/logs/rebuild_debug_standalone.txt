@@ -1,0 +1,976 @@
+-- Configuring juceaide
+-- Building juceaide
+-- Exporting juceaide
+-- Testing juceaide
+-- Finished setting up juceaide
+-- Configuring done (1.0s)
+-- Generating done (0.1s)
+-- Build files have been written to: /Users/artbox/Documents/Repos/GenerativeMIDI/build
+[  9%] Building CXX object CMakeFiles/GenerativeMIDI.dir/Source/Core/EuclideanEngine.cpp.o
+[  9%] Building CXX object CMakeFiles/GenerativeMIDI.dir/Source/Core/AlgorithmicEngine.cpp.o
+[  9%] Building CXX object CMakeFiles/GenerativeMIDI.dir/Source/Core/PolyrhythmEngine.cpp.o
+[  9%] Building CXX object CMakeFiles/GenerativeMIDI.dir/Source/Core/StochasticEngine.cpp.o
+[ 14%] Building CXX object CMakeFiles/GenerativeMIDI.dir/Source/Core/MIDIGenerator.cpp.o
+[ 14%] Building CXX object CMakeFiles/GenerativeMIDI.dir/Source/DSP/ClockManager.cpp.o
+[ 19%] Building CXX object CMakeFiles/GenerativeMIDI.dir/Source/DSP/EventScheduler.cpp.o
+[ 19%] Building CXX object CMakeFiles/GenerativeMIDI.dir/Source/PluginProcessor.cpp.o
+[ 23%] Building CXX object CMakeFiles/GenerativeMIDI.dir/Source/UI/PresetBrowser.cpp.o
+[ 23%] Building CXX object CMakeFiles/GenerativeMIDI.dir/Source/Core/PresetManager.cpp.o
+In file included from /Users/artbox/Documents/Repos/GenerativeMIDI/Source/Core/StochasticEngine.cpp:1:
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/Core/StochasticEngine.h:36:28: warning: declaration shadows a field of 'StochasticEngine' [-Wshadow]
+   36 |     void setMomentum(float momentum) { this->momentum = std::clamp(momentum, 0.0f, 1.0f); }
+      |                            ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/Core/StochasticEngine.h:90:11: note: previous declaration is here
+   90 |     float momentum;
+      |           ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/Core/StochasticEngine.h:37:25: warning: declaration shadows a field of 'StochasticEngine' [-Wshadow]
+   37 |     void setOctaves(int octaves) { this->octaves = std::clamp(octaves, 1, 8); }
+      |                         ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/Core/StochasticEngine.h:91:9: note: previous declaration is here
+   91 |     int octaves;              // For Perlin noise multi-octave
+      |         ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/Core/StochasticEngine.h:41:25: warning: declaration shadows a field of 'StochasticEngine' [-Wshadow]
+   41 |     void setSigma(float sigma) { this->sigma = sigma; }
+      |                         ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/Core/StochasticEngine.h:95:11: note: previous declaration is here
+   95 |     float sigma;              // Prandtl number (default: 10.0)
+      |           ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/Core/StochasticEngine.h:42:23: warning: declaration shadows a field of 'StochasticEngine' [-Wshadow]
+   42 |     void setRho(float rho) { this->rho = rho; }
+      |                       ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/Core/StochasticEngine.h:96:11: note: previous declaration is here
+   96 |     float rho;                // Rayleigh number (default: 28.0)
+      |           ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/Core/StochasticEngine.h:43:24: warning: declaration shadows a field of 'StochasticEngine' [-Wshadow]
+   43 |     void setBeta(float beta) { this->beta = beta; }
+      |                        ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/Core/StochasticEngine.h:97:11: note: previous declaration is here
+   97 |     float beta;               // Geometric factor (default: 8.0/3.0)
+      |           ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/Core/StochasticEngine.cpp:32:23: warning: implicit conversion changes signedness: 'result_type' (aka 'unsigned int') to 'int' [-Wsign-conversion]
+   32 |         int j = rng() % (i + 1);
+      |             ~   ~~~~~~^~~~~~~~~
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/Core/StochasticEngine.cpp:32:28: warning: implicit conversion changes signedness: 'int' to 'result_type' (aka 'unsigned int') [-Wsign-conversion]
+   32 |         int j = rng() % (i + 1);
+      |                       ~  ~~^~~
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/Core/StochasticEngine.cpp:91:73: warning: implicit conversion from 'int' to 'float' may lose precision [-Wimplicit-int-float-conversion]
+   91 |     int pitch = minPitch + static_cast<int>(normalizedPitch * (maxPitch - minPitch));
+      |                                                             ~  ~~~~~~~~~^~~~~~~~~~
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/Core/StochasticEngine.cpp:152:53: warning: implicit conversion from 'int' to 'float' may lose precision [-Wimplicit-int-float-conversion]
+  152 |         value += perlinNoise(noiseTime * frequency, i * 100.0f) * amplitude;
+      |                                                     ^ ~
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/Core/StochasticEngine.cpp:171:79: warning: implicit conversion from 'int' to 'float' may lose precision [-Wimplicit-int-float-conversion]
+  171 |         secondaryVal += perlinNoise(noiseTime * secondaryFrequency + 1000.0f, i * 100.0f) * secondaryAmplitude;
+      |                                                                               ^ ~
+10 warnings generated.
+[ 28%] Building CXX object CMakeFiles/GenerativeMIDI.dir/Source/PluginEditor.cpp.o
+In file included from /Users/artbox/Documents/Repos/GenerativeMIDI/Source/DSP/ClockManager.cpp:10:
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/DSP/ClockManager.h:45:47: warning: implicit conversion loses integer precision: 'const int64_t' (aka 'const long long') to 'int' [-Wshorten-64-to-32]
+   45 |     int getPositionInSamples() const { return currentSample; }
+      |                                        ~~~~~~ ^~~~~~~~~~~~~
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/DSP/ClockManager.cpp:60:48: warning: implicit conversion from 'int64_t' (aka 'long long') to 'double' may lose precision [-Wimplicit-int-float-conversion]
+   60 |     int previousSubdivision = static_cast<int>(previousSample / samplesPerSixteenth);
+      |                                                ^~~~~~~~~~~~~~ ~
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/DSP/ClockManager.cpp:61:47: warning: implicit conversion from 'int64_t' (aka 'long long') to 'double' may lose precision [-Wimplicit-int-float-conversion]
+   61 |     int currentSubdivision = static_cast<int>(currentSample / samplesPerSixteenth);
+      |                                               ^~~~~~~~~~~~~ ~
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/DSP/ClockManager.cpp:75:12: warning: implicit conversion from 'const int64_t' (aka 'const long long') to 'double' may lose precision [-Wimplicit-int-float-conversion]
+   75 |     return currentSample / getSamplesPerBeat();
+      |            ^~~~~~~~~~~~~ ~
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/DSP/ClockManager.cpp:103:49: warning: implicit conversion from 'const int64_t' (aka 'const long long') to 'double' may lose precision [-Wimplicit-int-float-conversion]
+  103 |     int quantized = static_cast<int>(std::round(currentSample / samplesPerSub) * samplesPerSub);
+      |                                                 ^~~~~~~~~~~~~ ~
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/Core/AlgorithmicEngine.cpp:16:30: warning: constructor parameter 'order' shadows the field 'order' of 'MarkovChain' [-Wshadow-field-in-constructor]
+   16 | MarkovChain::MarkovChain(int order) : order(order)
+      |                              ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/Core/AlgorithmicEngine.h:36:9: note: previous declaration is here
+   36 |     int order;
+      |         ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/Core/AlgorithmicEngine.cpp:22:22: warning: comparison of integers of different signs: 'size_type' (aka 'unsigned long') and 'int' [-Wsign-compare]
+   22 |     if (state.size() != order)
+      |         ~~~~~~~~~~~~ ^  ~~~~~
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/Core/AlgorithmicEngine.cpp:36:47: warning: implicit conversion changes signedness: 'int' to 'size_type' (aka 'unsigned long') [-Wsign-conversion]
+   36 |     for (size_t i = 0; i <= sequence.size() - order - 1; ++i)
+      |                                             ~ ^~~~~
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/Core/AlgorithmicEngine.cpp:38:73: warning: implicit conversion changes signedness: 'size_t' (aka 'unsigned long') to 'difference_type' (aka 'long') [-Wsign-conversion]
+   38 |         std::vector<int> state(sequence.begin() + i, sequence.begin() + i + order);
+      |                                                                       ~ ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/Core/AlgorithmicEngine.cpp:38:51: warning: implicit conversion changes signedness: 'size_t' (aka 'unsigned long') to 'difference_type' (aka 'long') [-Wsign-conversion]
+   38 |         std::vector<int> state(sequence.begin() + i, sequence.begin() + i + order);
+      |                                                 ~ ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/Core/AlgorithmicEngine.cpp:39:33: warning: implicit conversion changes signedness: 'int' to 'size_t' (aka 'unsigned long') [-Wsign-conversion]
+   39 |         int next = sequence[i + order];
+      |                               ~ ^~~~~
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/Core/AlgorithmicEngine.cpp:52:61: warning: implicit conversion from 'int' to 'float' may lose precision [-Wimplicit-int-float-conversion]
+   52 |             float probability = static_cast<float>(count) / total;
+      |                                                           ~ ^~~~~
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/Core/AlgorithmicEngine.cpp:30:25: warning: comparison of integers of different signs: 'size_type' (aka 'unsigned long') and 'int' [-Wsign-compare]
+   30 |     if (sequence.size() <= order)
+      |         ~~~~~~~~~~~~~~~ ^  ~~~~~
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/Core/EuclideanEngine.cpp:80:31: warning: implicit conversion from 'int' to 'float' may lose precision [-Wimplicit-int-float-conversion]
+   80 |     pulses = static_cast<int>(steps * juce::jlimit(0.0f, 1.0f, density));
+      |                               ^~~~~ ~
+In file included from /Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/PresetBrowser.cpp:2:
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/CustomLookAndFeel.h:133:23: warning: implicit conversion from 'int' to 'float' may lose precision [-Wimplicit-int-float-conversion]
+  133 |         auto radius = juce::jmin(width / 2, height / 2) - 8.0f;
+      |                       ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ ~
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/CustomLookAndFeel.h:134:28: warning: implicit conversion from 'int' to 'float' may lose precision [-Wimplicit-int-float-conversion]
+  134 |         auto centreX = x + width * 0.5f;
+      |                            ^~~~~ ~
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/CustomLookAndFeel.h:134:24: warning: implicit conversion from 'int' to 'float' may lose precision [-Wimplicit-int-float-conversion]
+  134 |         auto centreX = x + width * 0.5f;
+      |                        ^ ~
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/CustomLookAndFeel.h:135:28: warning: implicit conversion from 'int' to 'float' may lose precision [-Wimplicit-int-float-conversion]
+  135 |         auto centreY = y + height * 0.5f;
+      |                            ^~~~~~ ~
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/CustomLookAndFeel.h:135:24: warning: implicit conversion from 'int' to 'float' may lose precision [-Wimplicit-int-float-conversion]
+  135 |         auto centreY = y + height * 0.5f;
+      |                        ^ ~
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/CustomLookAndFeel.h:247:35: warning: implicit conversion from 'int' to 'float' may lose precision [-Wimplicit-int-float-conversion]
+  247 |                 float tickAngle = i * (juce::MathConstants<float>::twoPi / 12.0f) - juce::MathConstants<float>::halfPi;
+      |                                   ^ ~
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/CustomLookAndFeel.h:363:36: warning: implicit conversion from 'int' to 'float' may lose precision [-Wimplicit-int-float-conversion]
+  363 |                 float thumbWidth = width * 1.2f;
+      |                                    ^~~~~ ~
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/CustomLookAndFeel.h:364:63: warning: implicit conversion from 'int' to 'float' may lose precision [-Wimplicit-int-float-conversion]
+  364 |                 auto thumbBounds = juce::Rectangle<float>(x + width * 0.5f - thumbWidth * 0.5f,
+      |                                                               ^~~~~ ~
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/CustomLookAndFeel.h:364:59: warning: implicit conversion from 'int' to 'float' may lose precision [-Wimplicit-int-float-conversion]
+  364 |                 auto thumbBounds = juce::Rectangle<float>(x + width * 0.5f - thumbWidth * 0.5f,
+      |                                                           ^ ~
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/CustomLookAndFeel.h:387:69: warning: implicit conversion from 'int' to 'float' may lose precision [-Wimplicit-int-float-conversion]
+  387 |         auto trackWidth = juce::jmin(10.0f, slider.isHorizontal() ? height * 0.3f : width * 0.3f);
+      |                                                                     ^~~~~~ ~
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/CustomLookAndFeel.h:387:85: warning: implicit conversion from 'int' to 'float' may lose precision [-Wimplicit-int-float-conversion]
+  387 |         auto trackWidth = juce::jmin(10.0f, slider.isHorizontal() ? height * 0.3f : width * 0.3f);
+      |                                                                                     ^~~~~ ~
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/CustomLookAndFeel.h:391:51: warning: implicit conversion from 'int' to 'float' may lose precision [-Wimplicit-int-float-conversion]
+  391 |             track = { static_cast<float>(x), y + (height - trackWidth) * 0.5f,
+      |                                                   ^~~~~~ ~
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/CustomLookAndFeel.h:391:46: warning: implicit conversion from 'int' to 'float' may lose precision [-Wimplicit-int-float-conversion]
+  391 |             track = { static_cast<float>(x), y + (height - trackWidth) * 0.5f,
+      |                                              ^ ~
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/CustomLookAndFeel.h:394:28: warning: implicit conversion from 'int' to 'float' may lose precision [-Wimplicit-int-float-conversion]
+  394 |             track = { x + (width - trackWidth) * 0.5f, static_cast<float>(y),
+      |                            ^~~~~ ~
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/CustomLookAndFeel.h:394:23: warning: implicit conversion from 'int' to 'float' may lose precision [-Wimplicit-int-float-conversion]
+  394 |             track = { x + (width - trackWidth) * 0.5f, static_cast<float>(y),
+      |                       ^ ~
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/CustomLookAndFeel.h:412:67: warning: implicit conversion from 'int' to 'float' may lose precision [-Wimplicit-int-float-conversion]
+  412 |             valueFill = { track.getX(), track.getY(), sliderPos - x, track.getHeight() };
+      |                                                                 ~ ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/CustomLookAndFeel.h:432:41: warning: implicit conversion from 'int' to 'float' may lose precision [-Wimplicit-int-float-conversion]
+  432 |             thumbPos = { sliderPos, y + height * 0.5f };
+      |                                         ^~~~~~ ~
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/CustomLookAndFeel.h:432:37: warning: implicit conversion from 'int' to 'float' may lose precision [-Wimplicit-int-float-conversion]
+  432 |             thumbPos = { sliderPos, y + height * 0.5f };
+      |                                     ^ ~
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/CustomLookAndFeel.h:434:30: warning: implicit conversion from 'int' to 'float' may lose precision [-Wimplicit-int-float-conversion]
+  434 |             thumbPos = { x + width * 0.5f, sliderPos };
+      |                              ^~~~~ ~
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/CustomLookAndFeel.h:434:26: warning: implicit conversion from 'int' to 'float' may lose precision [-Wimplicit-int-float-conversion]
+  434 |             thumbPos = { x + width * 0.5f, sliderPos };
+      |                          ^ ~
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/CustomLookAndFeel.h:331:49: warning: unused parameter 'minSliderPos' [-Wunused-parameter]
+  331 |                          float sliderPos, float minSliderPos, float maxSliderPos,
+      |                                                 ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/CustomLookAndFeel.h:331:69: warning: unused parameter 'maxSliderPos' [-Wunused-parameter]
+  331 |                          float sliderPos, float minSliderPos, float maxSliderPos,
+      |                                                                     ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/CustomLookAndFeel.h:332:58: warning: unused parameter 'style' [-Wunused-parameter]
+  332 |                          const juce::Slider::SliderStyle style, juce::Slider& slider) override
+      |                                                          ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/Core/AlgorithmicEngine.cpp:139:34: warning: implicit conversion loses integer precision: 'juce_wchar' (aka 'wchar_t') to 'const key_type' (aka 'const char') [-Wimplicit-int-conversion]
+  139 |             auto it = rules.find(c);
+      |                             ~~~~ ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/CustomLookAndFeel.h:554:16: warning: 'Font' is deprecated: Use the constructor that takes a FontOptions argument [-Wdeprecated-declarations]
+  554 |         return juce::Font(label.getHeight() * 0.7f, juce::Font::bold);
+      |                ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/JUCE/modules/juce_graphics/fonts/juce_Font.h:76:7: note: 'Font' has been explicitly marked deprecated here
+   76 |     [[deprecated ("Use the constructor that takes a FontOptions argument")]]
+      |       ^
+In file included from /Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/PresetBrowser.cpp:2:
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/CustomLookAndFeel.h:554:16: warning: 'Font' is deprecated: Use the constructor that takes a FontOptions argument [-Wdeprecated-declarations]
+  554 |         return juce::Font(label.getHeight() * 0.7f, juce::Font::bold);
+      |                ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/JUCE/modules/juce_graphics/fonts/juce_Font.h:76:7: note: 'Font' has been explicitly marked deprecated here
+   76 |     [[deprecated ("Use the constructor that takes a FontOptions argument")]]
+      |       ^
+In file included from /Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/PresetBrowser.cpp:2:
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/CustomLookAndFeel.h:554:33: warning: implicit conversion from 'int' to 'float' may lose precision [-Wimplicit-int-float-conversion]
+  554 |         return juce::Font(label.getHeight() * 0.7f, juce::Font::bold);
+      |                           ~~~~~~^~~~~~~~~~~ ~
+In file included from /Users/artbox/Documents/Repos/GenerativeMIDI/Source/Core/PolyrhythmEngine.cpp:10:
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/Core/PolyrhythmEngine.h:52:46: warning: implicit conversion loses integer precision: 'size_type' (aka 'unsigned long') to 'int' [-Wshorten-64-to-32]
+   52 |     int getNumLayers() const { return layers.size(); }
+      |                                ~~~~~~ ~~~~~~~^~~~~~
+In file included from /Users/artbox/Documents/Repos/GenerativeMIDI/Source/PluginProcessor.cpp:10:
+In file included from /Users/artbox/Documents/Repos/GenerativeMIDI/Source/PluginProcessor.h:14:
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/Core/PolyrhythmEngine.h:52:46: warning: implicit conversion loses integer precision: 'size_type' (aka 'unsigned long') to 'int' [-Wshorten-64-to-32]
+   52 |     int getNumLayers() const { return layers.size(); }
+      |                                ~~~~~~ ~~~~~~~^~~~~~
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/Core/AlgorithmicEngine.cpp:203:56: warning: implicit conversion changes signedness: 'int' to 'size_type' (aka 'unsigned long') [-Wsign-conversion]
+  203 | CellularAutomaton::CellularAutomaton(int size) : cells(size, false), scratch(size, false)
+      |                                                  ~~~~~ ^~~~
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/Core/AlgorithmicEngine.cpp:203:78: warning: implicit conversion changes signedness: 'int' to 'size_type' (aka 'unsigned long') [-Wsign-conversion]
+  203 | CellularAutomaton::CellularAutomaton(int size) : cells(size, false), scratch(size, false)
+      |                                                                      ~~~~~~~ ^~~~
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/PresetBrowser.cpp:65:21: warning: unused variable 'preset' [-Wunused-variable]
+   65 |         const auto& preset = presetManager.getPreset(presetIndex);
+      |                     ^~~~~~
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/Core/PolyrhythmEngine.cpp:36:26: warning: implicit conversion loses integer precision: 'size_type' (aka 'unsigned long') to 'int' [-Wshorten-64-to-32]
+   36 |     return layers.size/Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/PresetBrowser.cpp:108:29: warning: 'Font' is deprecated: Use the constructor that takes a FontOptions argument [-Wdeprecated-declarations]
+  108 |     pr() - ese1;
+      |     ~~~~~~ ~~~~~~~~~~~~~~^~~
+tNameLabel.setFont(juce::Font(18.0f, juce::Font::bold));
+      |                             ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/JUCE/modules/juce_graphics/fonts/juce_Font.h:76:7: note: 'Font' has been explicitly marked deprecated here
+   76 |     [[deprecated ("Use the constructor that takes a FontOptions argument")]]
+      |       ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/PresetBrowser.cpp:108:29: warning: 'Font' is deprecated: Use the constructor that takes a FontOptions argument [-Wdeprecated-declarations]
+  108 |     presetNameLabel.setFont(juce::Font(18.0f, juce::Font::bold));
+      |                             ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/JUCE/modules/juce_graphics/fonts/juce_Font.h:76:7: note: 'Font' has been explicitly marked deprecated here
+   76 |     [[deprecated ("Use the constructor that takes a FontOptions argument")]]
+      |       ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/PresetBrowser.cpp:113:29: warning: 'Font' is deprecated: Use the constructor that takes a FontOptions argument [-Wdeprecated-declarations]
+  113 |     presetInfoLabel.setFont(juce::Font(12.0f));
+      |                             ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/JUCE/modules/juce_graphics/fonts/juce_Font.h:76:7: note: 'Font' has been explicitly marked deprecated here
+   76 |     [[deprecated ("Use the constructor that takes a FontOptions argument")]]
+      |       ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/Core/PolyrhythmEngine.cpp:41:39: warning: comparison of integers of different signs: 'int' and 'size_type' (aka 'unsigned long') [-Wsign-compare]
+   41 |     if (layerIndex >= 0 && layerIndex < layers.size())
+      |                            ~~~~~~~~~~ ^ ~~~~~~~~~~~~~
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/Core/PolyrhythmEngine.cpp:48:24: warning: implicit conversion changes signedness: 'int' to 'size_type' (aka 'unsigned long') [-Wsign-conversion]
+   48 |         return &layers[layerIndex];
+      |                 ~~~~~~ ^~~~~~~~~~
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/Core/PolyrhythmEngine.cpp:47:39: warning: comparison of integers of different signs: 'int' and 'size_type' (aka 'unsigned long') [-Wsign-compare]
+   47 |     if (layerIndex >= 0 && layerIndex < layers.size())
+      |                            ~~~~~~~~~~ ^ ~~~~~~~~~~~~~
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/Core/AlgorithmicEngine.cpp:350:30: warning: implicit conversion changes signedness: 'int' to 'size_type' (aka 'unsigned long') [-Wsign-conversion]
+  350 |     std::vector<bool> rhythm(length, false);
+      |                       ~~~~~~ ^~~~~~
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/Core/PolyrhythmEngine.cpp:99:24: warning: implicit conversion changes signedness: 'int' to 'size_type' (aka 'unsigned long') [-Wsign-conversion]
+   99 |         layer->pattern[stepIndex] = active;
+      |         ~~~~~          ^~~~~~~~~
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/Core/PolyrhythmEngine.cpp:100:27: warning: implicit conversion changes signedness: 'int' to 'size_type' (aka 'unsigned long') [-Wsign-conversion]
+  100 |         layer->velocities[stepIndex] = juce::jlimit(0.0f, 1.0f, velocit/Users/artbox/Documents/Repos/GenerativeMIDI/Source/Core/AlgorithmicEngine.cpp:356:16: warning: implicit conversion changes signedness: 'int' to 'size_type' (aka 'unsigned long') [-Wsign-conversion]
+  356 |         rhythm[i] = random.nextFloat() < (density * bias);
+      |         ~~~~~~ ^
+y);
+      |         ~~~~~             ^~~~~~~~~
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/Core/PolyrhythmEngine.cpp:101:24: warning: implicit conversion changes signedness: 'int' to 'size_type' (aka 'unsigned long') [-Wsign-conversion]
+  101 |         layer->pitches[stepIndex] = juce::jlimit(0, 127, pitch);
+      |         ~~~~~          ^~~~~~~~~
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/Core/PolyrhythmEngine.cpp:126:24: warning: implicit conversion changes signedness: 'int' to 'size_type' (aka 'unsigned long') [-Wsign-conversion]
+  126 |         layer->pattern[i] = random.nextFloat() < density;
+      |         ~~~~~          ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/Core/PolyrhythmEngine.cpp:128:28: warning: implicit conversion changes signedness: 'int' to 'size_type' (aka 'unsigned long') [-Wsign-conversion]
+  128 |         if (layer->pattern[i])
+      |             ~~~~~          ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/Core/PolyrhythmEngine.cpp:130:31: warning: implicit conversion changes signedness: 'int' to 'size_type' (aka 'unsigned long') [-Wsign-conversion]
+  130 |             layer->velocities[i] = 0.5f + random.nextFloat() * 0.5f; // 0.5 - 1.0
+      |             ~~~~~             ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/Core/PolyrhythmEngine.cpp:131:28: warning: implicit conversion changes signedness: 'int' to 'size_type' (aka 'unsigned long') [-Wsign-conversion]
+  131 |             layer->pitches[i] = 36 + random.nextInt(49); // C2 - C6
+      |             ~~~~~          ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/Core/PolyrhythmEngine.cpp:173:66: warning: implicit conversion from 'int' to 'float' may lose precision [-Wimplicit-int-float-conversion]
+  173 |         layer.currentStep = static_cast<int>(layer.phase * layer.length);
+      |                                                          ~ ~~~~~~^~~~~~
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/Core/PolyrhythmEngine.cpp:181:69: warning: implicit conversion from 'int' to 'float' may lose precision [-Wimplicit-int-float-conversion]
+  181 |         layer->currentStep = static_cast<int>(layer->phase * layer->length);
+      |                                                            ~ ~~~~~~~^~~~~~
+In file included from /Users/artbox/Documents/Repos/GenerativeMIDI/Source/Core/PresetManager.cpp:2:
+In file included from /Users/artbox/Documents/Repos/GenerativeMIDI/Source/Core/GeneratorTypeMapping.h:13:
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/Core/StochasticEngine.h:36:28: warning: declaration shadows a field of 'StochasticEngine' [-Wshadow]
+   36 |     void setMomentum(float momentum) { this->momentum = std::clamp(momentum, 0.0f, 1.0f); }
+      |                            ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/Core/StochasticEngine.h:90:11: note: previous declaration is here
+   90 |     float momentum;
+      |           ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/Core/StochasticEngine.h:37:25: warning: declaration shadows a field of 'StochasticEngine' [-Wshadow]
+   37 |     void setOctaves(int octaves) { this->octaves = std::clamp(octaves, 1, 8); }
+      |                         ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/Core/StochasticEngine.h:91:9: note: previous declaration is here
+   91 |     int octaves;              // For Perlin noise multi-octave
+      |         ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/Core/StochasticEngine.h:41:25: warning: declaration shadows a field of 'StochasticEngine' [-Wshadow]
+   41 |     void setSigma(float sigma) { this->sigma = sigma; }
+      |                         ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/Core/StochasticEngine.h:95:11: note: previous declaration is here
+   95 |     float sigma;              // Prandtl number (default: 10.0)
+      |           ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/Core/StochasticEngine.h:42:23: warning: declaration shadows a field of 'StochasticEngine' [-Wshadow]
+   42 |     void setRho(float rho) { this->rho = rho; }
+      |                       ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/Core/StochasticEngine.h:96:11: note: previous declaration is here
+   96 |     float rho;                // Rayleigh number (default: 28.0)
+      |           ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/Core/StochasticEngine.h:43:24: warning: declaration shadows a field of 'StochasticEngine' [-Wshadow]
+   43 |     void setBeta(float beta) { this->beta = beta; }
+      |                        ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/Core/StochasticEngine.h:97:11: note: previous declaration is here
+   97 |     float beta;               // Geometric factor (default: 8.0/3.0)
+      |           ^
+In file included from /Users/artbox/Documents/Repos/GenerativeMIDI/Source/Core/PresetManager.cpp:2:
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/Core/GeneratorTypeMapping.h:104:55: warning: comparing floating point with == or != is unsafe [-Wfloat-equal]
+  104 |                 if (raw >= 0.0f && raw <= 1.0f && raw != static_cast<float>(index))
+      |                                                   ~~~ ^  ~~~~~~~~~~~~~~~~~~~~~~~~~
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/PresetBrowser.cpp:136:15: warning: 'Font' is deprecated: Use the constructor that takes a FontOptions argument [-Wdeprecated-declarations]
+  136 |     g.setFont(juce::Font(20.0f, juce::Font::bold));
+      |               ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/JUCE/modules/juce_graphics/fonts/juce_Font.h:76:7: note: 'Font' has been explicitly marked deprecated here
+   76 |     [[deprecated ("Use the constructor that takes a FontOptions argument")]]
+      |       ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/PresetBrowser.cpp:136:15: warning: 'Font' is deprecated: Use the constructor that takes a FontOptions argument [-Wdeprecated-declarations]
+  136 |     g.setFont(juce::Font(20.0f, juce::Font::bold));
+      |               ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/JUCE/modules/juce_graphics/fonts/juce_Font.h:76:7: note: 'Font' has been explicitly marked deprecated here
+   76 |     [[deprecated ("Use the constructor that takes a FontOptions argument")]]
+      |       ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/Core/MIDIGenerator.cpp:189:44: warning: implicit conversion from 'int' to 'float' may lose precision [-Wimplicit-int-float-conversion]
+  189 |         float phaseIncrement = (mod.rate * numSamples) / static_cast<float>(sampleRate);
+      |                                          ~ ^~~~~~~~~~
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/Core/MIDIGenerator.cpp:249:12: warning: implicit conversion from 'int' to 'float' may lose precision [-Wimplicit-int-float-conversion]
+  249 |     return juce::jlimit(0, 127, value) / 127.0f;
+      |            ^~~~~~~~~~~~~~~~~~~~~~~~~~~ ~
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/PresetBrowser.cpp:215:15: warning: 'Font' is deprecated: Use the constructor that takes a FontOptions argument [-Wdeprecated-declarations]
+  215 |     g.setFont(juce::Font(14.0f, preset.isFactory ? juce::Font::bold : juce::Font::plain));
+      |               ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/JUCE/modules/juce_graphics/fonts/juce_Font.h:76:7: note: 'Font' has been explicitly marked deprecated here
+   76 |     [[deprecated ("Use the constructor that takes a FontOptions argument")]]
+      |       ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/PresetBrowser.cpp:215:15: warning: 'Font' is deprecated: Use the constructor that takes a FontOptions argument [-Wdeprecated-declarations]
+  215 |     g.setFont(juce::Font(14.0f, preset.isFactory ? juce::Font::bold : juce::Font::plain));
+      |               ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/JUCE/modules/juce_graphics/fonts/juce_Font.h:76:7: note: 'Font' has been explicitly marked deprecated here
+   76 |     [[deprecated ("Use the constructor that takes a FontOptions argument")]]
+      |       ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/PresetBrowser.cpp:220:15: warning: 'Font' is deprecated: Use the constructor that takes a FontOptions argument [-Wdeprecated-declarations]
+  220 |     g.setFont(juce::Font(11.0f));
+      |               ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/JUCE/modules/juce_graphics/fonts/juce_Font.h:76:7: note: 'Font' has been explicitly marked deprecated here
+   76 |     [[deprecated ("Use the constructor that takes a FontOptions argument")]]
+      |       ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/PresetBrowser.cpp:224:44: warning: unused parameter 'row' [-Wunused-parameter]
+  224 | void PresetBrowser::listBoxItemClicked(int row, const juce::MouseEvent&)
+      |                                            ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/PresetBrowser.cpp:329:9: warning: unused variable 'currentFilteredCount' [-Wunused-variable]
+  329 |     int currentFilteredCount = filteredPresetIndices.size();
+      |         ^~~~~~~~~~~~~~~~~~~~
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/PresetBrowser.cpp:394:23: warning: 'Font' is deprecated: Use the constructor that takes a FontOptions argument [-Wdeprecated-declarations]
+  394 |     nameLabel.setFont(juce::Font(14.0f, juce::Font::bold));
+      |                       ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/JUCE/modules/juce_graphics/fonts/juce_Font.h:76:7: note: 'Font' has been explicitly marked deprecated here
+   76 |     [[deprecated ("Use the constructor that takes a FontOptions argument")]]
+      |       ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/PresetBrowser.cpp:394:23: warning: 'Font' is deprecated: Use the constructor that takes a FontOptions argument [-Wdeprecated-declarations]
+  394 |     nameLabel.setFont(juce::Font(14.0f, juce::Font::bold));
+      |                       ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/JUCE/modules/juce_graphics/fonts/juce_Font.h:76:7: note: 'Font' has been explicitly marked deprecated here
+   76 |     [[deprecated ("Use the constructor that takes a FontOptions argument")]]
+      |       ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/PresetBrowser.cpp:403:25: warning: 'Font' is deprecated: Use the constructor that takes a FontOptions argument [-Wdeprecated-declarations]
+  403 |     authorLabel.setFont(juce::Font(14.0f, juce::Font::bold));
+      |                         ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/JUCE/modules/juce_graphics/fonts/juce_Font.h:76:7: note: 'Font' has been explicitly marked deprecated here
+   76 |     [[deprecated ("Use the constructor that takes a FontOptions argument")]]
+      |       ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/PresetBrowser.cpp:403:25: warning: 'Font' is deprecated: Use the constructor that takes a FontOptions argument [-Wdeprecated-declarations]
+  403 |     authorLabel.setFont(juce::Font(14.0f, juce::Font::bold));
+      |                         ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/JUCE/modules/juce_graphics/fonts/juce_Font.h:76:7: note: 'Font' has been explicitly marked deprecated here
+   76 |     [[deprecated ("Use the constructor that takes a FontOptions argument")]]
+      |       ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/PresetBrowser.cpp:412:27: warning: 'Font' is deprecated: Use the constructor that takes a FontOptions argument [-Wdeprecated-declarations]
+  412 |     categoryLabel.setFont(juce::Font(14.0f, juce::Font::bold));
+      |                           ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/JUCE/modules/juce_graphics/fonts/juce_Font.h:76:7: note: 'Font' has been explicitly marked deprecated here
+   76 |     [[deprecated ("Use the constructor that takes a FontOptions argument")]]
+      |       ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/PresetBrowser.cpp:412:27: warning: 'Font' is deprecated: Use the constructor that takes a FontOptions argument [-Wdeprecated-declarations]
+  412 |     categoryLabel.setFont(juce::Font(14.0f, juce::Font::bold));
+      |                           ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/JUCE/modules/juce_graphics/fonts/juce_Font.h:76:7: note: 'Font' has been explicitly marked deprecated here
+   76 |     [[deprecated ("Use the constructor that takes a FontOptions argument")]]
+      |       ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/PresetBrowser.cpp:427:30: warning: 'Font' is deprecated: Use the constructor that takes a FontOptions argument [-Wdeprecated-declarations]
+  427 |     descriptionLabel.setFont(juce::Font(14.0f, juce::Font::bold));
+      |                              ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/JUCE/modules/juce_graphics/fonts/juce_Font.h:76:7: note: 'Font' has been explicitly marked deprecated here
+   76 |     [[deprecated ("Use the constructor that takes a FontOptions argument")]]
+      |       ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/PresetBrowser.cpp:427:30: warning: 'Font' is deprecated: Use the constructor that takes a FontOptions argument [-Wdeprecated-declarations]
+  427 |     descriptionLabel.setFont(juce::Font(14.0f, juce::Font::bold));
+      |                              ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/JUCE/modules/juce_graphics/fonts/juce_Font.h:76:7: note: 'Font' has been explicitly marked deprecated here
+   76 |     [[deprecated ("Use the constructor that takes a FontOptions argument")]]
+      |       ^
+In file included from /Users/artbox/Documents/Repos/GenerativeMIDI/Source/PluginProcessor.cpp:10:
+In file included from /Users/artbox/Documents/Repos/GenerativeMIDI/Source/PluginProcessor.h:16:
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/Core/StochasticEngine.h:36:28: warning: declaration shadows a field of 'StochasticEngine' [-Wshadow]
+   36 |     void setMomentum(float momentum) { this->momentum = std::clamp(momentum, 0.0f, 1.0f); }
+      |                            ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/Core/StochasticEngine.h:90:11: note: previous declaration is here
+   90 |     float momentum;
+      |           ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/Core/StochasticEngine.h:37:25: warning: declaration shadows a field of 'StochasticEngine' [-Wshadow]
+   37 |     void setOctaves(int octaves) { this->octaves = std::clamp(octaves, 1, 8); }
+      |                         ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/Core/StochasticEngine.h:91:9: note: previous declaration is here
+   91 |     int octaves;              // For Perlin noise multi-octave
+      |         ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/Core/StochasticEngine.h:41:25: warning: declaration shadows a field of 'StochasticEngine' [-Wshadow]
+   41 |     void setSigma(float sigma) { this->sigma = sigma; }
+      |                         ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/Core/StochasticEngine.h:95:11: note: previous declaration is here
+   95 |     float sigma;              // Prandtl number (default: 10.0)
+      |           ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/Core/StochasticEngine.h:42:23: warning: declaration shadows a field of 'StochasticEngine' [-Wshadow]
+   42 |     void setRho(float rho) { this->rho = rho; }
+      |                       ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/Core/StochasticEngine.h:96:11: note: previous declaration is here
+   96 |     float rho;                // Rayleigh number (default: 28.0)
+      |           ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/Core/StochasticEngine.h:43:24: warning: declaration shadows a field of 'StochasticEngine' [-Wshadow]
+   43 |     void setBeta(float beta) { this->beta = beta; }
+      |                        ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/Core/StochasticEngine.h:97:11: note: previous declaration is here
+   97 |     float beta;               // Geometric factor (default: 8.0/3.0)
+      |           ^
+In file included from /Users/artbox/Documents/Repos/GenerativeMIDI/Source/PluginProcessor.cpp:10:
+In file included from /Users/artbox/Documents/Repos/GenerativeMIDI/Source/PluginProcessor.h:18:
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/Core/ScaleQuantizer.h:167:27: warning: implicit conversion changes signedness: 'int' to 'size_type' (aka 'unsigned long') [-Wsign-conversion]
+  167 |             if (intervals[i] < targetPitch)
+      |                 ~~~~~~~~~ ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/Core/ScaleQuantizer.h:168:61: warning: implicit conversion changes signedness: 'int' to 'size_type' (aka 'unsigned long') [-Wsign-conversion]
+  168 |                 return octave * 12 + ((rootNote + intervals[i]) % 12);
+      |                                                   ~~~~~~~~~ ^
+In file included from /Users/artbox/Documents/Repos/GenerativeMIDI/Source/PluginProcessor.cpp:10:
+In file included from /Users/artbox/Documents/Repos/GenerativeMIDI/Source/PluginProcessor.h:19:
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/Core/SwingEngine.h:110:44: warning: implicit conversion from 'int' to 'float' may lose precision [-Wimplicit-int-float-conversion]
+  110 |         int swingOffset = static_cast<int>(samplesPerStep * swingRatio);
+      |                                            ^~~~~~~~~~~~~~ ~
+In file included from /Users/artbox/Documents/Repos/GenerativeMIDI/Source/PluginProcessor.cpp:10:
+In file included from /Users/artbox/Documents/Repos/GenerativeMIDI/Source/PluginProcessor.h:20:
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/Core/GateLengthController.h:66:33: warning: implicit conversion from 'int' to 'float' may lose precision [-Wimplicit-int-float-conversion]
+   66 |         return static_cast<int>(samplesPerStep * finalGate);
+      |                                 ^~~~~~~~~~~~~~ ~
+In file included from /Users/artbox/Documents/Repos/GenerativeMIDI/Source/PluginProcessor.cpp:10:
+In file included from /Users/artbox/Documents/Repos/GenerativeMIDI/Source/PluginProcessor.h:23:
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/DSP/ClockManager.h:45:47: warning: implicit conversion loses integer precision: 'const int64_t' (aka 'const long long') to 'int' [-Wshorten-64-to-32]
+   45 |     int getPositionInSamples() const { return currentSample; }
+      |                                        ~~~~~~ ^~~~~~~~~~~~~
+In file included from /Users/artbox/Documents/Repos/GenerativeMIDI/Source/PluginProcessor.cpp:11:
+In file included from /Users/artbox/Documents/Repos/GenerativeMIDI/Source/PluginEditor.h:14:
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/CustomLookAndFeel.h:133:23: warning: implicit conversion from 'int' to 'float' may lose precision [-Wimplicit-int-float-conversion]
+  133 |         auto radius = juce::jmin(width / 2, height / 2) - 8.0f;
+      |                       ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ ~
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/CustomLookAndFeel.h:134:28: warning: implicit conversion from 'int' to 'float' may lose precision [-Wimplicit-int-float-conversion]
+  134 |         auto centreX = x + width * 0.5f;
+      |                            ^~~~~ ~
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/CustomLookAndFeel.h:134:24: warning: implicit conversion from 'int' to 'float' may lose precision [-Wimplicit-int-float-conversion]
+  134 |         auto centreX = x + width * 0.5f;
+      |                        ^ ~
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/CustomLookAndFeel.h:135:28: warning: implicit conversion from 'int' to 'float' may lose precision [-Wimplicit-int-float-conversion]
+  135 |         auto centreY = y + height * 0.5f;
+      |                            ^~~~~~ ~
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/CustomLookAndFeel.h:135:24: warning: implicit conversion from 'int' to 'float' may lose precision [-Wimplicit-int-float-conversion]
+  135 |         auto centreY = y + height * 0.5f;
+      |                        ^ ~
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/CustomLookAndFeel.h:247:35: warning: implicit conversion from 'int' to 'float' may lose precision [-Wimplicit-int-float-conversion]
+  247 |                 float tickAngle = i * (juce::MathConstants<float>::twoPi / 12.0f) - juce::MathConstants<float>::halfPi;
+      |                                   ^ ~
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/CustomLookAndFeel.h:363:36: warning: implicit conversion from 'int' to 'float' may lose precision [-Wimplicit-int-float-conversion]
+  363 |                 float thumbWidth = width * 1.2f;
+      |                                    ^~~~~ ~
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/CustomLookAndFeel.h:364:63: warning: implicit conversion from 'int' to 'float' may lose precision [-Wimplicit-int-float-conversion]
+  364 |                 auto thumbBounds = juce::Rectangle<float>(x + width * 0.5f - thumbWidth * 0.5f,
+      |                                                               ^~~~~ ~
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/CustomLookAndFeel.h:364:59: warning: implicit conversion from 'int' to 'float' may lose precision [-Wimplicit-int-float-conversion]
+  364 |                 auto thumbBounds = juce::Rectangle<float>(x + width * 0.5f - thumbWidth * 0.5f,
+      |                                                           ^ ~
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/CustomLookAndFeel.h:387:69: warning: implicit conversion from 'int' to 'float' may lose precision [-Wimplicit-int-float-conversion]
+  387 |         auto trackWidth = juce::jmin(10.0f, slider.isHorizontal() ? height * 0.3f : width * 0.3f);
+      |                                                                     ^~~~~~ ~
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/CustomLookAndFeel.h:387:85: warning: implicit conversion from 'int' to 'float' may lose precision [-Wimplicit-int-float-conversion]
+  387 |         auto trackWidth = juce::jmin(10.0f, slider.isHorizontal() ? height * 0.3f : width * 0.3f);
+      |                                                                                     ^~~~~ ~
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/CustomLookAndFeel.h:391:51: warning: implicit conversion from 'int' to 'float' may lose precision [-Wimplicit-int-float-conversion]
+  391 |             track = { static_cast<float>(x), y + (height - trackWidth) * 0.5f,
+      |                                                   ^~~~~~ ~
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/CustomLookAndFeel.h:391:46: warning: implicit conversion from 'int' to 'float' may lose precision [-Wimplicit-int-float-conversion]
+  391 |             track = { static_cast<float>(x), y + (height - trackWidth) * 0.5f,
+      |                                              ^ ~
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/CustomLookAndFeel.h:394:28: warning: implicit conversion from 'int' to 'float' may lose precision [-Wimplicit-int-float-conversion]
+  394 |             track = { x + (width - trackWidth) * 0.5f, static_cast<float>(y),
+      |                            ^~~~~ ~
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/CustomLookAndFeel.h:394:23: warning: implicit conversion from 'int' to 'float' may lose precision [-Wimplicit-int-float-conversion]
+  394 |             track = { x + (width - trackWidth) * 0.5f, static_cast<float>(y),
+      |                       ^ ~
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/CustomLookAndFeel.h:412:67: warning: implicit conversion from 'int' to 'float' may lose precision [-Wimplicit-int-float-conversion]
+  412 |             valueFill = { track.getX(), track.getY(), sliderPos - x, track.getHeight() };
+      |                                                                 ~ ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/CustomLookAndFeel.h:432:41: warning: implicit conversion from 'int' to 'float' may lose precision [-Wimplicit-int-float-conversion]
+  432 |             thumbPos = { sliderPos, y + height * 0.5f };
+      |                                         ^~~~~~ ~
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/CustomLookAndFeel.h:432:37: warning: implicit conversion from 'int' to 'float' may lose precision [-Wimplicit-int-float-conversion]
+  432 |             thumbPos = { sliderPos, y + height * 0.5f };
+      |                                     ^ ~
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/CustomLookAndFeel.h:434:30: warning: implicit conversion from 'int' to 'float' may lose precision [-Wimplicit-int-float-conversion]
+  434 |             thumbPos = { x + width * 0.5f, sliderPos };
+      |                              ^~~~~ ~
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/CustomLookAndFeel.h:434:26: warning: implicit conversion from 'int' to 'float' may lose precision [-Wimplicit-int-float-conversion]
+  434 |             thumbPos = { x + width * 0.5f, sliderPos };
+      |                          ^ ~
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/CustomLookAndFeel.h:331:49: warning: unused parameter 'minSliderPos' [-Wunused-parameter]
+  331 |                          float sliderPos, float minSliderPos, float maxSliderPos,
+      |                                                 ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/CustomLookAndFeel.h:331:69: warning: unused parameter 'maxSliderPos' [-Wunused-parameter]
+  331 |                          float sliderPos, float minSliderPos, float maxSliderPos,
+      |                                                                     ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/CustomLookAndFeel.h:332:58: warning: unused parameter 'style' [-Wunused-parameter]
+  332 |                          const juce::Slider::SliderStyle style, juce::Slider& slider) override
+      |                                                          ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/CustomLookAndFeel.h:554:16: warning: 'Font' is deprecated: Use the constructor that takes a FontOptions argument [-Wdeprecated-declarations]
+  554 |         return juce::Font(label.getHeight() * 0.7f, juce::Font::bold);
+      |                ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/JUCE/modules/juce_graphics/fonts/juce_Font.h:76:7: note: 'Font' has been explicitly marked deprecated here
+   76 |     [[deprecated ("Use the constructor that takes a FontOptions argument")]]
+      |       ^
+In file included from /Users/artbox/Documents/Repos/GenerativeMIDI/Source/PluginProcessor.cpp:11:
+In file included from /Users/artbox/Documents/Repos/GenerativeMIDI/Source/PluginEditor.h:14:
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/CustomLookAndFeel.h:554:16: warning: 'Font' is deprecated: Use the constructor that takes a FontOptions argument [-Wdeprecated-declarations]
+  554 |         return juce::Font(label.getHeight() * 0.7f, juce::Font::bold);
+      |                ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/JUCE/modules/juce_graphics/fonts/juce_Font.h:76:7: note: 'Font' has been explicitly marked deprecated here
+   76 |     [[deprecated ("Use the constructor that takes a FontOptions argument")]]
+      |       ^
+In file included from /Users/artbox/Documents/Repos/GenerativeMIDI/Source/PluginProcessor.cpp:11:
+In file included from /Users/artbox/Documents/Repos/GenerativeMIDI/Source/PluginEditor.h:14:
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/CustomLookAndFeel.h:554:33: warning: implicit conversion from 'int' to 'float' may lose precision [-Wimplicit-int-float-conversion]
+  554 |         return juce::Font(label.getHeight() * 0.7f, juce::Font::bold);
+      |                           ~~~~~~^~~~~~~~~~~ ~
+In file included from /Users/artbox/Documents/Repos/GenerativeMIDI/Source/PluginProcessor.cpp:11:
+In file included from /Users/artbox/Documents/Repos/GenerativeMIDI/Source/PluginEditor.h:15:
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/PatternVisualizer.h:75:23: warning: 'Font' is deprecated: Use the constructor that takes a FontOptions argument [-Wdeprecated-declarations]
+   75 |             g.setFont(juce::Font(12.0f));
+      |                       ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/JUCE/modules/juce_graphics/fonts/juce_Font.h:76:7: note: 'Font' has been explicitly marked deprecated here
+   76 |     [[deprecated ("Use the constructor that takes a FontOptions argument")]]
+      |       ^
+In file included from /Users/artbox/Documents/Repos/GenerativeMIDI/Source/PluginProcessor.cpp:11:
+In file included from /Users/artbox/Documents/Repos/GenerativeMIDI/Source/PluginEditor.h:15:
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/PatternVisualizer.h:167:19: warning: 'Font' is deprecated: Use the constructor that takes a FontOptions argument [-Wdeprecated-declarations]
+  167 |         g.setFont(juce::Font(9.0f, juce::Font::bold));
+      |                   ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/JUCE/modules/juce_graphics/fonts/juce_Font.h:76:7: note: 'Font' has been explicitly marked deprecated here
+   76 |     [[deprecated ("Use the constructor that takes a FontOptions argument")]]
+      |       ^
+In file included from /Users/artbox/Documents/Repos/GenerativeMIDI/Source/PluginProcessor.cpp:11:
+In file included from /Users/artbox/Documents/Repos/GenerativeMIDI/Source/PluginEditor.h:15:
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/PatternVisualizer.h:167:19: warning: 'Font' is deprecated: Use the constructor that takes a FontOptions argument [-Wdeprecated-declarations]
+  167 |         g.setFont(juce::Font(9.0f, juce::Font::bold));
+      |                   ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/JUCE/modules/juce_graphics/fonts/juce_Font.h:76:7: note: 'Font' has been explicitly marked deprecated here
+   76 |     [[deprecated ("Use the constructor that takes a FontOptions argument")]]
+      |       ^
+In file included from /Users/artbox/Documents/Repos/GenerativeMIDI/Source/PluginProcessor.cpp:11:
+In file included from /Users/artbox/Documents/Repos/GenerativeMIDI/Source/PluginEditor.h:15:
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/PatternVisualizer.h:174:66: warning: implicit conversion turns floating-point number into integer: 'float' to 'int' [-Wfloat-conversion]
+  174 |                 g.drawText(label, x, bounds.getBottom() - 20.0f, stepWidth, 15.0f,
+      |                   ~~~~~~~~                                       ^~~~~~~~~
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/PatternVisualizer.h:174:57: warning: implicit conversion turns floating-point number into integer: 'float' to 'int' [-Wfloat-conversion]
+  174 |                 g.drawText(label, x, bounds.getBottom() - 20.0f, stepWidth, 15.0f,
+      |                   ~~~~~~~~           ~~~~~~~~~~~~~~~~~~~^~~~~~~
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/PatternVisualizer.h:174:35: warning: implicit conversion turns floating-point number into integer: 'float' to 'int' [-Wfloat-conversion]
+  174 |                 g.drawText(label, x, bounds.getBottom() - 20.0f, stepWidth, 15.0f,
+      |                   ~~~~~~~~        ^
+In file included from /Users/artbox/Documents/Repos/GenerativeMIDI/Source/PluginProcessor.cpp:11:
+In file included from /Users/artbox/Documents/Repos/GenerativeMIDI/Source/PluginEditor.h:17:
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/PolyrhythmLayerEditor.h:33:28: warning: 'Font' is deprecated: Use the constructor that takes a FontOptions argument [-Wdeprecated-declarations]
+   33 |         layerLabel.setFont(juce::Font(14.0f, juce::Font::bold));
+      |                            ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/JUCE/modules/juce_graphics/fonts/juce_Font.h:76:7: note: 'Font' has been explicitly marked deprecated here
+   76 |     [[deprecated ("Use the constructor that takes a FontOptions argument")]]
+      |       ^
+In file included from /Users/artbox/Documents/Repos/GenerativeMIDI/Source/PluginProcessor.cpp:11:
+In file included from /Users/artbox/Documents/Repos/GenerativeMIDI/Source/PluginEditor.h:17:
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/PolyrhythmLayerEditor.h:33:28: warning: 'Font' is deprecated: Use the constructor that takes a FontOptions argument [-Wdeprecated-declarations]
+   33 |         layerLabel.setFont(juce::Font(14.0f, juce::Font::bold));
+      |                            ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/JUCE/modules/juce_graphics/fonts/juce_Font.h:76:7: note: 'Font' has been explicitly marked deprecated here
+   76 |     [[deprecated ("Use the constructor that takes a FontOptions argument")]]
+      |       ^
+In file included from /Users/artbox/Documents/Repos/GenerativeMIDI/Source/PluginProcessor.cpp:11:
+In file included from /Users/artbox/Documents/Repos/GenerativeMIDI/Source/PluginEditor.h:17:
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/PolyrhythmLayerEditor.h:201:59: warning: implicit conversion from 'size_type' (aka 'unsigned long') to 'float' may lose precision [-Wimplicit-int-float-conversion]
+  201 |             float stepWidth = bounds.getWidth() / pattern.size();
+      |                                                 ~ ~~~~~~~~^~~~~~
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/PolyrhythmLayerEditor.h:206:43: warning: implicit conversion from 'size_t' (aka 'unsigned long') to 'float' may lose precision [-Wimplicit-int-float-conversion]
+  206 |                 float x = bounds.getX() + i * stepWidth + 1.0f;
+      |                                           ^ ~
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/PolyrhythmLayerEditor.h:263:30: warning: 'Font' is deprecated: Use the constructor that takes a FontOptions argument [-Wdeprecated-declarations]
+  263 |         headersLabel.setFont(juce::Font(10.0f, juce::Font::plain));
+      |                              ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/JUCE/modules/juce_graphics/fonts/juce_Font.h:76:7: note: 'Font' has been explicitly marked deprecated here
+   76 |     [[deprecated ("Use the constructor that takes a FontOptions argument")]]
+      |       ^
+In file included from /Users/artbox/Documents/Repos/GenerativeMIDI/Source/PluginProcessor.cpp:11:
+In file included from /Users/artbox/Documents/Repos/GenerativeMIDI/Source/PluginEditor.h:17:
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/PolyrhythmLayerEditor.h:263:30: warning: 'Font' is deprecated: Use the constructor that takes a FontOptions argument [-Wdeprecated-declarations]
+  263 |         headersLabel.setFont(juce::Font(10.0f, juce::Font::plain));
+      |                              ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/JUCE/modules/juce_graphics/fonts/juce_Font.h:76:7: note: 'Font' has been explicitly marked deprecated here
+   76 |     [[deprecated ("Use the constructor that takes a FontOptions argument")]]
+      |       ^
+In file included from /Users/artbox/Documents/Repos/GenerativeMIDI/Source/PluginProcessor.cpp:11:
+In file included from /Users/artbox/Documents/Repos/GenerativeMIDI/Source/PluginEditor.h:17:
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/PolyrhythmLayerEditor.h:351:13: warning: unused variable 'newLayerIndex' [-Wunused-variable]
+  351 |         int newLayerIndex = polyEngine.addLayer();
+      |             ^~~~~~~~~~~~~
+In file included from /Users/artbox/Documents/Repos/GenerativeMIDI/Source/PluginProcessor.cpp:12:
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/Core/GeneratorTypeMapping.h:104:55: warning: comparing floating point with == or != is unsafe [-Wfloat-equal]
+  104 |                 if (raw >= 0.0f && raw <= 1.0f && raw != static_cast<float>(index))
+      |                                                   ~~~ ^  ~~~~~~~~~~~~~~~~~~~~~~~~~
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/PluginProcessor.cpp:234:53: warning: unused parameter 'index' [-Wunused-parameter]
+  234 | void GenerativeMIDIProcessor::setCurrentProgram(int index)
+      |                                                     ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/PluginProcessor.cpp:238:64: warning: unused parameter 'index' [-Wunused-parameter]
+  238 | const juce::String GenerativeMIDIProcessor::getProgramName(int index)
+      |                                                                ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/PluginProcessor.cpp:243:53: warning: unused parameter 'index' [-Wunused-parameter]
+  243 | void GenerativeMIDIProcessor::changeProgramName(int index, const juce::String& newName)
+      |                                                     ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/PluginProcessor.cpp:243:80: warning: unused parameter 'newName' [-Wunused-parameter]
+  243 | void GenerativeMIDIProcessor::changeProgramName(int index, const juce::String& newName)
+      |                                                                                ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/PluginProcessor.cpp:403:73: warning: unused parameter 'midiMessages' [-Wunused-parameter]
+  403 | void GenerativeMIDIProcessor::processGenerativeOutput(juce::MidiBuffer& midiMessages, int numSamples)
+      |                                                                         ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/PluginProcessor.cpp:403:91: warning: unused parameter 'numSamples' [-Wunused-parameter]
+  403 | void GenerativeMIDIProcessor::processGenerativeOutput(juce::MidiBuffer& midiMessages, int numSamples)
+      |                                                                                           ^
+5 warnings generated.
+[ 28%] Building CXX object CMakeFiles/GenerativeMIDI.dir/JUCE/modules/juce_audio_processors/juce_audio_processors.mm.o
+In file included from /Users/artbox/Documents/Repos/GenerativeMIDI/Source/PluginEditor.cpp:10:
+In file included from /Users/artbox/Documents/Repos/GenerativeMIDI/Source/PluginProcessor.h:14:
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/Core/PolyrhythmEngine.h:52:46: warning: implicit conversion loses integer precision: 'size_type' (aka 'unsigned long') to 'int' [-Wshorten-64-to-32]
+   52 |     int getNumLayers() const { return layers.size(); }
+      |                                ~~~~~~ ~~~~~~~^~~~~~
+[ 33%] Building CXX object CMakeFiles/GenerativeMIDI.dir/JUCE/modules/juce_gui_extra/juce_gui_extra.mm.o
+In file included from /Users/artbox/Documents/Repos/GenerativeMIDI/Source/PluginEditor.cpp:10:
+In file included from /Users/artbox/Documents/Repos/GenerativeMIDI/Source/PluginProcessor.h:16:
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/Core/StochasticEngine.h:36:28: warning: declaration shadows a field of 'StochasticEngine' [-Wshadow]
+   36 |     void setMomentum(float momentum) { this->momentum = std::clamp(momentum, 0.0f, 1.0f); }
+      |                            ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/Core/StochasticEngine.h:90:11: note: previous declaration is here
+   90 |     float momentum;
+      |           ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/Core/StochasticEngine.h:37:25: warning: declaration shadows a field of 'StochasticEngine' [-Wshadow]
+   37 |     void setOctaves(int octaves) { this->octaves = std::clamp(octaves, 1, 8); }
+      |                         ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/Core/StochasticEngine.h:91:9: note: previous declaration is here
+   91 |     int octaves;              // For Perlin noise multi-octave
+      |         ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/Core/StochasticEngine.h:41:25: warning: declaration shadows a field of 'StochasticEngine' [-Wshadow]
+   41 |     void setSigma(float sigma) { this->sigma = sigma; }
+      |                         ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/Core/StochasticEngine.h:95:11: note: previous declaration is here
+   95 |     float sigma;              // Prandtl number (default: 10.0)
+      |           ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/Core/StochasticEngine.h:42:23: warning: declaration shadows a field of 'StochasticEngine' [-Wshadow]
+   42 |     void setRho(float rho) { this->rho = rho; }
+      |                       ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/Core/StochasticEngine.h:96:11: note: previous declaration is here
+   96 |     float rho;                // Rayleigh number (default: 28.0)
+      |           ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/Core/StochasticEngine.h:43:24: warning: declaration shadows a field of 'StochasticEngine' [-Wshadow]
+   43 |     void setBeta(float beta) { this->beta = beta; }
+      |                        ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/Core/StochasticEngine.h:97:11: note: previous declaration is here
+   97 |     float beta;               // Geometric factor (default: 8.0/3.0)
+      |           ^
+In file included from /Users/artbox/Documents/Repos/GenerativeMIDI/Source/PluginEditor.cpp:10:
+In file included from /Users/artbox/Documents/Repos/GenerativeMIDI/Source/PluginProcessor.h:18:
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/Core/ScaleQuantizer.h:167:27: warning: implicit conversion changes signedness: 'int' to 'size_type' (aka 'unsigned long') [-Wsign-conversion]
+  167 |             if (intervals[i] < targetPitch)
+      |                 ~~~~~~~~~ ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/Core/ScaleQuantizer.h:168:61: warning: implicit conversion changes signedness: 'int' to 'size_type' (aka 'unsigned long') [-Wsign-conversion]
+  168 |                 return octave * 12 + ((rootNote + intervals[i]) % 12);
+      |                                                   ~~~~~~~~~ ^
+In file included from /Users/artbox/Documents/Repos/GenerativeMIDI/Source/PluginEditor.cpp:10:
+In file included from /Users/artbox/Documents/Repos/GenerativeMIDI/Source/PluginProcessor.h:19:
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/Core/SwingEngine.h:110:44: warning: implicit conversion from 'int' to 'float' may lose precision [-Wimplicit-int-float-conversion]
+  110 |         int swingOffset = static_cast<int>(samplesPerStep * swingRatio);
+      |                                            ^~~~~~~~~~~~~~ ~
+In file included from /Users/artbox/Documents/Repos/GenerativeMIDI/Source/PluginEditor.cpp:10:
+In file included from /Users/artbox/Documents/Repos/GenerativeMIDI/Source/PluginProcessor.h:20:
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/Core/GateLengthController.h:66:33: warning: implicit conversion from 'int' to 'float' may lose precision [-Wimplicit-int-float-conversion]
+   66 |         return static_cast<int>(samplesPerStep * finalGate);
+      |                                 ^~~~~~~~~~~~~~ ~
+In file included from /Users/artbox/Documents/Repos/GenerativeMIDI/Source/PluginEditor.cpp:10:
+In file included from /Users/artbox/Documents/Repos/GenerativeMIDI/Source/PluginProcessor.h:23:
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/DSP/ClockManager.h:45:47: warning: implicit conversion loses integer precision: 'const int64_t' (aka 'const long long') to 'int' [-Wshorten-64-to-32]
+   45 |     int getPositionInSamples() const { return currentSample; }
+      |                                        ~~~~~~ ^~~~~~~~~~~~~
+1 warning generated.
+In file included from /Users/artbox/Documents/Repos/GenerativeMIDI/Source/PluginEditor.cpp:11:
+In file included from /Users/artbox/Documents/Repos/GenerativeMIDI/Source/PluginEditor.h:14:
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/CustomLookAndFeel.h:133:23: warning: implicit conversion from 'int' to 'float' may lose precision [-Wimplicit-int-float-conversion]
+  133 |         auto radius = juce::jmin(width / 2, height / 2) - 8.0f;
+      |                       ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ ~
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/CustomLookAndFeel.h:134:28: warning: implicit conversion from 'int' to 'float' may lose precision [-Wimplicit-int-float-conversion]
+  134 |         auto centreX = x + width * 0.5f;
+      |                            ^~~~~ ~
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/CustomLookAndFeel.h:134:24: warning: implicit conversion from 'int' to 'float' may lose precision [-Wimplicit-int-float-conversion]
+  134 |         auto centreX = x + width * 0.5f;
+      |                        ^ ~
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/CustomLookAndFeel.h:135:28: warning: implicit conversion from 'int' to 'float' may lose precision [-Wimplicit-int-float-conversion]
+  135 |         auto centreY = y + height * 0.5f;
+      |                            ^~~~~~ ~
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/CustomLookAndFeel.h:135:24: warning: implicit conversion from 'int' to 'float' may lose precision [-Wimplicit-int-float-conversion]
+  135 |         auto centreY = y + height * 0.5f;
+      |                        ^ ~
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/CustomLookAndFeel.h:247:35: warning: implicit conversion from 'int' to 'float' may lose precision [-Wimplicit-int-float-conversion]
+  247 |                 float tickAngle = i * (juce::MathConstants<float>::twoPi / 12.0f) - juce::MathConstants<float>::halfPi;
+      |                                   ^ ~
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/CustomLookAndFeel.h:363:36: warning: implicit conversion from 'int' to 'float' may lose precision [-Wimplicit-int-float-conversion]
+  363 |                 float thumbWidth = width * 1.2f;
+      |                                    ^~~~~ ~
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/CustomLookAndFeel.h:364:63: warning: implicit conversion from 'int' to 'float' may lose precision [-Wimplicit-int-float-conversion]
+  364 |                 auto thumbBounds = juce::Rectangle<float>(x + width * 0.5f - thumbWidth * 0.5f,
+      |                                                               ^~~~~ ~
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/CustomLookAndFeel.h:364:59: warning: implicit conversion from 'int' to 'float' may lose precision [-Wimplicit-int-float-conversion]
+  364 |                 auto thumbBounds = juce::Rectangle<float>(x + width * 0.5f - thumbWidth * 0.5f,
+      |                                                           ^ ~
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/CustomLookAndFeel.h:387:69: warning: implicit conversion from 'int' to 'float' may lose precision [-Wimplicit-int-float-conversion]
+  387 |         auto trackWidth = juce::jmin(10.0f, slider.isHorizontal() ? height * 0.3f : width * 0.3f);
+      |                                                                     ^~~~~~ ~
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/CustomLookAndFeel.h:387:85: warning: implicit conversion from 'int' to 'float' may lose precision [-Wimplicit-int-float-conversion]
+  387 |         auto trackWidth = juce::jmin(10.0f, slider.isHorizontal() ? height * 0.3f : width * 0.3f);
+      |                                                                                     ^~~~~ ~
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/CustomLookAndFeel.h:391:51: warning: implicit conversion from 'int' to 'float' may lose precision [-Wimplicit-int-float-conversion]
+  391 |             track = { static_cast<float>(x), y + (height - trackWidth) * 0.5f,
+      |                                                   ^~~~~~ ~
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/CustomLookAndFeel.h:391:46: warning: implicit conversion from 'int' to 'float' may lose precision [-Wimplicit-int-float-conversion]
+  391 |             track = { static_cast<float>(x), y + (height - trackWidth) * 0.5f,
+      |                                              ^ ~
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/CustomLookAndFeel.h:394:28: warning: implicit conversion from 'int' to 'float' may lose precision [-Wimplicit-int-float-conversion]
+  394 |             track = { x + (width - trackWidth) * 0.5f, static_cast<float>(y),
+      |                            ^~~~~ ~
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/CustomLookAndFeel.h:394:23: warning: implicit conversion from 'int' to 'float' may lose precision [-Wimplicit-int-float-conversion]
+  394 |             track = { x + (width - trackWidth) * 0.5f, static_cast<float>(y),
+      |                       ^ ~
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/CustomLookAndFeel.h:412:67: warning: implicit conversion from 'int' to 'float' may lose precision [-Wimplicit-int-float-conversion]
+  412 |             valueFill = { track.getX(), track.getY(), sliderPos - x, track.getHeight() };
+      |                                                                 ~ ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/CustomLookAndFeel.h:432:41: warning: implicit conversion from 'int' to 'float' may lose precision [-Wimplicit-int-float-conversion]
+  432 |             thumbPos = { sliderPos, y + height * 0.5f };
+      |                                         ^~~~~~ ~
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/CustomLookAndFeel.h:432:37: warning: implicit conversion from 'int' to 'float' may lose precision [-Wimplicit-int-float-conversion]
+  432 |             thumbPos = { sliderPos, y + height * 0.5f };
+      |                                     ^ ~
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/CustomLookAndFeel.h:434:30: warning: implicit conversion from 'int' to 'float' may lose precision [-Wimplicit-int-float-conversion]
+  434 |             thumbPos = { x + width * 0.5f, sliderPos };
+      |                              ^~~~~ ~
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/CustomLookAndFeel.h:434:26: warning: implicit conversion from 'int' to 'float' may lose precision [-Wimplicit-int-float-conversion]
+  434 |             thumbPos = { x + width * 0.5f, sliderPos };
+      |                          ^ ~
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/CustomLookAndFeel.h:331:49: warning: unused parameter 'minSliderPos' [-Wunused-parameter]
+  331 |                          float sliderPos, float minSliderPos, float maxSliderPos,
+      |                                                 ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/CustomLookAndFeel.h:331:69: warning: unused parameter 'maxSliderPos' [-Wunused-parameter]
+  331 |                          float sliderPos, float minSliderPos, float maxSliderPos,
+      |                                                                     ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/CustomLookAndFeel.h:332:58: warning: unused parameter 'style' [-Wunused-parameter]
+  332 |                          const juce::Slider::SliderStyle style, juce::Slider& slider) override
+      |                                                          ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/CustomLookAndFeel.h:554:16: warning: 'Font' is deprecated: Use the constructor that takes a FontOptions argument [-Wdeprecated-declarations]
+  554 |         return juce::Font(label.getHeight() * 0.7f, juce::Font::bold);
+      |                ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/JUCE/modules/juce_graphics/fonts/juce_Font.h:76:7: note: 'Font' has been explicitly marked deprecated here
+   76 |     [[deprecated ("Use the constructor that takes a FontOptions argument")]]
+      |       ^
+In file included from /Users/artbox/Documents/Repos/GenerativeMIDI/Source/PluginEditor.cpp:11:
+In file included from /Users/artbox/Documents/Repos/GenerativeMIDI/Source/PluginEditor.h:14:
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/CustomLookAndFeel.h:554:16: warning: 'Font' is deprecated: Use the constructor that takes a FontOptions argument [-Wdeprecated-declarations]
+  554 |         return juce::Font(label.getHeight() * 0.7f, juce::Font::bold);
+      |                ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/JUCE/modules/juce_graphics/fonts/juce_Font.h:76:7: note: 'Font' has been explicitly marked deprecated here
+   76 |     [[deprecated ("Use the constructor that takes a FontOptions argument")]]
+      |       ^
+In file included from /Users/artbox/Documents/Repos/GenerativeMIDI/Source/PluginEditor.cpp:11:
+In file included from /Users/artbox/Documents/Repos/GenerativeMIDI/Source/PluginEditor.h:14:
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/CustomLookAndFeel.h:554:33: warning: implicit conversion from 'int' to 'float' may lose precision [-Wimplicit-int-float-conversion]
+  554 |         return juce::Font(label.getHeight() * 0.7f, juce::Font::bold);
+      |                           ~~~~~~^~~~~~~~~~~ ~
+In file included from /Users/artbox/Documents/Repos/GenerativeMIDI/Source/PluginEditor.cpp:11:
+In file included from /Users/artbox/Documents/Repos/GenerativeMIDI/Source/PluginEditor.h:15:
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/PatternVisualizer.h:75:23: warning: 'Font' is deprecated: Use the constructor that takes a FontOptions argument [-Wdeprecated-declarations]
+   75 |             g.setFont(juce::Font(12.0f));
+      |                       ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/JUCE/modules/juce_graphics/fonts/juce_Font.h:76:7: note: 'Font' has been explicitly marked deprecated here
+   76 |     [[deprecated ("Use the constructor that takes a FontOptions argument")]]
+      |       ^
+In file included from /Users/artbox/Documents/Repos/GenerativeMIDI/Source/PluginEditor.cpp:11:
+In file included from /Users/artbox/Documents/Repos/GenerativeMIDI/Source/PluginEditor.h:15:
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/PatternVisualizer.h:167:19: warning: 'Font' is deprecated: Use the constructor that takes a FontOptions argument [-Wdeprecated-declarations]
+  167 |         g.setFont(juce::Font(9.0f, juce::Font::bold));
+      |                   ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/JUCE/modules/juce_graphics/fonts/juce_Font.h:76:7: note: 'Font' has been explicitly marked deprecated here
+   76 |     [[deprecated ("Use the constructor that takes a FontOptions argument")]]
+      |       ^
+In file included from /Users/artbox/Documents/Repos/GenerativeMIDI/Source/PluginEditor.cpp:11:
+In file included from /Users/artbox/Documents/Repos/GenerativeMIDI/Source/PluginEditor.h:15:
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/PatternVisualizer.h:167:19: warning: 'Font' is deprecated: Use the constructor that takes a FontOptions argument [-Wdeprecated-declarations]
+  167 |         g.setFont(juce::Font(9.0f, juce::Font::bold));
+      |                   ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/JUCE/modules/juce_graphics/fonts/juce_Font.h:76:7: note: 'Font' has been explicitly marked deprecated here
+   76 |     [[deprecated ("Use the constructor that takes a FontOptions argument")]]
+      |       ^
+In file included from /Users/artbox/Documents/Repos/GenerativeMIDI/Source/PluginEditor.cpp:11:
+In file included from /Users/artbox/Documents/Repos/GenerativeMIDI/Source/PluginEditor.h:15:
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/PatternVisualizer.h:174:66: warning: implicit conversion turns floating-point number into integer: 'float' to 'int' [-Wfloat-conversion]
+  174 |                 g.drawText(label, x, bounds.getBottom() - 20.0f, stepWidth, 15.0f,
+      |                   ~~~~~~~~                                       ^~~~~~~~~
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/PatternVisualizer.h:174:57: warning: implicit conversion turns floating-point number into integer: 'float' to 'int' [-Wfloat-conversion]
+  174 |                 g.drawText(label, x, bounds.getBottom() - 20.0f, stepWidth, 15.0f,
+      |                   ~~~~~~~~           ~~~~~~~~~~~~~~~~~~~^~~~~~~
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/PatternVisualizer.h:174:35: warning: implicit conversion turns floating-point number into integer: 'float' to 'int' [-Wfloat-conversion]
+  174 |                 g.drawText(label, x, bounds.getBottom() - 20.0f, stepWidth, 15.0f,
+      |                   ~~~~~~~~        ^
+In file included from /Users/artbox/Documents/Repos/GenerativeMIDI/Source/PluginEditor.cpp:11:
+In file included from /Users/artbox/Documents/Repos/GenerativeMIDI/Source/PluginEditor.h:17:
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/PolyrhythmLayerEditor.h:33:28: warning: 'Font' is deprecated: Use the constructor that takes a FontOptions argument [-Wdeprecated-declarations]
+   33 |         layerLabel.setFont(juce::Font(14.0f, juce::Font::bold));
+      |                            ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/JUCE/modules/juce_graphics/fonts/juce_Font.h:76:7: note: 'Font' has been explicitly marked deprecated here
+   76 |     [[deprecated ("Use the constructor that takes a FontOptions argument")]]
+      |       ^
+In file included from /Users/artbox/Documents/Repos/GenerativeMIDI/Source/PluginEditor.cpp:11:
+In file included from /Users/artbox/Documents/Repos/GenerativeMIDI/Source/PluginEditor.h:17:
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/PolyrhythmLayerEditor.h:33:28: warning: 'Font' is deprecated: Use the constructor that takes a FontOptions argument [-Wdeprecated-declarations]
+   33 |         layerLabel.setFont(juce::Font(14.0f, juce::Font::bold));
+      |                            ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/JUCE/modules/juce_graphics/fonts/juce_Font.h:76:7: note: 'Font' has been explicitly marked deprecated here
+   76 |     [[deprecated ("Use the constructor that takes a FontOptions argument")]]
+      |       ^
+In file included from /Users/artbox/Documents/Repos/GenerativeMIDI/Source/PluginEditor.cpp:11:
+In file included from /Users/artbox/Documents/Repos/GenerativeMIDI/Source/PluginEditor.h:17:
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/PolyrhythmLayerEditor.h:201:59: warning: implicit conversion from 'size_type' (aka 'unsigned long') to 'float' may lose precision [-Wimplicit-int-float-conversion]
+  201 |             float stepWidth = bounds.getWidth() / pattern.size();
+      |                                                 ~ ~~~~~~~~^~~~~~
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/PolyrhythmLayerEditor.h:206:43: warning: implicit conversion from 'size_t' (aka 'unsigned long') to 'float' may lose precision [-Wimplicit-int-float-conversion]
+  206 |                 float x = bounds.getX() + i * stepWidth + 1.0f;
+      |                                           ^ ~
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/PolyrhythmLayerEditor.h:263:30: warning: 'Font' is deprecated: Use the constructor that takes a FontOptions argument [-Wdeprecated-declarations]
+  263 |         headersLabel.setFont(juce::Font(10.0f, juce::Font::plain));
+      |                              ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/JUCE/modules/juce_graphics/fonts/juce_Font.h:76:7: note: 'Font' has been explicitly marked deprecated here
+   76 |     [[deprecated ("Use the constructor that takes a FontOptions argument")]]
+      |       ^
+In file included from /Users/artbox/Documents/Repos/GenerativeMIDI/Source/PluginEditor.cpp:11:
+In file included from /Users/artbox/Documents/Repos/GenerativeMIDI/Source/PluginEditor.h:17:
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/PolyrhythmLayerEditor.h:263:30: warning: 'Font' is deprecated: Use the constructor that takes a FontOptions argument [-Wdeprecated-declarations]
+  263 |         headersLabel.setFont(juce::Font(10.0f, juce::Font::plain));
+      |                              ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/JUCE/modules/juce_graphics/fonts/juce_Font.h:76:7: note: 'Font' has been explicitly marked deprecated here
+   76 |     [[deprecated ("Use the constructor that takes a FontOptions argument")]]
+      |       ^
+In file included from /Users/artbox/Documents/Repos/GenerativeMIDI/Source/PluginEditor.cpp:11:
+In file included from /Users/artbox/Documents/Repos/GenerativeMIDI/Source/PluginEditor.h:17:
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/UI/PolyrhythmLayerEditor.h:351:13: warning: unused variable 'newLayerIndex' [-Wunused-variable]
+  351 |         int newLayerIndex = polyEngine.addLayer();
+      |             ^~~~~~~~~~~~~
+In file included from /Users/artbox/Documents/Repos/GenerativeMIDI/Source/PluginEditor.cpp:12:
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/Core/GeneratorTypeMapping.h:104:55: warning: comparing floating point with == or != is unsafe [-Wfloat-equal]
+  104 |                 if (raw >= 0.0f && raw <= 1.0f && raw != static_cast<float>(index))
+      |                                                   ~~~ ^  ~~~~~~~~~~~~~~~~~~~~~~~~~
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/PluginEditor.cpp:28:24: warning: 'Font' is deprecated: Use the constructor that takes a FontOptions argument [-Wdeprecated-declarations]
+   28 |     titleLabel.setFont(juce::Font(40.0f, juce::Font::bold));
+      |                        ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/JUCE/modules/juce_graphics/fonts/juce_Font.h:76:7: note: 'Font' has been explicitly marked deprecated here
+   76 |     [[deprecated ("Use the constructor that takes a FontOptions argument")]]
+      |       ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/PluginEditor.cpp:28:24: warning: 'Font' is deprecated: Use the constructor that takes a FontOptions argument [-Wdeprecated-declarations]
+   28 |     titleLabel.setFont(juce::Font(40.0f, juce::Font::bold));
+      |                        ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/JUCE/modules/juce_graphics/fonts/juce_Font.h:76:7: note: 'Font' has been explicitly marked deprecated here
+   76 |     [[deprecated ("Use the constructor that takes a FontOptions argument")]]
+      |       ^
+[ 33%] Building CXX object CMakeFiles/GenerativeMIDI.dir/JUCE/modules/juce_gui_basics/juce_gui_basics.mm.o
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/PluginEditor.cpp:381:32: warning: 'Font' is deprecated: Use the constructor that takes a FontOptions argument [-Wdeprecated-declarations]
+  381 |     currentPresetLabel.setFont(juce::Font(12.0f));
+      |                                ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/JUCE/modules/juce_graphics/fonts/juce_Font.h:76:7: note: 'Font' has been explicitly marked deprecated here
+   76 |     [[deprecated ("Use the constructor that takes a FontOptions argument")]]
+      |       ^
+2 warnings generated.
+[ 38%] Building CXX object CMakeFiles/GenerativeMIDI.dir/JUCE/modules/juce_graphics/juce_graphics_Harfbuzz.cpp.o
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/PluginEditor.cpp:504:34: warning: implicit conversion from 'int' to 'float' may lose precision [-Wimplicit-int-float-conversion]
+  504 |     drawBrassOrnament(getWidth() - 20, 20, true, false);
+      |     ~~~~~~~~~~~~~~~~~ ~~~~~~~~~~~^~~~
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/PluginEditor.cpp:505:39: warning: implicit conversion from 'int' to 'float' may lose precision [-Wimplicit-int-float-conversion]
+  505 |     drawBrassOrnament(20, getHeight() - 20, false, true);
+      |     ~~~~~~~~~~~~~~~~~     ~~~~~~~~~~~~^~~~
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/PluginEditor.cpp:506:52: warning: implicit conversion from 'int' to 'float' may lose precision [-Wimplicit-int-float-conversion]
+  506 |     drawBrassOrnament(getWidth() - 20, getHeight() - 20, true, true);
+      |     ~~~~~~~~~~~~~~~~~                  ~~~~~~~~~~~~^~~~
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/PluginEditor.cpp:506:34: warning: implicit conversion from 'int' to 'float' may lose precision [-Wimplicit-int-float-conversion]
+  506 |     drawBrassOrnament(getWidth() - 20, getHeight() - 20, true, true);
+      |     ~~~~~~~~~~~~~~~~~ ~~~~~~~~~~~^~~~
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/PluginEditor.cpp:560:23: warning: 'Font' is deprecated: Use the constructor that takes a FontOptions argument [-Wdeprecated-declarations]
+  560 |             g.setFont(juce::Font(14.0f, juce::Font::bold));
+      |                       ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/JUCE/modules/juce_graphics/fonts/juce_Font.h:76:7: note: 'Font' has been explicitly marked deprecated here
+   76 |     [[deprecated ("Use the constructor that takes a FontOptions argument")]]
+      |       ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/PluginEditor.cpp:560:23: warning: 'Font' is deprecated: Use the constructor that takes a FontOptions argument [-Wdeprecated-declarations]
+  560 |             g.setFont(juce::Font(14.0f, juce::Font::bold));
+      |                       ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/JUCE/modules/juce_graphics/fonts/juce_Font.h:76:7: note: 'Font' has been explicitly marked deprecated here
+   76 |     [[deprecated ("Use the constructor that takes a FontOptions argument")]]
+      |       ^
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/PluginEditor.cpp:830:45: warning: implicit conversion changes signedness: 'int' to 'size_type' (aka 'unsigned long') [-Wsign-conversion]
+  830 |         std::vector<bool> pattern(euclidean.getSteps());
+      |                           ~~~~~~~ ~~~~~~~~~~^~~~~~~~~~
+/Users/artbox/Documents/Repos/GenerativeMIDI/Source/PluginEditor.cpp:832:21: warning: implicit conversion changes signedness: 'int' to 'size_type' (aka 'unsigned long') [-Wsign-conversion]
+  832 |             pattern[i] = euclidean.getStep(i);
+      |             ~~~~~~~ ^
+6 warnings generated.
+[ 38%] Building C object CMakeFiles/GenerativeMIDI.dir/JUCE/modules/juce_graphics/juce_graphics_Sheenbidi.c.o
+14 warnings generated.
+[ 42%] Building CXX object CMakeFiles/GenerativeMIDI.dir/JUCE/modules/juce_graphics/juce_graphics.mm.o
+45 warnings generated.
+[ 42%] Building CXX object CMakeFiles/GenerativeMIDI.dir/JUCE/modules/juce_events/juce_events.mm.o
+13 warnings generated.
+[ 47%] Building CXX object CMakeFiles/GenerativeMIDI.dir/JUCE/modules/juce_core/juce_core_CompilationTime.cpp.o
+[ 47%] Building CXX object CMakeFiles/GenerativeMIDI.dir/JUCE/modules/juce_core/juce_core.mm.o
+[ 52%] Building CXX object CMakeFiles/GenerativeMIDI.dir/JUCE/modules/juce_data_structures/juce_data_structures.mm.o
+57 warnings generated.
+[ 52%] Building CXX object CMakeFiles/GenerativeMIDI.dir/JUCE/modules/juce_audio_processors_headless/juce_audio_processors_headless_ara.cpp.o
+[ 57%] Building CXX object CMakeFiles/GenerativeMIDI.dir/JUCE/modules/juce_audio_processors_headless/juce_audio_processors_headless_lv2_libs.cpp.o
+[ 57%] Building CXX object CMakeFiles/GenerativeMIDI.dir/JUCE/modules/juce_audio_processors_headless/juce_audio_processors_headless.mm.o
+62 warnings generated.
+[ 61%] Building CXX object CMakeFiles/GenerativeMIDI.dir/JUCE/modules/juce_audio_basics/juce_audio_basics.mm.o
+[ 61%] Building CXX object CMakeFiles/GenerativeMIDI.dir/JUCE/modules/juce_audio_devices/juce_audio_devices.mm.o
+[ 66%] Building CXX object CMakeFiles/GenerativeMIDI.dir/JUCE/modules/juce_audio_formats/juce_audio_formats.mm.o
+[ 66%] Building CXX object CMakeFiles/GenerativeMIDI.dir/JUCE/modules/juce_audio_utils/juce_audio_utils.mm.o
+[ 71%] Linking CXX static library "GenerativeMIDI_artefacts/Debug/libGenerative MIDI_SharedCode.a"
+[ 71%] Built target GenerativeMIDI
+[ 71%] Building CXX object CMakeFiles/GenerativeMIDI_Standalone.dir/JUCE/modules/juce_audio_plugin_client/juce_audio_plugin_client_ARA.cpp.o
+[ 76%] Building CXX object CMakeFiles/GenerativeMIDI_Standalone.dir/JUCE/modules/juce_audio_plugin_client/juce_audio_plugin_client_AAX_utils.cpp.o
+[ 80%] Building CXX object CMakeFiles/GenerativeMIDI_Standalone.dir/JUCE/modules/juce_audio_plugin_client/juce_audio_plugin_client_AAX.mm.o
+[ 85%] Building CXX object CMakeFiles/GenerativeMIDI_Standalone.dir/JUCE/modules/juce_audio_plugin_client/juce_audio_plugin_client_Standalone.cpp.o
+[ 85%] Building CXX object CMakeFiles/GenerativeMIDI_Standalone.dir/JUCE/modules/juce_audio_plugin_client/juce_audio_plugin_client_VST2.mm.o
+[ 85%] Building CXX object CMakeFiles/GenerativeMIDI_Standalone.dir/JUCE/modules/juce_audio_plugin_client/juce_audio_plugin_client_Unity.cpp.o
+[ 90%] Building CXX object CMakeFiles/GenerativeMIDI_Standalone.dir/JUCE/modules/juce_audio_plugin_client/juce_audio_plugin_client_AU_2.mm.o
+[ 90%] Building CXX object CMakeFiles/GenerativeMIDI_Standalone.dir/JUCE/modules/juce_audio_plugin_client/juce_audio_plugin_client_AUv3.mm.o
+[ 90%] Building CXX object CMakeFiles/GenerativeMIDI_Standalone.dir/JUCE/modules/juce_audio_plugin_client/juce_audio_plugin_client_AU_1.mm.o
+[ 95%] Building CXX object CMakeFiles/GenerativeMIDI_Standalone.dir/JUCE/modules/juce_audio_plugin_client/juce_audio_plugin_client_LV2.mm.o
+[100%] Building CXX object CMakeFiles/GenerativeMIDI_Standalone.dir/JUCE/modules/juce_audio_plugin_client/juce_audio_plugin_client_VST3.mm.o
+Copying OS X content GenerativeMIDI_artefacts/Debug/Standalone/Generative MIDI.app/Contents/Resources/RecentFilesMenuTemplate.nib
+[100%] Linking CXX executable "GenerativeMIDI_artefacts/Debug/Standalone/Generative MIDI.app/Contents/MacOS/Generative MIDI"
+[100%] Built target GenerativeMIDI_Standalone

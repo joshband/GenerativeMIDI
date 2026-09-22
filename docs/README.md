@@ -20,6 +20,13 @@ The markdown below is **internal / developer evidence** (build notes, design spe
 - **[Smoke Checklist](user/SMOKE_CHECKLIST.md)** - Manual Standalone/DAW smoke (v0.8.0)
 - **[REAPER Quick Start](user/REAPER_QUICK_START.md)** - DAW-specific integration guide
 
+### QA / Host verification
+
+- **[QA Findings v0.8.0](qa/QA_FINDINGS_v0.8.0.md)** - Host/UI campaign scorecard (ctest, auval, pluginval, Standalone, REAPER)
+- **[Smoke checklist results](qa/logs/SMOKE_CHECKLIST_RESULTS.md)** - Filled results for the latest campaign
+- **[REAPER MCP setup](qa/reaper/MCP_SETUP.md)** - TwelveTake MCP for agent-driven transport-gate QA
+- **[REAPER transport gate](qa/reaper/README.md)** - MCP-primary + operator fallback
+
 ### For Developers
 
 - **[Build Instructions](developer/BUILD.md)** - How to build the plugin from source
@@ -61,6 +68,8 @@ The markdown below is **internal / developer evidence** (build notes, design spe
 | Read the engineering case study | [Engineering](engineering.html) |
 | Use the plugin | [Getting Started](user/GETTING_STARTED.md) |
 | Run a manual Standalone/DAW smoke | [Smoke Checklist](user/SMOKE_CHECKLIST.md) |
+| Read latest Host/UI QA findings | [QA Findings v0.8.0](qa/QA_FINDINGS_v0.8.0.md) |
+| Set up REAPER MCP for agents | [REAPER MCP setup](qa/reaper/MCP_SETUP.md) |
 | Build from source | [Build Instructions](developer/BUILD.md) |
 | Build for iOS | [iOS Build Guide](developer/BUILDING-iOS.md) |
 | Understand the features | [Features Guide](user/FEATURES.md) |

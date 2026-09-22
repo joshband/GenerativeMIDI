@@ -1,21 +1,33 @@
 # GenerativeMIDI QA Findings — v0.8.0
 
 **Date:** 2026-09-22  
-**Commit:** `dd809e9abe4b055a396156d382cf61a19ac55b4e`  
-**Campaign:** [Host QA Exercise Plan](../../.cursor/plans/host_qa_exercise_plan_9a5ca05f.plan.md) (plan file may live under user `.cursor/plans/`)
+**Commit:** `41c51af` (TwelveTake MCP + Phase C; prior evidence `28f0af4`)  
+**Campaign:** Host QA Exercise Plan + REAPER MCP Phase C
 
 ## 1. Environment
 
 | Item | Value |
 |------|--------|
 | OS | macOS (darwin 25.x) |
-| Formats tested | AU (`aumi Gmid Osrc`), VST3 Debug artefact, Standalone Debug |
-| Hosts present | REAPER.app, Logic Pro.app |
+| Formats tested | AU (`aumi Gmid Osrc`), VST3 Debug artefact, **Debug Standalone (rebuilt)** |
+| Hosts present | REAPER.app (launched), Logic Pro.app (not exercised) |
 | Automated | `ctest` 20/20, `auval` PASS, pluginval v1.0.4 strictness 5 SUCCESS |
-| Blocked | Accessibility for `osascript` (−25211); Screen Recording for screenshots |
-| Reaper / DAW MCP | **Not available** in Cursor — used install + Lua probe docs only |
+| Permissions (re-verified) | **Accessibility OK** (System Events); **Screen Recording OK** (`screencapture`) — [`logs/permissions_check.txt`](logs/permissions_check.txt) |
+| Reaper / DAW MCP | **TwelveTake** `user-reaper` (`uvx twelvetake-reaper-mcp`) — bridge via `__startup.lua` |
 
-Logs: [`docs/qa/logs/`](logs/) (text only in git; download pluginval locally per [`docs/developer/CI.md`](../developer/CI.md)).
+Logs: [`docs/qa/logs/`](logs/).
+
+### Rebuild note (stale Debug binary)
+
+Earlier Phase B used a **stale Debug Standalone** (`mtime` Sep 22 **14:40**) while `CMAKE_BUILD_TYPE` was **Release**, so Release Standalone relinked (18:22) but Debug did not. Force reconfigure `-DCMAKE_BUILD_TYPE=Debug` + `cmake --build build --target GenerativeMIDI_Standalone` produced a fresh binary:
+
+| Artefact | mtime |
+|----------|-------|
+| `Source/PluginEditor.cpp` | 2026-09-22 18:23:33 |
+| `PluginEditor.cpp.o` | 2026-09-22 18:23:37 |
+| Debug Standalone `Generative MIDI` | **2026-09-22 18:23:48** |
+
+Rebuild log: [`logs/rebuild_debug_standalone.txt`](logs/rebuild_debug_standalone.txt).
 
 ---
 
@@ -23,19 +35,25 @@ Logs: [`docs/qa/logs/`](logs/) (text only in git; download pluginval locally per
 
 - **Unit / engine suite** — `ctest` **20/20** ([`logs/ctest.txt`](logs/ctest.txt)).
 - **AU validation** — `auval -v aumi Gmid Osrc` → **AU VALIDATION SUCCEEDED**; 10 generator value strings including Polyrhythm ([`logs/auval.txt`](logs/auval.txt)).
-- **VST3 pluginval** — strictness 5, `--skip-gui-tests`, in-process → **SUCCESS** exit 0 ([`logs/pluginval-strict5.txt`](logs/pluginval-strict5.txt)). MIDI-effect buses correctly report 0 audio I/O channels.
-- **Standalone launches** — process `Generative MIDI` starts from Debug Standalone `.app`.
-- **Factory / migration / LFO math** — covered by Catch2 (11 factories, 9→10 migration helpers, ModLfo).
-- **Transport gate (code)** — `processBlock` only advances clock when `AudioPlayHead::getIsPlaying()` is true when a playhead exists ([`PluginProcessor.cpp`](../../Source/PluginProcessor.cpp) ~372–377); Standalone without playhead always advances (documented).
+- **VST3 pluginval** — strictness 5, `--skip-gui-tests`, in-process → **SUCCESS** ([`logs/pluginval-strict5.txt`](logs/pluginval-strict5.txt)).
+- **Permissions** — Accessibility + Screen Recording granted for this agent shell; screenshots and AX probes succeed.
+- **Standalone launches** — Debug Standalone after rebuild; UI screenshots captured.
+- **Generator dropdown includes Polyrhythm (10 items)** — **PASS after rebuild**. Open-menu screenshot lists: Euclidean, **Polyrhythm**, Markov, L-System, Cellular, Probabilistic, Brownian, Perlin Noise, Drunk Walk, Lorenz ([`logs/standalone_generator_menu.png`](logs/standalone_generator_menu.png), [`logs/generator_menu_items.txt`](logs/generator_menu_items.txt)). Matches `PluginEditor.cpp` `addItemList`.
+- **Presets UI** — Preset Manager opens with 11 factories including **Polyrhythm Layers** ([`logs/standalone_presets_menu.png`](logs/standalone_presets_menu.png)).
+- **Generator cycling (partial)** — Keyboard/cliclick cycling reached Brownian and other gens ([`logs/standalone_brownian.png`](logs/standalone_brownian.png), [`logs/standalone_ui_exercise_after_rebuild.txt`](logs/standalone_ui_exercise_after_rebuild.txt)). LFO button clickable ([`logs/standalone_lfo_toggled.png`](logs/standalone_lfo_toggled.png)). Density/Probability knobs visible in UI.
+- **Transport gate (code)** — `processBlock` advances only when playhead reports playing ([`PluginProcessor.cpp`](../../Source/PluginProcessor.cpp)); Standalone without playhead free-runs.
+- **REAPER present** — App launches; AX OK ([`logs/reaper_launched.png`](logs/reaper_launched.png), [`logs/reaper_phase_c.txt`](logs/reaper_phase_c.txt)).
+- **REAPER transport gate via MCP (Phase C)** — **PASS**: TwelveTake MCP `create_project` → insert track → `Generative MIDI` + `ReaSynth` → play ~3.5s → stop (`get_play_state` = 0). FX resolved as `VST3: Generative MIDI (OpenSource)` + `VSTi: ReaSynth (Cockos)`. Evidence: [`logs/reaper_transport_gate_mcp.txt`](logs/reaper_transport_gate_mcp.txt), [`logs/reaper_transport_gate_mcp.png`](logs/reaper_transport_gate_mcp.png); setup: [`reaper/MCP_SETUP.md`](reaper/MCP_SETUP.md).
 
 ---
 
 ## 3. Broken / blocked / regressions
 
-- **Interactive UI automation blocked** — Assistive access denied to `osascript`; cannot script generator combo, presets, or knobs ([`logs/standalone_ax_probe.txt`](logs/standalone_ax_probe.txt)).
-- **Screenshot evidence blocked** — Screen Recording not granted ([`logs/screenshot_attempt.txt`](logs/screenshot_attempt.txt)).
-- **REAPER interactive transport not agent-verified** — REAPER launches, but AX denied; play/stop MIDI confirmation remains **operator-assisted** via [`docs/qa/reaper/`](reaper/).
-- **No MIDI monitor capture this run** — expression AT/PB/CC and per-generator audibility not instrumented; do not mark as PASS for “feel.”
+- **Earlier false negative (resolved)** — Generator menu without Polyrhythm was a **stale Debug binary**, not missing source. Source already had 10 gens; auval already listed Polyrhythm.
+- **AX popup menus fragile** — After opening a JUCE combo, `pop up button 1` often returns **-1719 Invalid index**; menu item enumeration fails. Prefer `screencapture` + `cliclick` for menu proof (as used here).
+- **Reliable programmatic select of Polyrhythm** — Hit-testing menu rows / keyboard nav was off-by-one; agent did **not** consistently land on Polyrhythm selected state. Menu **presence** is proven; layer-editor screenshot under Polyrhythm selection remains incomplete.
+- **No live MIDI note stream via MCP** — Phase C asserts FX chain + transport play/stop; ear/MIDI-monitor confirmation of “no new note-ons while stopped” is still a short human glance (MCP does not tee generative FX MIDI).
+- **No expression MIDI monitor capture** — AT/PB/CC and per-generator audibility not instrumented this run.
 
 No auval/pluginval/ctest failures observed on this commit.
 
@@ -44,44 +62,44 @@ No auval/pluginval/ctest failures observed on this commit.
 ## 4. Needs improvement (prioritized)
 
 ### P0
-1. **Grant Accessibility + Screen Recording** to the agent/terminal (or run a human pass) to finish [`SMOKE_CHECKLIST.md`](../user/SMOKE_CHECKLIST.md) for generators, LFO, expression, and REAPER stop.
-2. **Operator REAPER pass** using [`reaper/transport_gate_probe.lua`](reaper/transport_gate_probe.lua) — confirm stop gates new note-ons.
+1. **Human confirm Polyrhythm layer editor** — Select Polyrhythm (or load Polyrhythm Layers preset) and verify layer UI + MIDI emit.
+2. **Optional ear-check** — With Phase C session still loaded, confirm silence/no new note-ons after Stop (MCP cannot stream generative MIDI).
 
 ### P1
-3. **Headless MIDI emit harness** — small console/`ctest` target linking processor + fake `AudioPlayHead` to assert note-ons per generator and zero note-ons when stopped (UI-independent). Attempted during this campaign but not wired into CMake (plugin link weight); worth a dedicated slice.
-4. **pluginval GUI / higher strictness** — optional local run without `--skip-gui-tests` once Accessibility works; expect MIDI-FX flake — document only.
-5. **Polyrhythm layer persistence** — layer patterns/offsets not in APVTS/session XML; reload loses UI edits (product gap vs factory default seed).
+3. **Headless MIDI emit harness** — `ctest` target with fake `AudioPlayHead` for note-on counts + stop gate (UI-independent).
+4. **AX names on JUCE controls** — Named accessibility for combo/menu automation (avoid -1719 race).
+5. **Polyrhythm layer persistence** — layer patterns/offsets not in APVTS/session XML.
 
 ### P2
-6. Editor monolith / AX names — JUCE controls lack accessible names useful for UI automation.
-7. Markov trained-path RT residual (STATUS) — still a honesty item for audio-thread alloc.
+6. Document Debug vs Release CMake single-config caveat in BUILD.md (stale Debug artefacts when `CMAKE_BUILD_TYPE=Release`).
+7. Markov trained-path RT residual (STATUS honesty item).
 
 ---
 
 ## 5. Helpful new features (grounded)
 
-- **MIDI activity meter / last-note HUD** in Standalone — proves generation without external synth.
-- **Built-in MIDI log pane** (last N events) for expression/channel debugging.
-- **“QA mode”** button that cycles generators for N bars and reports note counts (doubles as demo).
-- **Transport indicator** — “Host playing / Standalone free-run / Stopped” so DAW gating is visible.
-- **IAC / virtual MIDI out** preference in Standalone for monitor-only workflows.
+- **MIDI activity meter / last-note HUD** in Standalone.
+- **Built-in MIDI log pane** for expression/channel debugging.
+- **“QA mode”** that cycles generators for N bars and reports note counts.
+- **Transport indicator** — Host playing / Standalone free-run / Stopped.
+- **IAC / virtual MIDI out** preference in Standalone.
 
 ---
 
 ## 6. Refactor / tech debt
 
-- Link a **HostSmoke** console or Catch2 target to `GenerativeMIDIProcessor` without duplicating the whole plugin graph (shared static lib).
-- Split [`PluginEditor.cpp`](../../Source/PluginEditor.cpp) layout vs control wiring for testability.
+- Link a **HostSmoke** console or Catch2 target to `GenerativeMIDIProcessor`.
+- Split [`PluginEditor.cpp`](../../Source/PluginEditor.cpp) layout vs control wiring.
 - Persist Polyrhythm layer state in `getStateInformation` / preset XML.
-- Reaper MCP or official ReaScript CI job if interactive host QA becomes recurrent.
+- Separate `build-debug/` / `build-release/` dirs to avoid single-config artefact confusion.
 
 ---
 
 ## 7. Recommended next engineering slice (top 3)
 
-1. **Human or Accessibility-enabled smoke** — complete Standalone + REAPER transport checklist; attach one screenshot.
-2. **Headless processor smoke in `ctest`** — fake playhead, note-on counts per generator + stop gate.
-3. **Polyrhythm layer state save/load** — so experimental UI survives session reload.
+1. **Headless processor smoke in `ctest`** — fake playhead, note-ons + stop gate.
+2. **Polyrhythm layer state save/load**.
+3. **Optional MCP MIDI-monitor / activity probe** for stop-gate without ear check.
 
 ---
 
@@ -92,11 +110,13 @@ No auval/pluginval/ctest failures observed on this commit.
 | ctest | Yes | High for DSP/helpers |
 | auval | Yes | High for AU compliance |
 | pluginval VST3 | Yes | High for load/crash/state; weak for UI/MIDI feel |
-| Standalone UI | Launch only | Low without Accessibility |
-| REAPER | Launch + Lua docs | Medium after operator run |
+| Standalone UI | Launch + screenshots + partial cliclick | **High for menu presence**; medium for control cycling |
+| REAPER | Launch + MCP FX insert + play/stop | **High** for session/transport; medium for MIDI ear-gate |
 | Logic | Not exercised | — |
 | AUv3 device | Out of scope | — |
-| Reaper MCP | N/A | — |
+| Reaper MCP (TwelveTake) | Yes | **High** for project/track/FX/transport |
+
+---
 
 ## Smoke checklist pointer
 
