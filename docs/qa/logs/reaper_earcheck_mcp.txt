@@ -1,0 +1,30 @@
+=== GenerativeMIDI — REAPER MIDI ear-check (best effort) ===
+Date: 2026-09-22
+MCP: user-reaper (TwelveTake)
+Bridge: ~/Library/Application Support/REAPER/Scripts/reaper_mcp_bridge.lua
+
+Steps (MCP):
+1. open REAPER.app (was not running; launched for this pass)
+2. create_project -> ok
+3. insert_track name="GenerativeMIDI ear-check" -> ok (index 0)
+4. track_fx_add_by_name(0, "Generative MIDI", position=0) -> ret 0
+5. track_fx_add_by_name(0, "ReaSynth") -> ret 1
+6. track_fx_get_list(0) ->
+     [0] VST3: Generative MIDI (OpenSource) enabled
+     [1] VSTi: ReaSynth (Cockos) enabled
+7. play -> ok; get_play_state -> ret 1 (playing)
+8. wait ~3.5s (screencapture while playing)
+9. stop -> ok; get_play_state -> ret 0 (stopped)
+
+Evidence:
+- docs/qa/logs/reaper_earcheck_playing.png
+- docs/qa/logs/reaper_earcheck_stopped.png
+
+Result: PASS with residual human glance
+- Transport + FX chain verified via MCP (play→stop).
+- No objective MIDI-silence / note-on stream proof without a monitor or mic capture;
+  MCP cannot stream generative MIDI from the FX.
+- Headless HostSmokeTests already gate playing note-ons / stopped silence in CI.
+- Optional: human ear confirm no new notes while stopped (~10s glance).
+
+=== end ===

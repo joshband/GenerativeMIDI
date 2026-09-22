@@ -25,7 +25,7 @@ public:
     void addTransition(const std::vector<int>& state, int nextValue, float probability = 1.0f);
     void learn(const std::vector<int>& sequence);
     int generate(const std::vector<int>& currentState);
-    /** RT-friendlier: returns default when table empty (no map key alloc). */
+    /** RT-friendly trained lookup: uses pre-reserved scratch key (no per-note heap). */
     int generateOrDefault(const int* state, int stateLen, int fallbackNote = 60);
     bool hasTransitions() const { return !transitionTable.empty(); }
     void reset();
@@ -35,6 +35,7 @@ public:
 private:
     int order;
     std::map<std::vector<int>, std::map<int, float>> transitionTable;
+    mutable std::vector<int> lookupScratch; // reserved to `order` — trained RT lookup
     juce::Random random;
 };
 

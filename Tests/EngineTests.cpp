@@ -99,6 +99,23 @@ TEST_CASE("GeneratorTypeMapping stochastic enums", "[mapping]")
     REQUIRE(GeneratorTypeMapping::toStochastic(9) == StochasticEngine::GeneratorType::LorenzAttractor);
 }
 
+TEST_CASE("MarkovChain trained generateOrDefault uses learned transitions", "[markov]")
+{
+    MarkovChain chain(1);
+    chain.learn(std::vector<int>{60, 62, 64, 62, 60, 62});
+
+    REQUIRE(chain.hasTransitions());
+
+    const int state[] = {60};
+    const int note = chain.generateOrDefault(state, 1, 48);
+    // Trained from 60→62 only in this sequence fragment of order-1 starts.
+    REQUIRE(note == 62);
+
+    // Repeated lookups from a deterministic trained state stay on the learned next.
+    for (int i = 0; i < 32; ++i)
+        REQUIRE(chain.generateOrDefault(state, 1, 48) == 62);
+}
+
 TEST_CASE("PolyrhythmEngine seeds audible default layer", "[polyrhythm]")
 {
     PolyrhythmEngine engine;

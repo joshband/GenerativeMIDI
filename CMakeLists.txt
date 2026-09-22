@@ -121,6 +121,7 @@ add_executable(GenerativeMIDITests
     Source/Core/EuclideanEngine.cpp
     Source/Core/PolyrhythmEngine.cpp
     Source/Core/StochasticEngine.cpp
+    Source/Core/AlgorithmicEngine.cpp
     Source/Core/PresetManager.cpp
     Source/DSP/ClockManager.cpp
 )

@@ -16,7 +16,7 @@
 | Modulation matrix | Archived under `archive/modulation_v1/` — not live |
 | AUv3 / iOS | CMake target + docs; **not App Store–ready** |
 | Touch / a11y | No dedicated touch redesign; key controls have AX `setTitle` names |
-| Tests | Catch2 + `ctest` (**25**, incl. host playhead smoke + polyrhythm layer persistence) in CMake / CI |
+| Tests | Catch2 + `ctest` (**26**, incl. host playhead smoke + polyrhythm layer persistence + Markov trained lookup) in CMake / CI |
 | CI matrix | macOS plugins + iOS AUv3 + Windows/Linux VST3 + pluginval (VST3) |
 | Canonical build | **CMake** (`GenerativeMIDI.jucer` deprecated) |
 
@@ -68,8 +68,8 @@ Full router / multi-source panel — not part of current LFO MVP.
 ## Notes
 
 - Prefer CMake; initialize `art/` with `git submodule update --init --recursive`.
-- **Realtime**: Euclidean regen, ratchet, algorithmic single-note, EventScheduler steady-state path allocation-free (queue pre-reserved). Residual: trained Markov map-key vector. Polyrhythm uses shared `scheduleNote` (expression intact).
-- **Host/UI smoke (2026-09-22):** Phase A green (ctest/auval/pluginval). Phase B: Debug Standalone rebuilt; generator menu shows **10 items including Polyrhythm** (earlier miss = stale Debug binary under `CMAKE_BUILD_TYPE=Release`). Phase C: TwelveTake REAPER MCP — insert Generative MIDI VST3 + ReaSynth, play/stop **PASS**. **Headless host smoke:** `GenerativeMIDIHostSmokeTests` (fake `AudioPlayHead`, note-ons while playing + stop gate). **Polyrhythm layers** persist in session (`get`/`setStateInformation`) and preset XML (`PolyrhythmLayers` ValueTree child, schema **1.2**). **AX titles** on Generator Type / Presets / LFO / Probability / layer editor controls (System Events probe). **Polyrhythm layer UI** confirmed in Standalone screenshots. Details: [`docs/qa/QA_FINDINGS_v0.8.0.md`](docs/qa/QA_FINDINGS_v0.8.0.md); MCP setup: [`docs/qa/reaper/MCP_SETUP.md`](docs/qa/reaper/MCP_SETUP.md).
+- **Realtime**: Euclidean regen, ratchet, algorithmic single-note, EventScheduler steady-state path allocation-free (queue pre-reserved). Trained Markov lookup reuses a pre-reserved scratch key (no per-note heap); map remains `vector`-keyed (learn off-RT). Polyrhythm uses shared `scheduleNote` (expression intact).
+- **Host/UI smoke (2026-09-22):** Phase A green (ctest/auval/pluginval). Phase B: Debug Standalone rebuilt; generator menu shows **10 items including Polyrhythm** (earlier miss = stale Debug binary under `CMAKE_BUILD_TYPE=Release`). Phase C: TwelveTake REAPER MCP — insert Generative MIDI VST3 + ReaSynth, play/stop **PASS**. Optional ear-check re-run: play→stop **PASS with residual human glance** (no MIDI monitor). **Headless host smoke:** `GenerativeMIDIHostSmokeTests` (fake `AudioPlayHead`, note-ons while playing + stop gate). **Polyrhythm layers** persist in session (`get`/`setStateInformation`) and preset XML (`PolyrhythmLayers` ValueTree child, schema **1.2**). **AX titles** on Generator Type / Presets / LFO / Probability / layer editor controls (System Events probe). **Polyrhythm layer UI** confirmed in Standalone screenshots. Details: [`docs/qa/QA_FINDINGS_v0.8.0.md`](docs/qa/QA_FINDINGS_v0.8.0.md); MCP setup: [`docs/qa/reaper/MCP_SETUP.md`](docs/qa/reaper/MCP_SETUP.md).
 
 **License**: MIT  
 **Repository**: https://github.com/joshband/GenerativeMIDI

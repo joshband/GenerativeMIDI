@@ -13,8 +13,9 @@
 // ============================================================================
 // Markov Chain Implementation
 // ============================================================================
-MarkovChain::MarkovChain(int order) : order(order)
+MarkovChain::MarkovChain(int order) : order(juce::jlimit(1, 5, order))
 {
+    lookupScratch.reserve(static_cast<size_t>(this->order));
 }
 
 void MarkovChain::addTransition(const std::vector<int>& state, int nextValue, float probability)
@@ -84,9 +85,9 @@ int MarkovChain::generateOrDefault(const int* state, int stateLen, int fallbackN
     if (transitionTable.empty() || state == nullptr || stateLen != order)
         return fallbackNote;
 
-    // Trained tables still need a vector key for map lookup (documented RT risk).
-    std::vector<int> key(state, state + stateLen);
-    return generate(key);
+    // Reuse reserved scratch — assign within capacity avoids per-note heap alloc.
+    lookupScratch.assign(state, state + stateLen);
+    return generate(lookupScratch);
 }
 
 void MarkovChain::reset()
@@ -97,6 +98,8 @@ void MarkovChain::reset()
 void MarkovChain::setOrder(int newOrder)
 {
     order = juce::jlimit(1, 5, newOrder);
+    lookupScratch.clear();
+    lookupScratch.reserve(static_cast<size_t>(order));
     reset();
 }
 

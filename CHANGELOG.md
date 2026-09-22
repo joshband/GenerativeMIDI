@@ -15,11 +15,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Accessibility titles (`Component::setTitle`) on key editor, Polyrhythm layer, and Preset Browser controls for System Events / VoiceOver automation.
 
 ### Changed
-- GitHub Pages `docs/index.html` / `docs/engineering.html` proof table aligned with 10 UI generators, 25 `ctest` cases, and REAPER MCP Host QA evidence.
-- `ctest` suite expanded with host playhead smoke and polyrhythm layer persistence coverage.
+- GitHub Pages `docs/index.html` / `docs/engineering.html` proof table aligned with 10 UI generators, 26 `ctest` cases, and REAPER MCP Host QA evidence.
+- `ctest` suite expanded with host playhead smoke, polyrhythm layer persistence, and Markov trained-path lookup coverage.
 - Preset / session schema bumped **1.1 → 1.2** (generator-index migration still only for schemas older than 1.1).
-- Host/UI QA findings: AX titles verified; Polyrhythm layer editor confirmed in Debug Standalone screenshots.
-
+- Host/UI QA findings: AX titles verified; Polyrhythm layer editor confirmed in Debug Standalone screenshots; P2 BUILD.md caveat + Markov RT scratch lookup closed; REAPER ear-check logged as PASS with residual human glance.
+- Markov trained-path `generateOrDefault` reuses a pre-reserved scratch key (no per-note heap after warmup).
 ## [0.8.0] - 2025-10-18
 
 ### Added - MIDI Channel Routing & Enhanced UI

@@ -11,7 +11,7 @@
 | OS | macOS (darwin 25.x) |
 | Formats tested | AU (`aumi Gmid Osrc`), VST3 Debug artefact, **Debug Standalone (rebuilt)** |
 | Hosts present | REAPER.app (launched), Logic Pro.app (not exercised) |
-| Automated | `ctest` **25/25** (engine + host smoke + polyrhythm persistence), `auval` PASS, pluginval v1.0.4 strictness 5 SUCCESS |
+| Automated | `ctest` **26/26** (engine + host smoke + polyrhythm persistence + Markov trained lookup), `auval` PASS, pluginval v1.0.4 strictness 5 SUCCESS |
 | Permissions (re-verified) | **Accessibility OK** (System Events); **Screen Recording OK** (`screencapture`) — [`logs/permissions_check.txt`](logs/permissions_check.txt) |
 | Reaper / DAW MCP | **TwelveTake** `user-reaper` (`uvx twelvetake-reaper-mcp`) — bridge via `__startup.lua` |
 
@@ -29,7 +29,7 @@ Rebuild log (earlier): [`logs/rebuild_debug_standalone.txt`](logs/rebuild_debug_
 
 ## 2. Works
 
-- **Unit / engine suite** — `ctest` **25/25** (engine + headless host playhead smoke + polyrhythm layer persistence); AX pass log [`logs/ctest_ax_names.txt`](logs/ctest_ax_names.txt).
+- **Unit / engine suite** — `ctest` **26/26** (engine + headless host playhead smoke + polyrhythm layer persistence + Markov trained lookup); AX pass log [`logs/ctest_ax_names.txt`](logs/ctest_ax_names.txt).
 - **AU validation** — `auval -v aumi Gmid Osrc` → **AU VALIDATION SUCCEEDED**; 10 generator value strings including Polyrhythm ([`logs/auval.txt`](logs/auval.txt)).
 - **VST3 pluginval** — strictness 5, `--skip-gui-tests`, in-process → **SUCCESS** ([`logs/pluginval-strict5.txt`](logs/pluginval-strict5.txt)).
 - **Permissions** — Accessibility + Screen Recording granted for this agent shell; screenshots and AX probes succeed.
@@ -49,7 +49,7 @@ Rebuild log (earlier): [`logs/rebuild_debug_standalone.txt`](logs/rebuild_debug_
 
 - **Earlier false negative (resolved)** — Generator menu without Polyrhythm was a **stale Debug binary**, not missing source. Source already had 10 gens; auval already listed Polyrhythm.
 - **AX popup menus still fragile for `menu item` clicks** — Opening a JUCE combo by **named** `AXPopUpButton` works; enumerating/`click menu item "Polyrhythm"` often returns **-1719 Invalid index**. Prefer: click named combo → OCR/screencapture row → `cliclick`, or load factory preset. Named titles remove the “unnamed popup” discovery problem; they do not fully fix JUCE menu AX trees.
-- **No live MIDI note stream via MCP** — Phase C asserts FX chain + transport play/stop; ear/MIDI-monitor confirmation of “no new note-ons while stopped” remains a short human glance. **Mitigated in CI/local:** headless `GenerativeMIDIHostSmokeTests` assert note-ons while playing and zero new note-ons when stopped. Polyrhythm UI confirm did **not** attach a MIDI monitor (Standalone free-runs; DSP already covered by host smoke).
+- **No live MIDI note stream via MCP** — Phase C / ear-check assert FX chain + transport play/stop; ear/MIDI-monitor confirmation of “no new note-ons while stopped” remains a short human glance (**PASS with residual human glance**, [`logs/reaper_earcheck_mcp.txt`](logs/reaper_earcheck_mcp.txt)). **Mitigated in CI/local:** headless `GenerativeMIDIHostSmokeTests` assert note-ons while playing and zero new note-ons when stopped. Polyrhythm UI confirm did **not** attach a MIDI monitor (Standalone free-runs; DSP already covered by host smoke).
 - **No expression MIDI monitor capture** — AT/PB/CC and per-generator audibility not instrumented this run.
 - **Preset Manager dialog AX shallow** — Native `DialogWindow` tree often omits nested control titles under System Events (`entire contents` ~window chrome only); main editor AX titles are reliable.
 
@@ -61,7 +61,7 @@ No auval/pluginval/ctest failures observed on this campaign.
 
 ### P0
 1. **Human confirm Polyrhythm layer editor** — **DONE (agent)** — Standalone Polyrhythm selection + layer UI screenshot + AX layer titles. Optional: human ear-check that notes emit in Standalone/REAPER.
-2. **Optional ear-check** — With Phase C session still loaded, confirm silence/no new note-ons after Stop (MCP cannot stream generative MIDI). **Skipped this pass** (bridge up, but no MIDI monitor); leave as short human glance.
+2. **Optional ear-check** — **PASS with residual human glance** — Re-ran Generative MIDI + ReaSynth via TwelveTake MCP: play ~3.5s → stop (`get_play_state` 1→0). Evidence: [`logs/reaper_earcheck_mcp.txt`](logs/reaper_earcheck_mcp.txt), [`logs/reaper_earcheck_playing.png`](logs/reaper_earcheck_playing.png), [`logs/reaper_earcheck_stopped.png`](logs/reaper_earcheck_stopped.png). No MIDI-monitor/mic proof of silence-on-stop; CI HostSmokeTests remain the objective gate.
 
 ### P1
 3. **Headless MIDI emit harness** — **DONE** — `Tests/HostSmokeTests.cpp` + `GenerativeMIDIHostSmokeTests` (links `GenerativeMIDI` shared code); fake `AudioPlayHead`; playing → note-ons > 0; stopped → no new note-ons; Standalone free-run contrast documented in source comments.
@@ -69,8 +69,8 @@ No auval/pluginval/ctest failures observed on this campaign.
 5. **Polyrhythm layer persistence** — **DONE** — `PolyrhythmLayers` ValueTree child in session XML (`get`/`setStateInformation`) and preset state blob; schema **1.2**; Catch2 coverage in EngineTests + HostSmokeTests.
 
 ### P2
-6. Document Debug vs Release CMake single-config caveat in BUILD.md (stale Debug artefacts when `CMAKE_BUILD_TYPE=Release`).
-7. Markov trained-path RT residual (STATUS honesty item).
+6. Document Debug vs Release CMake single-config caveat in BUILD.md — **DONE** (see [`docs/developer/BUILD.md`](../developer/BUILD.md) “Single-config caveat”).
+7. Markov trained-path RT residual — **DONE (small harden)** — `generateOrDefault` reuses a pre-reserved `lookupScratch` vector key (no per-note heap after warmup). Catch2: trained lookup case in EngineTests. Map still keyed by `std::vector<int>` (learn/rebuild remains off-RT).
 
 ---
 
@@ -94,11 +94,13 @@ No auval/pluginval/ctest failures observed on this campaign.
 
 ---
 
-## 7. Recommended next engineering slice (top 3)
+## 7. Recommended next engineering slice
 
-1. **Optional MCP MIDI-monitor / activity probe** for stop-gate without ear check.
-2. Document Debug vs Release CMake caveat in BUILD.md (P2).
-3. Markov trained-path RT residual (STATUS honesty).
+**Closable Host QA / P2 housekeeping for this campaign is done.** Remaining items below are deferred product work (out of scope for this pass):
+
+1. Full mod matrix / deeper expression MIDI monitoring in-host.
+2. MPE, Polyrhythm step-grid polish, AUv3 App Store packaging.
+3. Optional in-DAW MIDI activity probe if agent ear-checks without a human glance become a hard requirement.
 
 ---
 
@@ -106,7 +108,7 @@ No auval/pluginval/ctest failures observed on this campaign.
 
 | Harness | Used? | Effective? |
 |---------|-------|------------|
-| ctest | Yes | High for DSP/helpers + host playhead gate (25 cases) |
+| ctest | Yes | High for DSP/helpers + host playhead gate (26 cases) |
 | auval | Yes | High for AU compliance |
 | pluginval VST3 | Yes | High for load/crash/state; weak for UI/MIDI feel |
 | Standalone UI | Launch + screenshots + AX-named cliclick/OCR | **High** for menu presence + Polyrhythm layer UI |
