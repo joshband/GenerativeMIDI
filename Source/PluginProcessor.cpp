@@ -121,12 +121,14 @@ juce::AudioProcessorValueTreeState::ParameterLayout GenerativeMIDIProcessor::cre
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
         PARAM_RATCHET_DECAY, "Ratchet Decay", 0.0f, 1.0f, 0.5f)); // 0-100%, default 50%
 
-    // Legacy stochastic subtype (unused): top-level PARAM_GENERATOR_TYPE is source of truth.
-    // Kept so older sessions that stored stochasticType still load without breaking the layout.
+    // Legacy stochastic subtype: kept in the layout so older sessions that stored
+    // stochasticType still load. PARAM_GENERATOR_TYPE is the DSP source of truth;
+    // this param is non-automatable and ignored in processBlock.
     params.push_back(std::make_unique<juce::AudioParameterChoice>(
-        PARAM_STOCHASTIC_TYPE, "Stochastic Type",
+        PARAM_STOCHASTIC_TYPE, "Stochastic Type (legacy)",
         juce::StringArray{"Brownian", "Perlin", "Drunk Walk", "Lorenz"},
-        0));
+        0,
+        juce::AudioParameterChoiceAttributes().withAutomatable(false)));
 
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
         PARAM_STEP_SIZE, "Step Size", 0.01f, 1.0f, 0.1f));
@@ -488,7 +490,8 @@ void GenerativeMIDIProcessor::onSubdivisionHit(int subdivision)
         case 7: // Drunk Walk
         case 8: // Lorenz
         {
-            // Top-level generator choice is the source of truth (PARAM_STOCHASTIC_TYPE unused here)
+            // Ignore PARAM_STOCHASTIC_TYPE: legacy APVTS slot for session load only.
+            // DSP subtype comes solely from PARAM_GENERATOR_TYPE (indices 5–8).
             StochasticEngine::GeneratorType type = StochasticEngine::GeneratorType::BrownianMotion;
             switch (generatorType)
             {

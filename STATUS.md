@@ -10,6 +10,7 @@
 | Claim | Reality |
 |-------|---------|
 | Generators in editor UI | **9** (Euclidean + 4 algorithmic + 4 stochastic) |
+| `stochasticType` APVTS param | **Legacy** — kept for session load; non-automatable; **unused by DSP** (`generatorType` is source of truth) |
 | Polyrhythm | Engine sources retained; **deferred** from UI / APVTS choice list |
 | Modulation matrix | Archived under `archive/modulation_v1/` — not live |
 | AUv3 / iOS | CMake target + docs exist; **not App Store–ready** |

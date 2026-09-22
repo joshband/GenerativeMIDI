@@ -131,6 +131,7 @@ private:
     static constexpr const char* PARAM_RATCHET_DECAY = "ratchetDecay";
 
     // Stochastic/Chaos parameters
+    // Legacy: retained for session compatibility; unused by DSP (see createParameterLayout).
     static constexpr const char* PARAM_STOCHASTIC_TYPE = "stochasticType";
     static constexpr const char* PARAM_STEP_SIZE = "stepSize";
     static constexpr const char* PARAM_MOMENTUM = "momentum";
