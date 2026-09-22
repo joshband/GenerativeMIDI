@@ -14,13 +14,8 @@
 #include "UI/CustomLookAndFeel.h"
 #include "UI/PatternVisualizer.h"
 #include "UI/PresetBrowser.h"
-#include "UI/PolyrhythmLayerEditor.h"
-#include "UI/PatternAreaTabs.h"
-// #include "UI/ModulationPanel.h"
-// #include "UI/ModulationTarget.h"
 
 class GenerativeMIDIEditor : public juce::AudioProcessorEditor,
-                              // public juce::DragAndDropContainer,  // Commented out with modulation
                               private juce::Timer
 {
 public:
@@ -39,13 +34,8 @@ private:
 
     // Pattern area components
     PatternVisualizer patternDisplay;
-    std::unique_ptr<PolyrhythmLayerEditor> polyLayerEditor;
-    std::unique_ptr<PatternAreaTabs> patternAreaTabs;
 
-    // Modulation panel (COMMENTED OUT - not working correctly)
-    // std::unique_ptr<ModulationPanel> modulationPanel;
-
-    // Parameter sliders (reverted to standard sliders)
+    // Parameter sliders
     juce::Slider tempoSlider;
     juce::Slider stepsSlider;
     juce::Slider pulsesSlider;
@@ -133,6 +123,12 @@ private:
     std::unique_ptr<juce::AudioProcessorValueTreeState::ComboBoxAttachment> scaleRootAttachment;
     std::unique_ptr<juce::AudioProcessorValueTreeState::ComboBoxAttachment> scaleTypeAttachment;
     std::unique_ptr<juce::AudioProcessorValueTreeState::ComboBoxAttachment> midiChannelAttachment;
+
+    // Section chrome bounds (filled in resized, painted in paint)
+    juce::Rectangle<float> patternPanelBounds;
+    juce::Rectangle<float> generatorPanelBounds;
+    juce::Rectangle<float> expressionPanelBounds;
+    juce::Rectangle<float> advancedPanelBounds;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(GenerativeMIDIEditor)
 };

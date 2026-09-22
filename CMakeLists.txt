@@ -90,3 +90,46 @@ target_link_libraries(GenerativeMIDI
         juce::juce_recommended_lto_flags
         juce::juce_recommended_warning_flags
 )
+
+# ------------------------------------------------------------------------------
+# Unit tests (Catch2)
+# ------------------------------------------------------------------------------
+include(FetchContent)
+FetchContent_Declare(
+    Catch2
+    GIT_REPOSITORY https://github.com/catchorg/Catch2.git
+    GIT_TAG        v3.5.4
+)
+FetchContent_MakeAvailable(Catch2)
+
+enable_testing()
+
+add_executable(GenerativeMIDITests
+    Tests/EngineTests.cpp
+    Source/Core/EuclideanEngine.cpp
+    Source/Core/StochasticEngine.cpp
+    Source/DSP/ClockManager.cpp
+)
+
+target_include_directories(GenerativeMIDITests PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/Source
+)
+
+target_compile_definitions(GenerativeMIDITests PRIVATE
+    JUCE_WEB_BROWSER=0
+    JUCE_USE_CURL=0
+    JUCE_GLOBAL_MODULE_SETTINGS_INCLUDED=1
+)
+
+target_link_libraries(GenerativeMIDITests PRIVATE
+    Catch2::Catch2WithMain
+    juce::juce_audio_basics
+    juce::juce_audio_processors
+    juce::juce_core
+    juce::juce_data_structures
+    juce::juce_events
+)
+
+include(CTest)
+include(Catch)
+catch_discover_tests(GenerativeMIDITests)

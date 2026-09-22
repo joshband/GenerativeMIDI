@@ -9,6 +9,7 @@
 
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
+#include "DSP/NoteSchedulerHelpers.h"
 
 //==============================================================================
 GenerativeMIDIProcessor::GenerativeMIDIProcessor()
@@ -31,31 +32,6 @@ GenerativeMIDIProcessor::GenerativeMIDIProcessor()
     clockManager.onSubdivisionHit = [this](int subdivision) {
         onSubdivisionHit(subdivision);
     };
-
-    // Initialize modulation sources
-    // LFO 1 - slow sine
-    modulationMatrix.addSource(std::make_unique<LFOModulationSource>(
-        "LFO 1", LFOModulationSource::Waveform::Sine, 0.5, true));
-
-    // LFO 2 - fast triangle
-    modulationMatrix.addSource(std::make_unique<LFOModulationSource>(
-        "LFO 2", LFOModulationSource::Waveform::Triangle, 2.0, true));
-
-    // Random 1 - slow random
-    modulationMatrix.addSource(std::make_unique<RandomModulationSource>(
-        "Random 1", 1.0, false));
-
-    // Random 2 - fast random
-    modulationMatrix.addSource(std::make_unique<RandomModulationSource>(
-        "Random 2", 0.25, false));
-
-    // Envelope 1 - fast attack
-    modulationMatrix.addSource(std::make_unique<EnvelopeModulationSource>(
-        "Envelope 1", 0.05, 0.5, false));
-
-    // Envelope 2 - slow attack
-    modulationMatrix.addSource(std::make_unique<EnvelopeModulationSource>(
-        "Envelope 2", 0.5, 2.0, false));
 }
 
 GenerativeMIDIProcessor::~GenerativeMIDIProcessor()
@@ -87,7 +63,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout GenerativeMIDIProcessor::cre
 
     params.push_back(std::make_unique<juce::AudioParameterChoice>(
         PARAM_GENERATOR_TYPE, "Generator Type",
-        juce::StringArray{"Euclidean", "Polyrhythm", "Markov", "L-System", "Cellular", "Probabilistic",
+        juce::StringArray{"Euclidean", "Markov", "L-System", "Cellular", "Probabilistic",
                          "Brownian", "Perlin Noise", "Drunk Walk", "Lorenz"},
         0));
 
@@ -345,7 +321,8 @@ void GenerativeMIDIProcessor::processBlock(juce::AudioBuffer<float>& buffer, juc
         euclideanEngine.setSteps(steps);
     if (euclideanEngine.getPulses() != pulses)
         euclideanEngine.setPulses(pulses);
-    euclideanEngine.setRotation(rotation);
+    if (euclideanEngine.getRotation() != rotation)
+        euclideanEngine.setRotation(rotation);
 
     auto tempo = parameters.getRawParameterValue(PARAM_TEMPO)->load();
     clockManager.setTempo(tempo);
@@ -357,12 +334,16 @@ void GenerativeMIDIProcessor::processBlock(juce::AudioBuffer<float>& buffer, juc
         clockManager.processExternalMidiClock(message);
     }
 
-    // Advance clock
-    clockManager.advance(buffer.getNumSamples());
+    // Advance clock when host is playing, or always when no playhead (Standalone)
+    bool shouldAdvance = true;
+    if (auto* playHead = getPlayHead())
+    {
+        if (auto position = playHead->getPosition())
+            shouldAdvance = position->getIsPlaying();
+    }
 
-    // Advance modulation sources
-    double timeStep = static_cast<double>(buffer.getNumSamples()) / getSampleRate();
-    modulationMatrix.advance(timeStep);
+    if (shouldAdvance)
+        clockManager.advance(buffer.getNumSamples());
 
     // Generate MIDI events
     processGenerativeOutput(midiMessages, buffer.getNumSamples());
@@ -381,6 +362,8 @@ void GenerativeMIDIProcessor::processGenerativeOutput(juce::MidiBuffer& midiMess
 
 void GenerativeMIDIProcessor::onSubdivisionHit(int subdivision)
 {
+    juce::ignoreUnused(subdivision);
+
     // Update scale quantizer from parameters
     auto scaleRoot = static_cast<int>(parameters.getRawParameterValue(PARAM_SCALE_ROOT)->load());
     auto scaleType = static_cast<int>(parameters.getRawParameterValue(PARAM_SCALE_TYPE)->load());
@@ -409,236 +392,107 @@ void GenerativeMIDIProcessor::onSubdivisionHit(int subdivision)
     ratchetEngine.setRatchetProbability(ratchetProbability);
     ratchetEngine.setVelocityDecay(ratchetDecay);
 
-    // Generate events based on selected generator type
-    auto generatorType = parameters.getRawParameterValue(PARAM_GENERATOR_TYPE)->load();
+    // Generator indices match editor UI (Polyrhythm removed from APVTS):
+    // 0 = Euclidean
+    // 1-4 = Algorithmic (Markov, L-System, Cellular, Probabilistic)
+    // 5-8 = Stochastic (Brownian, Perlin, Drunk Walk, Lorenz)
+    const int generatorType = static_cast<int>(parameters.getRawParameterValue(PARAM_GENERATOR_TYPE)->load());
 
-    // Get velocity and pitch range parameters
-    auto velocityMin = parameters.getRawParameterValue(PARAM_VELOCITY_MIN)->load();
-    auto velocityMax = parameters.getRawParameterValue(PARAM_VELOCITY_MAX)->load();
-    auto pitchMin = static_cast<int>(parameters.getRawParameterValue(PARAM_PITCH_MIN)->load());
-    auto pitchMax = static_cast<int>(parameters.getRawParameterValue(PARAM_PITCH_MAX)->load());
+    const float velocityMin = parameters.getRawParameterValue(PARAM_VELOCITY_MIN)->load();
+    const float velocityMax = parameters.getRawParameterValue(PARAM_VELOCITY_MAX)->load();
+    const int pitchMin = static_cast<int>(parameters.getRawParameterValue(PARAM_PITCH_MIN)->load());
+    const int pitchMax = static_cast<int>(parameters.getRawParameterValue(PARAM_PITCH_MAX)->load());
+    const int midiChannel = static_cast<int>(parameters.getRawParameterValue(PARAM_MIDI_CHANNEL)->load());
+    const float density = parameters.getRawParameterValue(PARAM_NOTE_DENSITY)->load();
+    const int samplesPerStep = static_cast<int>(clockManager.getSamplesPerSubdivision(16));
 
-    // Get MIDI channel parameter
-    auto midiChannel = static_cast<int>(parameters.getRawParameterValue(PARAM_MIDI_CHANNEL)->load());
+    auto scheduleNote = [&](int pitch, float velocity, int stepForSwing)
+    {
+        velocity = swingEngine.humanizeVelocity(velocity);
+        const int timingOffset = swingEngine.calculateTotalTimingOffset(
+            stepForSwing, samplesPerStep, getSampleRate());
+        const bool useRatcheting = ratchetEngine.shouldRatchet();
 
-    // Get probability/density parameter - applies to ALL generators
-    auto density = parameters.getRawParameterValue(PARAM_NOTE_DENSITY)->load();
+        NoteSchedulerHelpers::scheduleGeneratedNote(
+            eventScheduler, ratchetEngine, gateLengthController,
+            pitch, velocity, midiChannel, currentSamplePosition,
+            timingOffset, samplesPerStep, useRatcheting);
+    };
 
-    // Get MIDI expression parameters
-    auto aftertouchEnable = parameters.getRawParameterValue(PARAM_AFTERTOUCH_ENABLE)->load() > 0.5f;
-    auto aftertouchAmount = parameters.getRawParameterValue(PARAM_AFTERTOUCH_AMOUNT)->load();
-    auto pitchbendEnable = parameters.getRawParameterValue(PARAM_PITCHBEND_ENABLE)->load() > 0.5f;
-    auto pitchbendRange = parameters.getRawParameterValue(PARAM_PITCHBEND_RANGE)->load();
-    auto ccEnable = parameters.getRawParameterValue(PARAM_CC_ENABLE)->load() > 0.5f;
-    auto ccNumber = static_cast<int>(parameters.getRawParameterValue(PARAM_CC_NUMBER)->load());
-    auto ccAmount = parameters.getRawParameterValue(PARAM_CC_AMOUNT)->load();
-
-    switch (static_cast<int>(generatorType))
+    switch (generatorType)
     {
         case 0: // Euclidean
         {
-            int step = lastSubdivisionStep % euclideanEngine.getSteps();
-            if (euclideanEngine.getStep(step))
+            const int step = lastSubdivisionStep % euclideanEngine.getSteps();
+            if (euclideanEngine.getStep(step)
+                && juce::Random::getSystemRandom().nextFloat() < density)
             {
-                // Apply probability check to Euclidean rhythm
-                if (juce::Random::getSystemRandom().nextFloat() < density)
-                {
-                    // Get raw velocity from engine and map to user-defined range
-                    float rawVelocity = euclideanEngine.getVelocity(step);
-                    float velocity = velocityMin + (rawVelocity * (velocityMax - velocityMin));
-
-                    // Apply velocity humanization
-                    velocity = swingEngine.humanizeVelocity(velocity);
-
-                    // Map step to pitch range instead of just adding offset
-                    int pitchRange = pitchMax - pitchMin;
-                    int rawPitch = pitchMin + (step % (pitchRange + 1));
-
-                    // Apply scale quantization
-                    int pitch = scaleQuantizer.quantize(rawPitch);
-
-                    // Calculate swing and humanization timing offset
-                    int samplesPerStep = static_cast<int>(clockManager.getSamplesPerSubdivision(16));
-                    int timingOffset = swingEngine.calculateTotalTimingOffset(
-                        step, samplesPerStep, getSampleRate());
-
-                    // Check if ratcheting should be applied
-                    bool useRatcheting = ratchetEngine.shouldRatchet();
-                    auto ratchetOffsets = useRatcheting ?
-                        ratchetEngine.calculateRatchetOffsets(samplesPerStep) :
-                        std::vector<int>{0};
-
-                    // Schedule note(s) with optional ratcheting
-                    for (size_t ratchetIdx = 0; ratchetIdx < ratchetOffsets.size(); ++ratchetIdx)
-                    {
-                        // Calculate velocity with ratchet decay
-                        float ratchetVelocity = ratchetEngine.calculateRatchetVelocity(
-                            velocity, static_cast<int>(ratchetIdx));
-
-                        int ratchetTimingOffset = timingOffset + ratchetOffsets[ratchetIdx];
-
-                        // Schedule note on
-                        eventScheduler.scheduleNoteOn(pitch, ratchetVelocity, midiChannel,
-                            currentSamplePosition + ratchetTimingOffset);
-
-                        // Schedule note off using gate length controller
-                        int noteDuration = gateLengthController.calculateGateLengthSamples(samplesPerStep);
-                        eventScheduler.scheduleNoteOff(pitch, midiChannel,
-                            currentSamplePosition + ratchetTimingOffset + noteDuration);
-                    }
-                }
-                // else: probability miss - note scheduled but not played
+                const float rawVelocity = euclideanEngine.getVelocity(step);
+                const float velocity = velocityMin + (rawVelocity * (velocityMax - velocityMin));
+                const int pitchRange = pitchMax - pitchMin;
+                const int rawPitch = pitchMin + (step % (pitchRange + 1));
+                const int pitch = scaleQuantizer.quantize(rawPitch);
+                scheduleNote(pitch, velocity, step);
             }
             lastSubdivisionStep++;
             break;
         }
 
-        case 1: // Polyrhythm
+        case 1: // Markov
+        case 2: // L-System
+        case 3: // Cellular
+        case 4: // Probabilistic
         {
-            for (int i = 0; i < polyrhythmEngine.getNumLayers(); ++i)
+            AlgorithmicEngine::GeneratorType algoType = AlgorithmicEngine::Probabilistic;
+            switch (generatorType)
             {
-                auto* layer = polyrhythmEngine.getLayer(i);
-                if (!layer || !layer->enabled)
-                    continue;
-
-                // Check if this step should trigger
-                if (layer->pattern[layer->currentStep])
-                {
-                    // Apply probability check to polyrhythm
-                    if (juce::Random::getSystemRandom().nextFloat() < density)
-                    {
-                        // Constrain pitch to user-defined range then quantize to scale
-                        int rawPitch = juce::jlimit(pitchMin, pitchMax, layer->pitches[layer->currentStep]);
-                        int pitch = scaleQuantizer.quantize(rawPitch);
-
-                        // Map velocity to user-defined range
-                        float rawVelocity = layer->velocities[layer->currentStep];
-                        float velocity = velocityMin + (rawVelocity * (velocityMax - velocityMin));
-
-                        // Apply velocity humanization
-                        velocity = swingEngine.humanizeVelocity(velocity);
-
-                        // Calculate swing and timing offset
-                        int samplesPerStep = static_cast<int>(clockManager.getSamplesPerSubdivision(16));
-                        int timingOffset = swingEngine.calculateTotalTimingOffset(
-                            layer->currentStep, samplesPerStep, getSampleRate());
-
-                        // Check if ratcheting should be applied
-                        bool useRatcheting = ratchetEngine.shouldRatchet();
-                        auto ratchetOffsets = useRatcheting ?
-                            ratchetEngine.calculateRatchetOffsets(samplesPerStep) :
-                            std::vector<int>{0};
-
-                        // Schedule note(s) with optional ratcheting
-                        for (size_t ratchetIdx = 0; ratchetIdx < ratchetOffsets.size(); ++ratchetIdx)
-                        {
-                            // Calculate velocity with ratchet decay
-                            float ratchetVelocity = ratchetEngine.calculateRatchetVelocity(
-                                velocity, static_cast<int>(ratchetIdx));
-
-                            int ratchetTimingOffset = timingOffset + ratchetOffsets[ratchetIdx];
-
-                            // Schedule note on
-                            eventScheduler.scheduleNoteOn(pitch, ratchetVelocity, 1,
-                                currentSamplePosition + ratchetTimingOffset);
-
-                            // Schedule note off using gate length controller
-                            int noteDuration = gateLengthController.calculateGateLengthSamples(samplesPerStep);
-                            eventScheduler.scheduleNoteOff(pitch, 1,
-                                currentSamplePosition + ratchetTimingOffset + noteDuration);
-                        }
-                    }
-                    // else: probability miss - note scheduled but not played
-                }
-
-                // Advance to next step
-                layer->currentStep = (layer->currentStep + 1) % layer->length;
+                case 1: algoType = AlgorithmicEngine::Markov; break;
+                case 2: algoType = AlgorithmicEngine::LSystem; break;
+                case 3: algoType = AlgorithmicEngine::CellularAutomatonType; break;
+                case 4: algoType = AlgorithmicEngine::Probabilistic; break;
+                default: break;
             }
-            break;
-        }
+            algorithmicEngine.setGeneratorType(algoType);
 
-        default: // Algorithmic generators
-        {
-            // Apply probability check to algorithmic generators
             if (juce::Random::getSystemRandom().nextFloat() < density)
             {
-                // Update algorithmic engine with current parameter ranges
                 algorithmicEngine.setPitchRange(pitchMin, pitchMax);
                 algorithmicEngine.setVelocityRange(velocityMin, velocityMax);
 
                 auto notes = algorithmicEngine.generateNoteSequence(1);
                 if (!notes.empty() && notes[0] >= 0)
                 {
-                    // Constrain generated note to user-defined pitch range then quantize to scale
-                    int rawPitch = juce::jlimit(pitchMin, pitchMax, notes[0]);
-                    int pitch = scaleQuantizer.quantize(rawPitch);
-
+                    const int rawPitch = juce::jlimit(pitchMin, pitchMax, notes[0]);
+                    const int pitch = scaleQuantizer.quantize(rawPitch);
                     auto velocities = algorithmicEngine.generateVelocitySequence(1);
-                    float rawVelocity = velocities.empty() ? 0.7f : velocities[0];
-
-                    // Map velocity to user-defined range
-                    float velocity = velocityMin + (rawVelocity * (velocityMax - velocityMin));
-
-                    // Apply velocity humanization
-                    velocity = swingEngine.humanizeVelocity(velocity);
-
-                    // Calculate swing and timing offset
-                    int samplesPerStep = static_cast<int>(clockManager.getSamplesPerSubdivision(16));
-                    int timingOffset = swingEngine.calculateTotalTimingOffset(
-                        lastSubdivisionStep, samplesPerStep, getSampleRate());
-
-                    // Check if ratcheting should be applied
-                    bool useRatcheting = ratchetEngine.shouldRatchet();
-                    auto ratchetOffsets = useRatcheting ?
-                        ratchetEngine.calculateRatchetOffsets(samplesPerStep) :
-                        std::vector<int>{0};
-
-                    // Schedule note(s) with optional ratcheting
-                    for (size_t ratchetIdx = 0; ratchetIdx < ratchetOffsets.size(); ++ratchetIdx)
-                    {
-                        // Calculate velocity with ratchet decay
-                        float ratchetVelocity = ratchetEngine.calculateRatchetVelocity(
-                            velocity, static_cast<int>(ratchetIdx));
-
-                        int ratchetTimingOffset = timingOffset + ratchetOffsets[ratchetIdx];
-
-                        // Schedule note on
-                        eventScheduler.scheduleNoteOn(pitch, ratchetVelocity, midiChannel,
-                            currentSamplePosition + ratchetTimingOffset);
-
-                        // Schedule note off using gate length controller
-                        int noteDuration = gateLengthController.calculateGateLengthSamples(samplesPerStep);
-                        eventScheduler.scheduleNoteOff(pitch, midiChannel,
-                            currentSamplePosition + ratchetTimingOffset + noteDuration);
-                    }
+                    const float rawVelocity = velocities.empty() ? 0.7f : velocities[0];
+                    const float velocity = velocityMin + (rawVelocity * (velocityMax - velocityMin));
+                    scheduleNote(pitch, velocity, lastSubdivisionStep);
                 }
             }
-            // else: probability miss - note scheduled but not played
+            lastSubdivisionStep++;
             break;
         }
 
-        case 6: // Brownian Motion
-        case 7: // Perlin Noise
-        case 8: // Drunk Walk
-        case 9: // Lorenz Attractor
+        case 5: // Brownian
+        case 6: // Perlin
+        case 7: // Drunk Walk
+        case 8: // Lorenz
         {
-            // Update stochastic engine from parameters
-            auto stochasticType = static_cast<int>(parameters.getRawParameterValue(PARAM_STOCHASTIC_TYPE)->load());
-            auto stepSize = parameters.getRawParameterValue(PARAM_STEP_SIZE)->load();
-            auto momentum = parameters.getRawParameterValue(PARAM_MOMENTUM)->load();
-            auto timeScale = parameters.getRawParameterValue(PARAM_TIME_SCALE)->load();
-
-            // Map generator type to stochastic type
-            StochasticEngine::GeneratorType type;
-            int genTypeInt = static_cast<int>(generatorType);
-            switch (genTypeInt)
+            // Top-level generator choice is the source of truth (PARAM_STOCHASTIC_TYPE unused here)
+            StochasticEngine::GeneratorType type = StochasticEngine::GeneratorType::BrownianMotion;
+            switch (generatorType)
             {
-                case 6: type = StochasticEngine::GeneratorType::BrownianMotion; break;
-                case 7: type = StochasticEngine::GeneratorType::PerlinNoise; break;
-                case 8: type = StochasticEngine::GeneratorType::DrunkWalk; break;
-                case 9: type = StochasticEngine::GeneratorType::LorenzAttractor; break;
-                default: type = StochasticEngine::GeneratorType::BrownianMotion; break;
+                case 5: type = StochasticEngine::GeneratorType::BrownianMotion; break;
+                case 6: type = StochasticEngine::GeneratorType::PerlinNoise; break;
+                case 7: type = StochasticEngine::GeneratorType::DrunkWalk; break;
+                case 8: type = StochasticEngine::GeneratorType::LorenzAttractor; break;
+                default: break;
             }
+
+            const float stepSize = parameters.getRawParameterValue(PARAM_STEP_SIZE)->load();
+            const float momentum = parameters.getRawParameterValue(PARAM_MOMENTUM)->load();
+            const float timeScale = parameters.getRawParameterValue(PARAM_TIME_SCALE)->load();
 
             stochasticEngine.setGeneratorType(type);
             stochasticEngine.setDensity(density);
@@ -646,53 +500,23 @@ void GenerativeMIDIProcessor::onSubdivisionHit(int subdivision)
             stochasticEngine.setMomentum(momentum);
             stochasticEngine.setTimeScale(timeScale);
 
-            // Advance the stochastic system
-            double secondsPerSubdivision = clockManager.getSamplesPerSubdivision(16) / getSampleRate();
+            const double secondsPerSubdivision = clockManager.getSamplesPerSubdivision(16) / getSampleRate();
             stochasticEngine.advance(static_cast<float>(secondsPerSubdivision));
 
-            // Check if note should trigger based on density
             if (stochasticEngine.shouldTriggerNote())
             {
-                // Get pitch from stochastic engine
                 int pitch = stochasticEngine.getCurrentPitch(pitchMin, pitchMax);
                 pitch = scaleQuantizer.quantize(pitch);
-
-                // Get velocity from stochastic engine
                 float velocity = stochasticEngine.getCurrentVelocity(velocityMin, velocityMax);
-                velocity = swingEngine.humanizeVelocity(velocity);
-
-                // Calculate timing offset
-                int samplesPerStep = static_cast<int>(clockManager.getSamplesPerSubdivision(16));
-                int timingOffset = swingEngine.calculateTotalTimingOffset(
-                    lastSubdivisionStep, samplesPerStep, getSampleRate());
-
-                // Check if ratcheting should be applied
-                bool useRatcheting = ratchetEngine.shouldRatchet();
-                auto ratchetOffsets = useRatcheting ?
-                    ratchetEngine.calculateRatchetOffsets(samplesPerStep) :
-                    std::vector<int>{0};
-
-                // Schedule note(s) with optional ratcheting
-                for (size_t ratchetIdx = 0; ratchetIdx < ratchetOffsets.size(); ++ratchetIdx)
-                {
-                    // Calculate velocity with ratchet decay
-                    float ratchetVelocity = ratchetEngine.calculateRatchetVelocity(
-                        velocity, static_cast<int>(ratchetIdx));
-
-                    int ratchetTimingOffset = timingOffset + ratchetOffsets[ratchetIdx];
-
-                    // Schedule note on
-                    eventScheduler.scheduleNoteOn(pitch, ratchetVelocity, 1,
-                        currentSamplePosition + ratchetTimingOffset);
-
-                    // Schedule note off using gate length controller
-                    int noteDuration = gateLengthController.calculateGateLengthSamples(samplesPerStep);
-                    eventScheduler.scheduleNoteOff(pitch, 1,
-                        currentSamplePosition + ratchetTimingOffset + noteDuration);
-                }
+                scheduleNote(pitch, velocity, lastSubdivisionStep);
             }
+            lastSubdivisionStep++;
             break;
         }
+
+        default:
+            lastSubdivisionStep++;
+            break;
     }
 }
 

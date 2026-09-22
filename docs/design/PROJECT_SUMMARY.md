@@ -3,7 +3,7 @@
 ## Build Status: ✅ SUCCESS
 
 **Date**: October 16, 2025
-**Location**: `/Users/noisebox/Repos/GenerativeMIDI/`
+**Location**: `${REPO_ROOT}/`
 **Status**: Fully built and installed
 
 ---
@@ -151,7 +151,7 @@ The plugin exposes 12 automatable parameters:
 ### Standalone Mode
 ```bash
 # Launch directly
-open "/Users/noisebox/Repos/GenerativeMIDI/build/GenerativeMIDI_artefacts/Release/Standalone/Generative MIDI.app"
+open "${REPO_ROOT}/build/GenerativeMIDI_artefacts/Release/Standalone/Generative MIDI.app"
 ```
 
 ### In a DAW
@@ -206,7 +206,7 @@ open "/Users/noisebox/Repos/GenerativeMIDI/build/GenerativeMIDI_artefacts/Releas
 
 ### Rebuild
 ```bash
-cd /Users/noisebox/Repos/GenerativeMIDI/build
+cd ${REPO_ROOT}/build
 cmake --build . --config Release -j8
 ```
 

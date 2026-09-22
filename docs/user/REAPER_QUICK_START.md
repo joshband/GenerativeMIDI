@@ -114,7 +114,7 @@ ls -lh ~/Library/Audio/Plug-Ins/VST3/ | grep "Generative"
 ls -lh ~/Library/Audio/Plug-Ins/Components/ | grep "Generative"
 
 # Reinstall if needed
-cd /Users/noisebox/Repos/GenerativeMIDI/build
+cd ${REPO_ROOT}/build
 cmake --build . --config Release
 ```
 
@@ -143,10 +143,7 @@ cmake --build . --config Release
 
 ### Polyrhythmic Layers
 
-Switch to Generator Type 1 (Polyrhythm):
-- Layer 1 already initialized with quarter notes
-- Pattern plays on beats 0, 4, 8, 12 of 16-step sequence
-- Pitches cycle through chromatic scale
+> **Deferred in v0.8.0:** Polyrhythm is not in the generator dropdown (engine retained for a later branch). Use Euclidean or algorithmic generators instead.
 
 ---
 

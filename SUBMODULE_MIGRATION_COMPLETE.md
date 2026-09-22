@@ -72,7 +72,7 @@ This means the migration is **completely non-breaking**. The plugin will continu
 ### Local File Structure
 
 ```
-/Users/noisebox/Repos/GenerativeMIDI/
+${REPO_ROOT}/
 ├── Source/                        # JUCE plugin source (unchanged)
 ├── art/                           # Git submodule → SynaptikUIToolkit
 │   ├── .git                       # Points to remote repo
@@ -175,7 +175,7 @@ git submodule update --init --recursive
 
 ### Update UI Assets to Latest Version
 ```bash
-cd /Users/noisebox/Repos/GenerativeMIDI
+cd ${REPO_ROOT}
 cd art
 git pull origin master
 cd ..
@@ -212,7 +212,7 @@ open art/catalog/index.html
 Once you've verified the build works, you can remove the backup:
 
 ```bash
-cd /Users/noisebox/Repos/GenerativeMIDI
+cd ${REPO_ROOT}
 rm -rf art_backup_20251018_161804
 ```
 
@@ -238,7 +238,7 @@ Successfully built all targets with the new submodule structure:
 
 Build command:
 ```bash
-cd /Users/noisebox/Repos/GenerativeMIDI/build
+cd ${REPO_ROOT}/build
 make clean
 make -j8
 ```

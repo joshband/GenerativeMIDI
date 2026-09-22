@@ -95,7 +95,7 @@ The repository is configured for automatic iOS builds:
    
    **If you have Xcode:**
    ```bash
-   cd /Users/noisebox/Repos/GenerativeMIDI
+   cd ${REPO_ROOT}
    ./build_ios.sh
    open build_ios/GenerativeMIDI.xcodeproj
    ```
@@ -200,7 +200,7 @@ https://github.com/joshband/GenerativeMIDI/actions
 ### macOS Plugin Issues
 ```bash
 # Rebuild
-cd /Users/noisebox/Repos/GenerativeMIDI/build
+cd ${REPO_ROOT}/build
 cmake --build . --config Release -j8
 
 # Force DAW to rescan

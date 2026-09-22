@@ -68,7 +68,6 @@ void EventScheduler::scheduleCC(int ccNumber, float value, int channel, int64_t 
 void EventScheduler::processEvents(int64_t currentSample, juce::MidiBuffer& outputBuffer, int bufferSize)
 {
     int64_t endSample = currentSample + bufferSize;
-    std::vector<ScheduledEvent> futureEvents;
 
     while (!eventQueue.empty())
     {

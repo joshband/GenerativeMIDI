@@ -34,7 +34,7 @@ public:
 
     CustomLookAndFeel()
     {
-        // Load UI assets from SynaptikUIToolkit
+        // Load UI assets from art/ submodule (SynaptikUIToolkit)
         loadUIAssets();
 
         // SYNAPTIK Gilded Steampunk Theme
@@ -65,10 +65,14 @@ public:
 
     juce::Image loadAsset(const juce::String& relativePath)
     {
-        juce::File projectRoot = juce::File::getCurrentWorkingDirectory();
+        juce::File cwd = juce::File::getCurrentWorkingDirectory();
 
-        // Try common project layouts for SynaptikUIToolkit
-        std::vector<juce::String> possiblePaths = {
+        // Prefer art/ submodule (SynaptikUIToolkit); keep legacy sibling paths as fallback
+        const std::vector<juce::String> possiblePaths = {
+            "art/themes/victorian-steampunk/" + relativePath,
+            "../art/themes/victorian-steampunk/" + relativePath,
+            "../../art/themes/victorian-steampunk/" + relativePath,
+            "../../../art/themes/victorian-steampunk/" + relativePath,
             "../SynaptikUIToolkit/themes/victorian-steampunk/" + relativePath,
             "../../SynaptikUIToolkit/themes/victorian-steampunk/" + relativePath,
             "../../../SynaptikUIToolkit/themes/victorian-steampunk/" + relativePath
@@ -76,7 +80,7 @@ public:
 
         for (const auto& path : possiblePaths)
         {
-            juce::File assetFile = projectRoot.getChildFile(path);
+            juce::File assetFile = cwd.getChildFile(path);
             if (assetFile.existsAsFile())
             {
                 juce::Image img = juce::ImageCache::getFromFile(assetFile);
@@ -94,7 +98,7 @@ public:
 
     void loadUIAssets()
     {
-        // Load actual knob images from SynaptikUIToolkit (256px for quality)
+        // Load knob images from art/themes/victorian-steampunk (256px)
         knobOrnate = loadAsset("ui-elements/knobs/img_8150_256.png");
         knobConcentric = loadAsset("ui-elements/knobs/img_8183_256.png");
         knobSimple = loadAsset("ui-elements/knobs/img_8200_256.png");
@@ -116,7 +120,6 @@ public:
         // Load button assets
         buttonOrnate = loadAsset("ui-elements/buttons/button_cross_ornate_128.png");
 
-        // Check if key assets loaded
         if (knobOrnate.isValid())
             DBG("Victorian Steampunk UI Assets Loaded Successfully!");
         else

@@ -9,8 +9,8 @@ PresetBrowser::PresetBrowser(PresetManager& manager)
     addAndMakeVisible(presetListBox);
     presetListBox.setModel(this);
     presetListBox.setRowHeight(30);
-    presetListBox.setColour(juce::ListBox::backgroundColourId, juce::Colour(0xff1a1a1a));
-    presetListBox.setColour(juce::ListBox::outlineColourId, juce::Colour(0xff3a3a3a));
+    presetListBox.setColour(juce::ListBox::backgroundColourId, juce::Colour(CustomLookAndFeel::ABYSS_NAVY));
+    presetListBox.setColour(juce::ListBox::outlineColourId, juce::Colour(CustomLookAndFeel::BRASS_AGED));
 
     // Category selector
     addAndMakeVisible(categorySelector);
@@ -106,12 +106,12 @@ PresetBrowser::PresetBrowser(PresetManager& manager)
     // Labels
     addAndMakeVisible(presetNameLabel);
     presetNameLabel.setFont(juce::Font(18.0f, juce::Font::bold));
-    presetNameLabel.setColour(juce::Label::textColourId, juce::Colour(0xff00d4ff));
+    presetNameLabel.setColour(juce::Label::textColourId, juce::Colour(CustomLookAndFeel::GOLD_TEMPLE));
     presetNameLabel.setJustificationType(juce::Justification::centred);
 
     addAndMakeVisible(presetInfoLabel);
     presetInfoLabel.setFont(juce::Font(12.0f));
-    presetInfoLabel.setColour(juce::Label::textColourId, juce::Colours::lightgrey);
+    presetInfoLabel.setColour(juce::Label::textColourId, juce::Colour(CustomLookAndFeel::COPPER_STEAM));
     presetInfoLabel.setJustificationType(juce::Justification::centredLeft);
 
     // Initialize
@@ -129,15 +129,15 @@ PresetBrowser::~PresetBrowser()
 
 void PresetBrowser::paint(juce::Graphics& g)
 {
-    g.fillAll(juce::Colour(0xff0f0f0f));
+    g.fillAll(juce::Colour(CustomLookAndFeel::ABYSS_NAVY));
 
     // Title
-    g.setColour(juce::Colour(0xff00d4ff));
+    g.setColour(juce::Colour(CustomLookAndFeel::GOLD_TEMPLE));
     g.setFont(juce::Font(20.0f, juce::Font::bold));
     g.drawText("Preset Browser", 10, 5, getWidth() - 20, 30, juce::Justification::centred);
 
     // Section dividers
-    g.setColour(juce::Colour(0xff3a3a3a));
+    g.setColour(juce::Colour(CustomLookAndFeel::BRASS_AGED).withAlpha(0.5f));
     g.drawLine(10.0f, 40.0f, static_cast<float>(getWidth() - 10), 40.0f, 1.0f);
 }
 
@@ -199,23 +199,24 @@ void PresetBrowser::paintListBoxItem(int rowNumber, juce::Graphics& g,
 
     // Background
     if (rowIsSelected)
-        g.fillAll(juce::Colour(0xff2a4a5a));
+        g.fillAll(juce::Colour(CustomLookAndFeel::STEEL_OBSIDIAN).brighter(0.15f));
     else if (rowNumber % 2 == 0)
-        g.fillAll(juce::Colour(0xff1a1a1a));
+        g.fillAll(juce::Colour(CustomLookAndFeel::ABYSS_NAVY));
     else
-        g.fillAll(juce::Colour(0xff151515));
+        g.fillAll(juce::Colour(CustomLookAndFeel::STEEL_OBSIDIAN).darker(0.1f));
 
     // Factory/User indicator
-    g.setColour(preset.isFactory ? juce::Colour(0xffffaa00) : juce::Colour(0xff00d4ff));
+    g.setColour(preset.isFactory ? juce::Colour(CustomLookAndFeel::AMBER_TESLA)
+                                 : juce::Colour(CustomLookAndFeel::BRASS_AGED));
     g.fillRect(0, 0, 4, height);
 
     // Preset name
-    g.setColour(juce::Colours::white);
+    g.setColour(juce::Colour(CustomLookAndFeel::GOLD_TEMPLE));
     g.setFont(juce::Font(14.0f, preset.isFactory ? juce::Font::bold : juce::Font::plain));
     g.drawText(preset.name, 10, 0, width - 120, height, juce::Justification::centredLeft);
 
     // Category tag
-    g.setColour(juce::Colour(0xff666666));
+    g.setColour(juce::Colour(CustomLookAndFeel::COPPER_STEAM));
     g.setFont(juce::Font(11.0f));
     g.drawText(preset.category, width - 110, 0, 100, height, juce::Justification::centredRight);
 }
@@ -269,7 +270,7 @@ void PresetBrowser::showSavePresetDialog()
     options.content.setOwned(dialog);
     options.dialogTitle = "Save Preset";
     options.componentToCentreAround = this;
-    options.dialogBackgroundColour = juce::Colour(0xff1a1a1a);
+    options.dialogBackgroundColour = juce::Colour(CustomLookAndFeel::ABYSS_NAVY);
     options.escapeKeyTriggersCloseButton = true;
     options.useNativeTitleBar = true;
     options.resizable = false;
@@ -432,7 +433,7 @@ PresetSaveDialog::PresetSaveDialog()
 
 void PresetSaveDialog::paint(juce::Graphics& g)
 {
-    g.fillAll(juce::Colour(0xff1a1a1a));
+    g.fillAll(juce::Colour(CustomLookAndFeel::ABYSS_NAVY));
 }
 
 void PresetSaveDialog::resized()

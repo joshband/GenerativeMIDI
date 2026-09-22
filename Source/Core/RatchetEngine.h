@@ -68,33 +68,40 @@ public:
     }
 
     /**
+     * Fill ratchet timing offsets into a caller-provided buffer (realtime-safe).
+     * @return number of offsets written (at least 1)
+     */
+    int fillRatchetOffsets(int samplesPerStep, int* offsetsOut, int maxOffsets) const
+    {
+        if (offsetsOut == nullptr || maxOffsets <= 0)
+            return 0;
+
+        if (ratchetCount <= 1)
+        {
+            offsetsOut[0] = 0;
+            return 1;
+        }
+
+        const int count = juce::jmin(ratchetCount, maxOffsets);
+        const int subdivisionMultiplier = 1 << ratchetDivision;
+        const int samplesPerRatchet = samplesPerStep / (count * subdivisionMultiplier);
+
+        for (int i = 0; i < count; ++i)
+            offsetsOut[i] = i * samplesPerRatchet * subdivisionMultiplier;
+
+        return count;
+    }
+
+    /**
      * Calculate ratchet timing offsets for a given step
      * @param samplesPerStep Duration of one step in samples
      * @return Vector of sample offsets for each ratchet repeat
      */
     std::vector<int> calculateRatchetOffsets(int samplesPerStep) const
     {
-        std::vector<int> offsets;
-
-        if (ratchetCount <= 1)
-        {
-            offsets.push_back(0); // No ratcheting, single trigger
-            return offsets;
-        }
-
-        // Calculate subdivision based on ratchet division setting
-        // 0 = 16th notes (no subdivision)
-        // 1 = 32nd notes (2x subdivision)
-        // 2 = 64th notes (4x subdivision)
-        int subdivisionMultiplier = 1 << ratchetDivision; // 1, 2, or 4
-        int samplesPerRatchet = samplesPerStep / (ratchetCount * subdivisionMultiplier);
-
-        for (int i = 0; i < ratchetCount; ++i)
-        {
-            offsets.push_back(i * samplesPerRatchet * subdivisionMultiplier);
-        }
-
-        return offsets;
+        int buf[16];
+        const int n = fillRatchetOffsets(samplesPerStep, buf, 16);
+        return std::vector<int>(buf, buf + n);
     }
 
     /**

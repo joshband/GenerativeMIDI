@@ -16,19 +16,29 @@ EuclideanEngine::EuclideanEngine()
 
 void EuclideanEngine::setSteps(int numSteps)
 {
-    steps = juce::jlimit(1, 64, numSteps);
+    const int newSteps = juce::jlimit(1, 64, numSteps);
+    if (newSteps == steps)
+        return;
+    steps = newSteps;
+    pulses = juce::jmin(pulses, steps);
     regeneratePattern();
 }
 
 void EuclideanEngine::setPulses(int numPulses)
 {
-    pulses = juce::jlimit(0, steps, numPulses);
+    const int newPulses = juce::jlimit(0, steps, numPulses);
+    if (newPulses == pulses)
+        return;
+    pulses = newPulses;
     regeneratePattern();
 }
 
 void EuclideanEngine::setRotation(int rot)
 {
-    rotation = rot % steps;
+    const int newRotation = (steps > 0) ? (rot % steps) : 0;
+    if (newRotation == rotation)
+        return;
+    rotation = newRotation;
     regeneratePattern();
 }
 

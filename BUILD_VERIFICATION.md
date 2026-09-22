@@ -1,7 +1,9 @@
 # Build Verification - Submodule Migration
 
+> **Historical note:** This log records a one-time submodule migration (Oct 2025). For current build status use CI (`ci.yml`) and [STATUS.md](STATUS.md). Paths below are placeholders (`${REPO_ROOT}`), not a machine-specific checkout.
+
 **Date**: October 18, 2025, 4:27 PM
-**Status**: ✅ **PASSED**
+**Status**: ✅ **PASSED** (historical)
 
 ---
 
@@ -15,7 +17,7 @@ Verify that the GenerativeMIDI audio plugin builds correctly after converting th
 
 1. **Clean build environment**:
    ```bash
-   cd /Users/noisebox/Repos/GenerativeMIDI/build
+   cd ${REPO_ROOT}/build
    make clean
    ```
 
@@ -75,16 +77,16 @@ The build succeeded because:
 
 ```bash
 $ ls -la art/
-drwxr-xr-x@ 10 noisebox  staff   320 Oct 18 16:18 .
-drwxr-xr-x  27 noisebox  staff   864 Oct 18 16:18 ..
--rw-r--r--@  1 noisebox  staff    28 Oct 18 16:18 .git    # <-- Submodule reference
--rw-r--r--@  1 noisebox  staff   327 Oct 18 16:18 .gitignore
--rw-r--r--@  1 noisebox  staff  1614 Oct 18 16:18 LICENSE
--rw-r--r--@  1 noisebox  staff  8006 Oct 18 16:18 README.md
-drwxr-xr-x@  9 noisebox  staff   288 Oct 18 16:18 catalog
-drwxr-xr-x@  3 noisebox  staff    96 Oct 18 16:18 docs
-drwxr-xr-x@  3 noisebox  staff    96 Oct 18 16:18 themes
-drwxr-xr-x@ 11 noisebox  staff   352 Oct 18 16:18 tools
+drwxr-xr-x@ 10 user  staff   320 Oct 18 16:18 .
+drwxr-xr-x  27 user  staff   864 Oct 18 16:18 ..
+-rw-r--r--@  1 user  staff    28 Oct 18 16:18 .git    # <-- Submodule reference
+-rw-r--r--@  1 user  staff   327 Oct 18 16:18 .gitignore
+-rw-r--r--@  1 user  staff  1614 Oct 18 16:18 LICENSE
+-rw-r--r--@  1 user  staff  8006 Oct 18 16:18 README.md
+drwxr-xr-x@  9 user  staff   288 Oct 18 16:18 catalog
+drwxr-xr-x@  3 user  staff    96 Oct 18 16:18 docs
+drwxr-xr-x@  3 user  staff    96 Oct 18 16:18 themes
+drwxr-xr-x@ 11 user  staff   352 Oct 18 16:18 tools
 ```
 
 ✅ **Submodule verified**: `art/.git` is a reference file, not a directory

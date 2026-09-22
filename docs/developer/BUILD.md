@@ -1,69 +1,90 @@
 # Build Instructions
 
-## Quick Start - CMake Build (Recommended)
+**Canonical build system: CMake.** The `GenerativeMIDI.jucer` Projucer project is retained only as a historical reference and is **deprecated** — do not use it for new work.
 
-This is the fastest way to build the plugin:
+## Prerequisites
+
+1. **Clone with submodules** (required for Victorian UI bitmaps under `art/`):
 
 ```bash
-cd /Users/noisebox/Repos/GenerativeMIDI
+git clone --recurse-submodules https://github.com/joshband/GenerativeMIDI.git
+cd GenerativeMIDI
+```
+
+If you already cloned without submodules:
+
+```bash
+git submodule update --init --recursive
+```
+
+2. **JUCE**: symlink or place a JUCE checkout at `./JUCE` (see Troubleshooting).
+
+## Quick Start — CMake (canonical)
+
+```bash
+cd GenerativeMIDI   # repository root
 
 # Create build directory
-mkdir build && cd build
+mkdir -p build && cd build
 
 # Configure (Release build)
 cmake .. -DCMAKE_BUILD_TYPE=Release
 
 # Build
-cmake --build . --config Release
-
-# Or for faster parallel build
 cmake --build . --config Release -j8
 ```
 
-### Build outputs will be in:
+### Build outputs
+
 - **Standalone**: `build/GenerativeMIDI_artefacts/Release/Standalone/Generative MIDI.app`
 - **AU**: `build/GenerativeMIDI_artefacts/Release/AU/Generative MIDI.component`
 - **VST3**: `build/GenerativeMIDI_artefacts/Release/VST3/Generative MIDI.vst3`
-- **AUv3**: `build/GenerativeMIDI_artefacts/Release/AUv3/Generative MIDI.appex`
+- **AUv3**: `build/GenerativeMIDI_artefacts/Release/AUv3/Generative MIDI.appex` (configured; not App Store–ready)
 
-## Alternative Method - Projucer + Xcode
+### Unit tests
 
-### 1. Open in Projucer
+From the build directory (after configure):
+
 ```bash
-open -a ~/JUCE/Projucer.app GenerativeMIDI.jucer
+ctest --output-on-failure
 ```
 
-### 2. Configure JUCE Module Paths
-In Projucer:
-- Click "File" → "Global Paths..."
-- Set "Path to JUCE" to `/Users/noisebox/JUCE`
-- Or use the symlink that's already created in the project
+CI also runs the macOS/iOS build workflow (`.github/workflows/ci.yml`).
 
-### 3. Save and Open in Xcode
-- Click "File" → "Save Project and Open in IDE..." (or Cmd+P)
-- This will generate the Xcode project and open it
+## Projucer path (deprecated)
 
-### 4. Build in Xcode
-- Select target: "GenerativeMIDI - All" or specific format (AU, VST3, Standalone)
-- Build configuration: "Release"
-- Click Product → Build (or Cmd+B)
+`GenerativeMIDI.jucer` may still open in Projucer for archaeology, but **CMake is the supported path**. Module paths, exporters, and CI all assume CMake. Prefer fixing CMakeLists over regenerating from Projucer.
+
+If you must open it locally:
+
+```bash
+open -a Projucer.app GenerativeMIDI.jucer
+```
+
+Set Projucer’s global JUCE path to your local JUCE install (or rely on the in-tree `JUCE` symlink), then prefer switching back to CMake for actual builds.
 
 ## Troubleshooting
 
 ### Error: JUCE not found
+
 ```bash
-cd /Users/noisebox/Repos/GenerativeMIDI
-ln -s ~/JUCE JUCE
+cd GenerativeMIDI   # repository root
+ln -s ~/JUCE JUCE   # adjust path to your JUCE checkout
 ```
 
-### Error: Missing module paths in Projucer
-- Open Projucer's global settings
-- Set JUCE path to `/Users/noisebox/JUCE`
-- Resave the project
+### Error: Missing Victorian UI bitmaps
+
+```bash
+git submodule update --init --recursive
+```
+
+Without the `art/` submodule, the LookAndFeel falls back to procedural drawing.
 
 ### Compiler Errors
+
 Make sure you have:
-- Xcode 14+ installed
+
+- Xcode 14+ installed (macOS)
 - Command Line Tools: `xcode-select --install`
 - macOS deployment target set correctly
 
@@ -81,7 +102,9 @@ cp -r "build/GenerativeMIDI_artefacts/Release/VST3/Generative MIDI.vst3" \
 ```
 
 ### Using COPY_PLUGIN_AFTER_BUILD
+
 The plugin is configured to automatically copy after building if you set:
+
 ```cmake
 COPY_PLUGIN_AFTER_BUILD TRUE
 ```
@@ -90,8 +113,6 @@ This will automatically install to your system folders.
 
 ## Development Build (Debug)
 
-For development with debugging symbols:
-
 ```bash
 mkdir build-debug && cd build-debug
 cmake .. -DCMAKE_BUILD_TYPE=Debug
@@ -99,6 +120,7 @@ cmake --build . --config Debug
 ```
 
 Debug builds include:
+
 - Full debug symbols
 - No optimization
 - Assertions enabled
@@ -119,20 +141,22 @@ cmake --build . --config Release
 
 ## Platform-Specific Notes
 
-### macOS (Current Platform)
+### macOS (primary)
+
 - **AU** (Audio Units): Native macOS format
-- **AUv3**: iOS/macOS App Extension format
+- **AUv3**: iOS/macOS App Extension format (sideload / TestFlight path; not store-ready)
 - **VST3**: Cross-platform format
 - **Standalone**: Runs independently
 
-### Windows (Cross-compile or native)
+### Windows (cross-compile or native)
+
 - Use Visual Studio 2022
 - Build VST3 and Standalone
 - AU/AUv3 not available
 
 ### Linux
-- Use Linux Makefile exporter in Projucer
-- Or use CMake directly
+
+- Use CMake directly
 - VST3 and Standalone supported
 
 ## Next Steps
@@ -140,11 +164,13 @@ cmake --build . --config Release
 After building:
 
 1. **Test the standalone app**
+
    ```bash
    open "build/GenerativeMIDI_artefacts/Release/Standalone/Generative MIDI.app"
    ```
 
 2. **Validate AU plugin**
+
    ```bash
    auval -v aumi Osrc Gmid
    ```
@@ -157,12 +183,13 @@ After building:
 ## Build Performance
 
 Typical build times on Apple Silicon:
-- **Clean build**: ~2-3 minutes
-- **Incremental build**: 10-30 seconds
+
+- **Clean build**: ~2–3 minutes
+- **Incremental build**: 10–30 seconds
 - **Parallel build (-j8)**: ~1 minute
 
 ## Additional Resources
 
 - [JUCE Documentation](https://docs.juce.com/)
 - [CMake with JUCE](https://github.com/juce-framework/JUCE/blob/master/docs/CMake%20API.md)
-- [Project README](README.md)
+- [Project README](../../README.md)

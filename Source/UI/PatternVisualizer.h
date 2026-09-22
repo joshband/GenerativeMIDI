@@ -2,8 +2,10 @@
   ==============================================================================
     PatternVisualizer.h
 
-    Visual display of rhythm patterns with probability indication
+    Visual display of Euclidean rhythm patterns
     Gilded steampunk brass VU meter with aether crystal indicators
+
+    Refreshed by the editor's 30 Hz timer — this component does not own a Timer.
 
   ==============================================================================
 */
@@ -13,20 +15,14 @@
 #include <juce_audio_processors/juce_audio_processors.h>
 #include "CustomLookAndFeel.h"
 
-class PatternVisualizer : public juce::Component, private juce::Timer
+class PatternVisualizer : public juce::Component
 {
 public:
-    PatternVisualizer()
-    {
-        startTimerHz(30); // 30 FPS refresh
-    }
+    PatternVisualizer() = default;
 
     void setPattern(const std::vector<bool>& newPattern)
     {
         pattern = newPattern;
-        // Initialize probability misses if needed
-        if (probabilityMisses.size() != pattern.size())
-            probabilityMisses.resize(pattern.size(), false);
         repaint();
     }
 
@@ -40,15 +36,6 @@ public:
     {
         accentColor = color;
         repaint();
-    }
-
-    void setProbabilityMiss(int step, bool missed)
-    {
-        if (step >= 0 && step < probabilityMisses.size())
-        {
-            probabilityMisses[step] = missed;
-            repaint();
-        }
     }
 
     void paint(juce::Graphics& g) override
@@ -82,37 +69,33 @@ public:
         g.drawRoundedRectangle(bounds.reduced(2.5f), 5.5f, 1.0f);
 
         if (pattern.empty())
+        {
+            // Honest empty state for non-Euclidean generators (no fake pattern)
+            g.setColour(juce::Colour(CustomLookAndFeel::COPPER_STEAM).withAlpha(0.7f));
+            g.setFont(juce::Font(12.0f));
+            g.drawText("Euclidean pattern view",
+                       bounds.reduced(8.0f),
+                       juce::Justification::centred);
             return;
+        }
 
         // Draw LED-style pattern indicators
-        float stepWidth = (bounds.getWidth() - 20.0f) / pattern.size();
+        float stepWidth = (bounds.getWidth() - 20.0f) / static_cast<float>(pattern.size());
         float ledHeight = bounds.getHeight() - 35.0f;
         float padding = 2.0f;
 
         for (size_t i = 0; i < pattern.size(); ++i)
         {
-            float x = bounds.getX() + 10.0f + i * stepWidth + padding;
+            float x = bounds.getX() + 10.0f + static_cast<float>(i) * stepWidth + padding;
             float y = bounds.getY() + 10.0f;
             float w = stepWidth - padding * 2.0f;
 
             bool isCurrent = (static_cast<int>(i) == currentStep);
             bool isActive = pattern[i];
-            bool isProbabilityMiss = (i < probabilityMisses.size() && probabilityMisses[i]);
 
             if (isActive)
             {
-                if (isProbabilityMiss)
-                {
-                    // Probability miss - dim bronze (scheduled but didn't play)
-                    g.setColour(juce::Colour(CustomLookAndFeel::BRONZE_GOTHIC).withAlpha(0.6f));
-                    g.fillRoundedRectangle(x, y, w, ledHeight * 0.5f, 2.0f);
-
-                    // Crystal "dormant" indicator
-                    g.setColour(juce::Colour(CustomLookAndFeel::STEEL_OBSIDIAN));
-                    g.fillRoundedRectangle(x + w * 0.2f, y + ledHeight * 0.15f,
-                                          w * 0.6f, ledHeight * 0.2f, 1.0f);
-                }
-                else if (isCurrent)
+                if (isCurrent)
                 {
                     // Current active step - brilliant colored crystal (playing now)
                     juce::ColourGradient crystalGrad(
@@ -186,30 +169,18 @@ public:
         {
             if (i % 4 == 0)
             {
-                float x = bounds.getX() + 10.0f + i * stepWidth;
+                float x = bounds.getX() + 10.0f + static_cast<float>(i) * stepWidth;
                 juce::String label = juce::String(static_cast<int>(i + 1));
                 g.drawText(label, x, bounds.getBottom() - 20.0f, stepWidth, 15.0f,
                           juce::Justification::centred);
             }
         }
-
-        // Legend text (brass engraving)
-        g.setColour(juce::Colour(CustomLookAndFeel::BRASS_AGED).withAlpha(0.8f));
-        g.setFont(juce::Font(8.0f));
-        g.drawText("PROBABILITY OFF", bounds.getX() + 10, bounds.getBottom() - 12,
-                  120, 10, juce::Justification::left);
     }
 
 private:
-    void timerCallback() override
-    {
-        repaint();
-    }
-
     std::vector<bool> pattern;
-    std::vector<bool> probabilityMisses; // Track which steps were scheduled but missed due to probability
     int currentStep = 0;
-    juce::Colour accentColor = juce::Colour(CustomLookAndFeel::AMBER_TESLA); // Default accent color
+    juce::Colour accentColor = juce::Colour(CustomLookAndFeel::AMBER_TESLA);
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(PatternVisualizer)
 };

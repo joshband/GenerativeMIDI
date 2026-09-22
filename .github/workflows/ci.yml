@@ -1,4 +1,4 @@
-name: iOS Build
+name: CI
 
 on:
   push:
@@ -7,6 +7,9 @@ on:
     branches: [ main, master ]
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   build-ios:
     name: Build iOS/iPadOS AUv3
@@ -14,16 +17,18 @@ jobs:
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      with:
+        submodules: recursive
 
     - name: Setup Xcode
-      uses: maxim-lobanov/setup-xcode@v1
+      uses: maxim-lobanov/setup-xcode@ed7a3b1fda3918c0306d1b724322adc0b8cc0a90 # v1.7.0
       with:
-        xcode-version: '15.4'
+        xcode-version: latest-stable
 
     - name: Install JUCE
       run: |
-        git clone --depth 1 --branch develop https://github.com/juce-framework/JUCE.git ~/JUCE
+        git clone --depth 1 --branch 8.0.15 https://github.com/juce-framework/JUCE.git ~/JUCE
         ln -sf ~/JUCE JUCE
 
     - name: Generate Xcode Project
@@ -43,13 +48,14 @@ jobs:
           -destination 'generic/platform=iOS' \
           CODE_SIGN_IDENTITY="" \
           CODE_SIGNING_REQUIRED=NO \
-          build || true
+          build
 
     - name: Upload Artifacts
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
       with:
         name: GenerativeMIDI-iOS
         path: build_ios/**/*.app
+        if-no-files-found: error
 
   build-macos:
     name: Build macOS Plugins
@@ -57,16 +63,18 @@ jobs:
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      with:
+        submodules: recursive
 
     - name: Setup Xcode
-      uses: maxim-lobanov/setup-xcode@v1
+      uses: maxim-lobanov/setup-xcode@ed7a3b1fda3918c0306d1b724322adc0b8cc0a90 # v1.7.0
       with:
-        xcode-version: '15.4'
+        xcode-version: latest-stable
 
     - name: Install JUCE
       run: |
-        git clone --depth 1 --branch develop https://github.com/juce-framework/JUCE.git ~/JUCE
+        git clone --depth 1 --branch 8.0.15 https://github.com/juce-framework/JUCE.git ~/JUCE
         ln -sf ~/JUCE JUCE
 
     - name: Build Plugins
@@ -76,8 +84,14 @@ jobs:
         cmake .. -DCMAKE_BUILD_TYPE=Release
         cmake --build . --config Release
 
+    - name: Run unit tests
+      run: |
+        cd build
+        ctest --output-on-failure -C Release
+
     - name: Upload Artifacts
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
       with:
         name: GenerativeMIDI-macOS
         path: build/GenerativeMIDI_artefacts/Release/**/*
+        if-no-files-found: error

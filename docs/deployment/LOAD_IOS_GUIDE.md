@@ -86,7 +86,7 @@ sudo xcodebuild -license accept
 ### Build the iOS App
 
 ```bash
-cd /Users/noisebox/Repos/GenerativeMIDI
+cd ${REPO_ROOT}
 ./build_ios.sh
 open build_ios/GenerativeMIDI.xcodeproj
 ```

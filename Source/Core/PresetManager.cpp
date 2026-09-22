@@ -1,5 +1,22 @@
 #include "PresetManager.h"
 
+namespace
+{
+    constexpr juce::int64 kMaxPresetFileBytes = 1024 * 1024; // 1 MiB
+
+    bool isSafePresetFileName(const juce::String& name)
+    {
+        if (name.isEmpty())
+            return false;
+
+        // Reject path traversal and directory separators in names used for disk I/O.
+        if (name.contains("..") || name.containsChar('/') || name.containsChar('\\'))
+            return false;
+
+        return true;
+    }
+}
+
 PresetManager::PresetManager(juce::AudioProcessorValueTreeState& apvts)
     : valueTreeState(apvts), currentPresetIndex(-1)
 {
@@ -248,25 +265,33 @@ bool PresetManager::importPreset(const juce::File& presetFile)
     if (!presetFile.existsAsFile())
         return false;
 
+    if (presetFile.getSize() <= 0 || presetFile.getSize() > kMaxPresetFileBytes)
+        return false;
+
     auto xml = juce::XmlDocument::parse(presetFile);
-    if (!xml || xml->getTagName() != "GenerativeMIDIPreset")
+    if (xml == nullptr || xml->getTagName() != "GenerativeMIDIPreset")
         return false;
 
     juce::String name = xml->getStringAttribute("name");
+    if (!isSafePresetFileName(name))
+        return false;
+
     juce::String author = xml->getStringAttribute("author");
     juce::String category = xml->getStringAttribute("category");
     juce::String description = xml->getStringAttribute("description");
 
     auto stateXml = xml->getChildByName(valueTreeState.state.getType());
-    if (!stateXml)
+    if (stateXml == nullptr)
         return false;
 
     juce::ValueTree state = juce::ValueTree::fromXml(*stateXml);
+    if (!state.isValid())
+        return false;
 
     Preset preset(name, author, category, description, state, false);
     presets.add(preset);
 
-    // Copy to user preset directory
+    // Copy to user preset directory using the sanitized base name only.
     juce::File destFile = getPresetDirectory().getChildFile(name + ".gmpreset");
     return presetFile.copyFileTo(destFile);
 }

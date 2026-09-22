@@ -152,9 +152,11 @@ Repository → **Settings** → **Pages** → Build and deployment → Source: *
 ### Build Steps
 
 ```bash
-# Clone the repository
-git clone https://github.com/joshband/GenerativeMIDI.git
+# Clone the repository (include UI art submodule)
+git clone --recurse-submodules https://github.com/joshband/GenerativeMIDI.git
 cd GenerativeMIDI
+# If you already cloned without submodules:
+# git submodule update --init --recursive
 
 # Link JUCE (adjust path to your JUCE installation)
 ln -s ~/JUCE JUCE
@@ -167,6 +169,9 @@ cmake .. -DCMAKE_BUILD_TYPE=Release
 
 # Build (use -j8 for parallel build)
 cmake --build . --config Release -j8
+
+# Unit tests
+ctest --output-on-failure
 
 # Plugins are built to:
 # - build/GenerativeMIDI_artefacts/Release/AU/Generative MIDI.component
@@ -239,36 +244,16 @@ Complete documentation is available in the [docs/](docs/) directory:
 
 ---
 
-## 🤝 Contributing
+## Contributing
 
-Contributions are welcome! Whether you're fixing bugs, adding features, or improving documentation.
+Contributions are welcome (bug fixes, features, docs).
 
-### How to Contribute
+1. Fork and create a feature branch
+2. Build with CMake (see [docs/developer/BUILD.md](docs/developer/BUILD.md))
+3. Run unit tests: `cd build && ctest --output-on-failure`
+4. Open a pull request against `master`
 
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/amazing-feature`
-3. Make your changes
-4. Run tests: `cd build && ctest`
-5. Format code: `clang-format -i Source/**/*.cpp Source/**/*.h`
-6. Commit: `git commit -m "Add amazing feature"`
-7. Push: `git push origin feature/amazing-feature`
-8. Open a Pull Request
-
-### Development Setup
-
-```bash
-# Install pre-commit hooks
-pre-commit install
-
-# Run tests
-cd build
-ctest
-
-# Format code
-clang-format -i Source/**/*.cpp Source/**/*.h
-```
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines.
+There is no required `pre-commit` hook or separate `CONTRIBUTING.md` yet — keep PRs focused and match existing code style.
 
 ---
 

@@ -30,6 +30,7 @@ public:
     float getVelocity(int stepIndex) const;
     int getSteps() const { return steps; }
     int getPulses() const { return pulses; }
+    int getRotation() const { return rotation; }
 
     // Pattern modification
     void rotate(int amount);

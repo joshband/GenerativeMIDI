@@ -29,13 +29,8 @@ GenerativeMIDIEditor::GenerativeMIDIEditor(GenerativeMIDIProcessor& p)
     titleLabel.setColour(juce::Label::textColourId, juce::Colour(CustomLookAndFeel::GOLD_TEMPLE));
     titleLabel.setColour(juce::Label::backgroundColourId, juce::Colours::transparentBlack);
 
-    // Pattern display (polyrhythm layer editor commented out for now)
+    // Pattern display (polyrhythm layer UI deferred)
     addAndMakeVisible(patternDisplay);
-
-    // TODO: Polyrhythm layer editor - implement in future version
-    // polyLayerEditor = std::make_unique<PolyrhythmLayerEditor>(audioProcessor.getPolyrhythmEngine());
-    // patternAreaTabs = std::make_unique<PatternAreaTabs>(patternDisplay, *polyLayerEditor);
-    // addAndMakeVisible(patternAreaTabs.get());
 
     // Generator type selector
     addAndMakeVisible(generatorLabel);
@@ -476,11 +471,10 @@ void GenerativeMIDIEditor::paint(juce::Graphics& g)
         }
     };
 
-    drawBrassPanel(juce::Rectangle<float>(25, 70, getWidth() - 50, 130), "PATTERN DISPLAY");
-    drawBrassPanel(juce::Rectangle<float>(25, 220, getWidth() - 50, 190), "GENERATOR");
-    drawBrassPanel(juce::Rectangle<float>(25, 430, getWidth() - 50, 160), "EXPRESSION");
-    drawBrassPanel(juce::Rectangle<float>(25, 610, getWidth() - 50, 120), "ADVANCED");
-    // drawBrassPanel(juce::Rectangle<float>(25, 750, getWidth() - 50, 120), "MODULATION");  // Commented out
+    drawBrassPanel(patternPanelBounds, "PATTERN DISPLAY");
+    drawBrassPanel(generatorPanelBounds, "GENERATOR");
+    drawBrassPanel(expressionPanelBounds, "EXPRESSION");
+    drawBrassPanel(advancedPanelBounds, "ADVANCED");
 }
 
 void GenerativeMIDIEditor::resized()
@@ -495,21 +489,25 @@ void GenerativeMIDIEditor::resized()
     titleLabel.setBounds(titleArea);
 
     // Pattern display section
-    auto patternSection = area.removeFromTop(140).reduced(40, 20);
+    auto patternOuter = area.removeFromTop(140);
+    patternPanelBounds = patternOuter.reduced(25, 5).toFloat();
+    auto patternSection = patternOuter.reduced(40, 20);
     patternSection.removeFromTop(20); // Section label
     patternDisplay.setBounds(patternSection);
 
     // Generator controls section
-    auto controlsSection = area.removeFromTop(200).reduced(40, 20);
+    auto generatorOuter = area.removeFromTop(200);
+    generatorPanelBounds = generatorOuter.reduced(25, 5).toFloat();
+    auto controlsSection = generatorOuter.reduced(40, 20);
     controlsSection.removeFromTop(20); // Section label
 
-    int knobSize = 85;  // Reduced from 100 to fit more controls
-    int spacing = 15;   // Reduced from 20 to fit more controls
+    int knobSize = 85;
+    int spacing = 15;
 
     auto generatorArea = controlsSection.removeFromLeft(150);
     generatorLabel.setBounds(generatorArea.removeFromTop(20));
     generatorTypeCombo.setBounds(generatorArea.removeFromTop(30).reduced(10, 0));
-    generatorArea.removeFromTop(5); // Small gap
+    generatorArea.removeFromTop(5);
     midiChannelLabel.setBounds(generatorArea.removeFromTop(20));
     midiChannelCombo.setBounds(generatorArea.removeFromTop(30).reduced(10, 0));
 
@@ -543,8 +541,10 @@ void GenerativeMIDIEditor::resized()
     densityLabel.setBounds(densityArea.removeFromBottom(20));
     densitySlider.setBounds(densityArea);
 
-    // Expression & range section (expanded height)
-    auto rangeSection = area.removeFromTop(170).reduced(40, 20);
+    // Expression & range section
+    auto expressionOuter = area.removeFromTop(170);
+    expressionPanelBounds = expressionOuter.reduced(25, 5).toFloat();
+    auto rangeSection = expressionOuter.reduced(40, 20);
     rangeSection.removeFromTop(20); // Section label
 
     auto velocityArea = rangeSection.removeFromLeft(120);
@@ -603,7 +603,9 @@ void GenerativeMIDIEditor::resized()
     legatoButton.setBounds(legatoArea.removeFromTop(50).reduced(5));
 
     // Advanced section (ratcheting + stochastic controls)
-    auto advancedSection = area.removeFromTop(130).reduced(40, 20);
+    auto advancedOuter = area.removeFromTop(130);
+    advancedPanelBounds = advancedOuter.reduced(25, 5).toFloat();
+    auto advancedSection = advancedOuter.reduced(40, 20);
     advancedSection.removeFromTop(20); // Section label
 
     auto ratchetCountArea = advancedSection.removeFromLeft(knobSize);
@@ -639,13 +641,6 @@ void GenerativeMIDIEditor::resized()
     auto timeScaleArea = advancedSection.removeFromLeft(knobSize);
     timeScaleLabel.setBounds(timeScaleArea.removeFromBottom(20));
     timeScaleSlider.setBounds(timeScaleArea);
-
-    // Modulation panel (COMMENTED OUT - not working correctly)
-    // if (modulationPanel)
-    // {
-    //     auto modulationArea = area.removeFromTop(120).reduced(40, 10);
-    //     modulationPanel->setBounds(modulationArea);
-    // }
 }
 
 void GenerativeMIDIEditor::timerCallback()
@@ -683,18 +678,10 @@ void GenerativeMIDIEditor::timerCallback()
         int currentStep = audioProcessor.getCurrentStep() % euclidean.getSteps();
         patternDisplay.setCurrentStep(currentStep);
     }
-    else  // Algorithmic or Stochastic generators
+    else  // Algorithmic or Stochastic — empty pattern (honest; no fabricated steps)
     {
-        // For non-Euclidean generators, show a simple visualization of activity
-        // Create a 16-step pattern showing current playback position
-        std::vector<bool> pattern(16, false);
-
-        // Mark current step as active
-        int currentStep = audioProcessor.getCurrentStep() % 16;
-        pattern[currentStep] = true;
-
-        patternDisplay.setPattern(pattern);
-        patternDisplay.setCurrentStep(currentStep);
+        patternDisplay.setPattern({});
+        patternDisplay.setCurrentStep(0);
     }
 
     // Update current preset label

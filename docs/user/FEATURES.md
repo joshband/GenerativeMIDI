@@ -2,6 +2,8 @@
 
 Complete feature documentation for the GenerativeMIDI plugin - a cross-platform generative MIDI processor with advanced algorithmic composition capabilities.
 
+> **Honesty note:** Development status is **v0.8.0**. The live UI exposes **9 generators** (Polyrhythm deferred). Touch/iOS/App Store claims below that conflict with [STATUS.md](../../STATUS.md) should be treated as aspirational or outdated — use the [showcase](https://joshband.github.io/GenerativeMIDI/) for employer-facing boundaries.
+
 ---
 
 ## Table of Contents
@@ -57,30 +59,16 @@ Steps: 16, Pulses: 9  → [X·X·X·X·X·X·X·X]   (Complex polyrhythm)
 
 ---
 
-### 2. Polyrhythm Engine
+### 2. Polyrhythm Engine (deferred)
 
-**What it does:** Layers multiple independent rhythmic patterns with different lengths, creating complex polyrhythmic textures.
+**Status:** Core `PolyrhythmEngine` sources remain in the tree for a future feature branch. **Not exposed** in the current editor dropdown or APVTS generator choice list (UI shows **9** generators).
 
-**Features:**
-- **Multiple Layers**: Stack independent patterns
-- **Per-Layer Settings**: Individual length, pitch, velocity per step
-- **Phase Relationships**: Patterns cycle at different rates
-- **Enable/Disable**: Turn layers on/off independently
+**Intended behavior (when restored):**
+- Multiple independent rhythmic layers
+- Per-layer length, pitch, velocity, phase
+- Enable/disable per layer
 
-**Example:**
-```
-Layer 1: [X·X·X·X·] (8 steps)  ← Playing notes at C4
-Layer 2: [X··X··X··] (9 steps) ← Playing notes at G4
-Layer 3: [X···X···] (8 steps)  ← Playing notes at C5
-
-Result: Complex evolving pattern that repeats every 72 steps
-```
-
-**Musical Applications:**
-- African drumming patterns
-- Minimalist composition (Steve Reich style)
-- Modular techno sequences
-- Polymetric composition
+Until then, create layered feels with multiple plugin instances on different MIDI channels.
 
 ---
 
@@ -530,10 +518,9 @@ Result: Loose, sloppy, experimental jazz
 - Brass chamber outlines
 
 #### 2. GENERATOR ✨ ENHANCED (v0.8.0)
-- **Generator Type**: Dropdown selector (10 types)
+- **Generator Type**: Dropdown selector (**9** types; Polyrhythm deferred)
 - **Color-coded label**: Changes color by engine type
   - Gold: Euclidean
-  - Copper: Polyrhythm
   - Green Verdigris: Algorithmic
   - Violet: Stochastic/Chaos
 - **MIDI Channel**: Channel selector (1-16)
@@ -583,10 +570,10 @@ Result: Loose, sloppy, experimental jazz
 ### Responsiveness
 
 - **Resizable**: 1200x500 to 2000x1000 pixels
-- **Touch-optimized**: Works great on iPad/touchscreen
-- **30Hz refresh**: Smooth visual updates and playback visualization
+- **30Hz refresh**: Editor timer drives Euclidean playhead visualization
 - **Real-time feedback**: Immediate parameter response
 - **31 parameters**: Full automation support
+- **Touch / iPad**: AUv3 builds exist; no dedicated touch-optimized UI is claimed
 
 ---
 
@@ -612,18 +599,15 @@ Result: Loose, sloppy, experimental jazz
 
 ### Mobile (iOS/iPadOS)
 
-✅ **AUv3 (Audio Unit v3)**
-- Native iOS/iPadOS format
-- Works in GarageBand, AUM, Cubasis, Beatmaker 3
-- Full touch support
-- Background audio support
-- Inter-app audio compatibility
+⚙️ **AUv3 (Audio Unit v3)** — configured build target
+- Shares desktop DSP / editor
+- Sideload / developer workflows documented in [README-iOS.md](../deployment/README-iOS.md)
+- **Not App Store–ready**; no fake “full touch support” claim
+- Prefer landscape; expect further UI work before store packaging
 
-**System Requirements:**
-- iOS 13.0 or later
-- iPadOS 13.0 or later
-- iPhone 8 or newer recommended
-- iPad Pro for best experience
+**System Requirements (when building AUv3):**
+- iOS 13.0 or later / iPadOS 13.0 or later
+- Xcode + signing team
 
 ### Future Platforms
 
@@ -910,42 +894,18 @@ Result: Complex West African polyrhythm
 
 ## Version History
 
-### v1.1.0 (Current)
-- ✅ Scale Quantization (16 scales)
-- ✅ Swing & Humanization
-- ✅ Updated UI with new controls
-- ✅ Enhanced Expression section
+Product status is tracked as **v0.8.0** in [STATUS.md](../../STATUS.md) (not a silent 1.x claim).
 
-### v1.0.0 (Initial Release)
-- ✅ Euclidean rhythm generator
-- ✅ Polyrhythm engine
-- ✅ Markov Chain generator
-- ✅ L-System generator
-- ✅ Cellular Automaton generator
-- ✅ Probabilistic generator
-- ✅ Cross-platform support
-- ✅ Custom vintage UI
+### Current (v0.8.0)
+- ✅ 9 UI generators (Euclidean, algorithmic ×4, stochastic ×4)
+- ✅ Polyrhythm deferred from UI (engine retained)
+- ✅ Scale quantization, swing, humanization, gate, ratchet
+- ✅ MIDI channel routing, preset browser, steampunk LookAndFeel
+- ✅ Catch2 / `ctest` harness; CI via GitHub Actions
 
----
+### Earlier milestones
+- Core Euclidean + algorithmic engines, AU/VST3/Standalone
+- Stochastic/chaos generators and dynamic UI enablement
+- Preset XML format and browser
 
-## License
-
-MIT License - Free and open source
-
-See [LICENSE](LICENSE) for full details.
-
----
-
-## Support & Community
-
-- 📖 **Documentation**: This file and [README.md](README.md)
-- 🎯 **Roadmap**: See [ENHANCEMENTS.md](ENHANCEMENTS.md)
-- 🐛 **Bug Reports**: GitHub Issues
-- 💬 **Discussions**: GitHub Discussions
-- 📧 **Contact**: Via GitHub
-
----
-
-**Made with ❤️ for musicians, coders, and explorers of generative music**
-
-*Last Updated: 2025-10-17 (v1.1.0)*
+*Last Updated: 2026-09-22 (v0.8.0 honesty pass)*

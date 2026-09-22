@@ -60,6 +60,8 @@ DerivedData/
 # Temporary files
 *.log
 *.tmp
+*.bak
+*.bak2
 
 # Local brainstorm / agent session artifacts
 .superpowers/

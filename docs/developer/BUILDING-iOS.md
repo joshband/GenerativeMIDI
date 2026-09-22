@@ -37,7 +37,7 @@ If you don't want to install Xcode locally, you can use GitHub Actions to build 
 
 1. **Create GitHub repository** (if you haven't already):
    ```bash
-   cd /Users/noisebox/Repos/GenerativeMIDI
+   cd ${REPO_ROOT}
    git init
    git add .
    git commit -m "Initial commit"

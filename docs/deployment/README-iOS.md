@@ -2,12 +2,16 @@
 
 This guide explains how to build the Generative MIDI AUv3 plugin for iOS and iPadOS devices.
 
+> **Honesty note:** AUv3 is a configured CMake target useful for sideload / TestFlight-style workflows. It is **not App Store–ready**, and there is **no dedicated touch / accessibility redesign** claimed for the current Victorian desktop UI.
+
 ## Requirements
 
 - macOS with Xcode installed (Xcode 14 or later recommended)
 - Apple Developer account (free or paid) for code signing
 - iOS device or simulator running iOS 13.0 or later
 - CMake 3.15 or later
+- JUCE linked at `./JUCE`
+- `art/` submodule initialized: `git submodule update --init --recursive`
 
 ## Quick Start
 
@@ -36,95 +40,67 @@ This guide explains how to build the Generative MIDI AUv3 plugin for iOS and iPa
 
 ## Using the AUv3 Plugin
 
-Once installed on your device, the Generative MIDI AUv3 plugin will be available in:
+Once installed on your device, the Generative MIDI AUv3 plugin will be available in hosts that support AUv3 MIDI effects, for example:
 
-- **GarageBand** - Tap the Plugins button, go to Audio Units
-- **AUM (Audio Mixer)** - Add as a MIDI effect
-- **Cubasis** - MIDI FX section
-- **Beatmaker 3** - Plugin chain
-- **Any other AUv3 host app**
+- **GarageBand** - Plugins → Audio Units
+- **AUM (Audio Mixer)** - MIDI effect slot
+- Other AUv3 MIDI hosts (support varies)
 
-## Features
+## Features (same DSP / editors as desktop)
 
-The iOS/iPadOS version includes:
+The iOS/iPadOS build shares the desktop engine set:
 
-- Full Euclidean rhythm generation
-- Polyrhythmic sequencing (6 generators available)
-- Algorithmic pattern generation (Markov, L-Systems, Cellular Automata)
-- Real-time parameter control with touch-optimized UI
-- Pattern visualization
-- MIDI CC and expression support
-- Works in both portrait and landscape orientations
+- **9 UI generators** (Euclidean, 4 algorithmic, 4 stochastic)
+- **Polyrhythm deferred** from the editor (engine retained in tree)
+- Pattern visualization (Euclidean step grid; other modes show an honest empty state)
+- Gate / ratchet / scale / humanization parameters
+- **Not** store packaging, touch-optimized layout, or claimed full MIDI expression UI
 
 ## UI Considerations for iOS
 
-The UI has been designed to work on iOS devices:
+The current UI is the desktop steampunk layout compiled for AUv3:
 
-- **iPhone**: Best viewed in landscape orientation (900x600 minimum)
-- **iPad**: Works in all orientations, optimal in landscape
-- Touch controls are sized for finger input
-- All knobs respond to drag gestures
-- Sliders use standard iOS touch interactions
+- Prefer **landscape** on phone-sized screens
+- Knobs use JUCE drag gestures (works with touch, but not a mobile-first redesign)
+- Expect further layout work before any store submission
 
 ## Troubleshooting
 
 ### Code Signing Issues
-If you encounter code signing errors:
-1. Make sure you're logged into Xcode with your Apple ID (Preferences > Accounts)
-2. Select "Automatically manage signing" in the target settings
-3. If using a free account, change the bundle ID to something unique (e.g., `com.yourname.generativemidi`)
+1. Sign in to Xcode with your Apple ID (Settings → Accounts)
+2. Select "Automatically manage signing"
+3. With a free account, use a unique bundle ID (e.g. `com.yourname.generativemidi`)
 
 ### Plugin Not Showing in Host Apps
-1. Make sure the app successfully installed and launched at least once
-2. Force quit and restart your host app (GarageBand, AUM, etc.)
-3. Check that the host app supports AUv3 MIDI effects (not all do)
+1. Launch the containing app at least once after install
+2. Force quit and restart the host
+3. Confirm the host supports AUv3 MIDI effects
 
 ### Build Errors
-- Clean the build: In Xcode, go to Product > Clean Build Folder
-- Delete the `build_ios` folder and regenerate: `./build_ios.sh clean`
-- Make sure JUCE is properly linked: `ls -la JUCE` should show a symlink to your JUCE installation
+- Product → Clean Build Folder
+- Delete `build_ios` and regenerate: `./build_ios.sh clean`
+- Confirm `ls -la JUCE` and `git submodule update --init --recursive`
 
 ## Advanced Configuration
 
 ### Changing the Bundle ID
-Edit `CMakeLists.txt` line 32:
+Edit `CMakeLists.txt`:
 ```cmake
 BUNDLE_ID "com.yourcompany.generativemidi"
 ```
 
 ### Changing Minimum iOS Version
-Edit `build_ios.sh` line 28:
+Edit `build_ios.sh`:
 ```bash
 -DCMAKE_OSX_DEPLOYMENT_TARGET=13.0 \
 ```
 
-### Building for Specific Architecture
-To build only for device (arm64):
-```bash
-cmake .. -G Xcode \
-    -DCMAKE_SYSTEM_NAME=iOS \
-    -DCMAKE_OSX_ARCHITECTURES=arm64
-```
-
-## Testing in Simulator
-
-The iOS Simulator can be used for UI testing, but note:
-- Audio routing may not work perfectly in simulator
-- MIDI functionality is limited
-- For full testing, use a real device
-
 ## Distribution
 
-To distribute your app:
-1. You'll need a paid Apple Developer account ($99/year)
-2. Archive the app in Xcode (Product > Archive)
-3. Distribute to TestFlight for beta testing
-4. Or submit to the App Store
-
-For personal use only, you can sideload using a free account, but apps expire after 7 days.
+App Store / TestFlight distribution requires a paid Apple Developer account, signing, and product polish beyond this repo’s current AUv3 target. For personal sideloading, free accounts typically expire after a short period.
 
 ## Support
 
-For issues specific to iOS building, check:
 - JUCE Forum: https://forum.juce.com
-- Apple Developer Documentation: https://developer.apple.com/documentation/audiotoolbox/audio_unit_v3_plug-ins
+- Apple AUv3 docs: https://developer.apple.com/documentation/audiotoolbox/audio_unit_v3_plug-ins
+- Project status: [STATUS.md](../../STATUS.md)
