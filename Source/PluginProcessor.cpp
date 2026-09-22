@@ -9,6 +9,7 @@
 
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
+#include "Core/GeneratorTypeMapping.h"
 #include "DSP/NoteSchedulerHelpers.h"
 
 //==============================================================================
@@ -63,7 +64,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout GenerativeMIDIProcessor::cre
 
     params.push_back(std::make_unique<juce::AudioParameterChoice>(
         PARAM_GENERATOR_TYPE, "Generator Type",
-        juce::StringArray{"Euclidean", "Markov", "L-System", "Cellular", "Probabilistic",
+        juce::StringArray{"Euclidean", "Polyrhythm", "Markov", "L-System", "Cellular", "Probabilistic",
                          "Brownian", "Perlin Noise", "Drunk Walk", "Lorenz"},
         0));
 
@@ -272,7 +273,30 @@ void GenerativeMIDIProcessor::prepareToPlay(double sampleRate, int samplesPerBlo
     const int queueCap = juce::jmax(256, samplesPerBlock * 8);
     eventScheduler.prepare(queueCap);
 
-    // PolyrhythmEngine retained for a future feature branch; not prepared on the live path.
+    // Ensure polyrhythm layer 0 has an audible default pattern (constructor starts empty).
+    if (auto* layer = polyrhythmEngine.getLayer(0))
+    {
+        bool anyActive = false;
+        for (bool step : layer->pattern)
+        {
+            if (step)
+            {
+                anyActive = true;
+                break;
+            }
+        }
+
+        if (!anyActive)
+        {
+            for (int i = 0; i < layer->length; ++i)
+            {
+                layer->pattern[static_cast<size_t>(i)] = (i % 4 == 0);
+                layer->velocities[static_cast<size_t>(i)] = 0.8f;
+                layer->pitches[static_cast<size_t>(i)] = 60 + (i % 12);
+            }
+            layer->enabled = true;
+        }
+    }
 
     clockManager.start();
 }
@@ -407,10 +431,7 @@ void GenerativeMIDIProcessor::onSubdivisionHit(int subdivision)
     ratchetEngine.setRatchetProbability(ratchetProbability);
     ratchetEngine.setVelocityDecay(ratchetDecay);
 
-    // Generator indices match editor UI (Polyrhythm removed from APVTS):
-    // 0 = Euclidean
-    // 1-4 = Algorithmic (Markov, L-System, Cellular, Probabilistic)
-    // 5-8 = Stochastic (Brownian, Perlin, Drunk Walk, Lorenz)
+    // Indices: GeneratorTypeMapping (0 Euclidean, 1 Polyrhythm, 2–5 algo, 6–9 stochastic)
     const int generatorType = static_cast<int>(parameters.getRawParameterValue(PARAM_GENERATOR_TYPE)->load());
 
     const float velocityMin = parameters.getRawParameterValue(PARAM_VELOCITY_MIN)->load();
@@ -466,7 +487,7 @@ void GenerativeMIDIProcessor::onSubdivisionHit(int subdivision)
 
     switch (generatorType)
     {
-        case 0: // Euclidean
+        case GeneratorTypeMapping::kEuclidean:
         {
             const int step = lastSubdivisionStep % euclideanEngine.getSteps();
             if (euclideanEngine.getStep(step)
@@ -483,20 +504,44 @@ void GenerativeMIDIProcessor::onSubdivisionHit(int subdivision)
             break;
         }
 
-        case 1: // Markov
-        case 2: // L-System
-        case 3: // Cellular
-        case 4: // Probabilistic
+        case GeneratorTypeMapping::kPolyrhythm:
         {
-            AlgorithmicEngine::GeneratorType algoType = AlgorithmicEngine::Probabilistic;
-            switch (generatorType)
+            // MVP: all enabled layers advance one step per subdivision hit.
+            // Layer `division` is stored/editable but not yet used for rate scaling.
+            for (int i = 0; i < polyrhythmEngine.getNumLayers(); ++i)
             {
-                case 1: algoType = AlgorithmicEngine::Markov; break;
-                case 2: algoType = AlgorithmicEngine::LSystem; break;
-                case 3: algoType = AlgorithmicEngine::CellularAutomatonType; break;
-                case 4: algoType = AlgorithmicEngine::Probabilistic; break;
-                default: break;
+                auto* layer = polyrhythmEngine.getLayer(i);
+                if (!layer || !layer->enabled || layer->length <= 0)
+                    continue;
+
+                const int step = layer->currentStep % layer->length;
+                if (step >= 0 && step < static_cast<int>(layer->pattern.size())
+                    && step < static_cast<int>(layer->pitches.size())
+                    && step < static_cast<int>(layer->velocities.size())
+                    && layer->pattern[static_cast<size_t>(step)]
+                    && rtRandom.nextFloat() < density)
+                {
+                    const int rawPitch = juce::jlimit(
+                        pitchMin, pitchMax,
+                        layer->pitches[static_cast<size_t>(step)]);
+                    const int pitch = scaleQuantizer.quantize(rawPitch);
+                    const float rawVelocity = layer->velocities[static_cast<size_t>(step)];
+                    const float velocity = velocityMin + (rawVelocity * (velocityMax - velocityMin));
+                    scheduleNote(pitch, velocity, step);
+                }
+
+                layer->currentStep = (layer->currentStep + 1) % layer->length;
             }
+            lastSubdivisionStep++;
+            break;
+        }
+
+        case GeneratorTypeMapping::kMarkov:
+        case GeneratorTypeMapping::kLSystem:
+        case GeneratorTypeMapping::kCellular:
+        case GeneratorTypeMapping::kProbabilistic:
+        {
+            const auto algoType = GeneratorTypeMapping::toAlgorithmic(generatorType);
             algorithmicEngine.setGeneratorType(algoType);
 
             if (rtRandom.nextFloat() < density)
@@ -518,22 +563,14 @@ void GenerativeMIDIProcessor::onSubdivisionHit(int subdivision)
             break;
         }
 
-        case 5: // Brownian
-        case 6: // Perlin
-        case 7: // Drunk Walk
-        case 8: // Lorenz
+        case GeneratorTypeMapping::kBrownian:
+        case GeneratorTypeMapping::kPerlin:
+        case GeneratorTypeMapping::kDrunkWalk:
+        case GeneratorTypeMapping::kLorenz:
         {
             // Ignore PARAM_STOCHASTIC_TYPE: legacy APVTS slot for session load only.
-            // DSP subtype comes solely from PARAM_GENERATOR_TYPE (indices 5–8).
-            StochasticEngine::GeneratorType type = StochasticEngine::GeneratorType::BrownianMotion;
-            switch (generatorType)
-            {
-                case 5: type = StochasticEngine::GeneratorType::BrownianMotion; break;
-                case 6: type = StochasticEngine::GeneratorType::PerlinNoise; break;
-                case 7: type = StochasticEngine::GeneratorType::DrunkWalk; break;
-                case 8: type = StochasticEngine::GeneratorType::LorenzAttractor; break;
-                default: break;
-            }
+            // DSP subtype comes solely from PARAM_GENERATOR_TYPE (indices 6–9).
+            const auto type = GeneratorTypeMapping::toStochastic(generatorType);
 
             const float stepSize = parameters.getRawParameterValue(PARAM_STEP_SIZE)->load();
             const float momentum = parameters.getRawParameterValue(PARAM_MOMENTUM)->load();

@@ -9,6 +9,7 @@
 
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
+#include "Core/GeneratorTypeMapping.h"
 
 //==============================================================================
 GenerativeMIDIEditor::GenerativeMIDIEditor(GenerativeMIDIProcessor& p)
@@ -29,8 +30,10 @@ GenerativeMIDIEditor::GenerativeMIDIEditor(GenerativeMIDIProcessor& p)
     titleLabel.setColour(juce::Label::textColourId, juce::Colour(CustomLookAndFeel::GOLD_TEMPLE));
     titleLabel.setColour(juce::Label::backgroundColourId, juce::Colours::transparentBlack);
 
-    // Pattern display (polyrhythm layer UI deferred)
+    // Pattern display + polyrhythm layer editor (swapped by generator type)
     addAndMakeVisible(patternDisplay);
+    polyLayerEditor = std::make_unique<PolyrhythmLayerEditor>(audioProcessor.getPolyrhythmEngine());
+    addChildComponent(polyLayerEditor.get());
 
     // Generator type selector
     addAndMakeVisible(generatorLabel);
@@ -38,7 +41,7 @@ GenerativeMIDIEditor::GenerativeMIDIEditor(GenerativeMIDIProcessor& p)
     generatorLabel.setJustificationType(juce::Justification::centred);
 
     addAndMakeVisible(generatorTypeCombo);
-    generatorTypeCombo.addItemList(juce::StringArray{"Euclidean", "Markov", "L-System", "Cellular", "Probabilistic",
+    generatorTypeCombo.addItemList(juce::StringArray{"Euclidean", "Polyrhythm", "Markov", "L-System", "Cellular", "Probabilistic",
                                                       "Brownian", "Perlin Noise", "Drunk Walk", "Lorenz"}, 1);
     generatorAttachment.reset(new juce::AudioProcessorValueTreeState::ComboBoxAttachment(
         audioProcessor.getValueTreeState(), "generatorType", generatorTypeCombo));
@@ -550,7 +553,9 @@ void GenerativeMIDIEditor::paint(juce::Graphics& g)
         }
     };
 
-    drawBrassPanel(patternPanelBounds, "PATTERN DISPLAY");
+    drawBrassPanel(patternPanelBounds,
+                   GeneratorTypeMapping::isPolyrhythm(generatorTypeCombo.getSelectedId() - 1)
+                       ? "POLYRHYTHM LAYERS" : "PATTERN DISPLAY");
     drawBrassPanel(generatorPanelBounds, "GENERATOR");
     drawBrassPanel(expressionPanelBounds, "EXPRESSION");
     drawBrassPanel(advancedPanelBounds, "ADVANCED");
@@ -567,12 +572,16 @@ void GenerativeMIDIEditor::resized()
     currentPresetLabel.setBounds(presetArea.reduced(5, 0));
     titleLabel.setBounds(titleArea);
 
-    // Pattern display section
-    auto patternOuter = area.removeFromTop(140);
+    // Pattern display / polyrhythm layers section
+    const bool isPolyrhythm = GeneratorTypeMapping::isPolyrhythm(generatorTypeCombo.getSelectedId() - 1);
+    const int patternHeight = isPolyrhythm ? 220 : 140;
+    auto patternOuter = area.removeFromTop(patternHeight);
     auto patternSection = patternOuter.reduced(40, 20);
     patternPanelBounds = patternSection.toFloat();
     patternSection.removeFromTop(20); // Section label
     patternDisplay.setBounds(patternSection);
+    if (polyLayerEditor)
+        polyLayerEditor->setBounds(patternSection);
 
     // Generator controls section
     auto generatorOuter = area.removeFromTop(200);
@@ -784,27 +793,23 @@ void GenerativeMIDIEditor::resized()
 
 void GenerativeMIDIEditor::timerCallback()
 {
-    // Update pattern visualizer based on active generator
-    int generatorType = generatorTypeCombo.getSelectedId() - 1;
+    const int generatorType = generatorTypeCombo.getSelectedId() - 1;
 
-    // Set accent color based on generator type
     juce::Colour visualizerColor;
-    bool isEuclidean = (generatorType == 0);
-    bool isAlgorithmic = (generatorType >= 1 && generatorType <= 4);
-    bool isStochastic = (generatorType >= 5 && generatorType <= 8);
-
-    if (isEuclidean)
-        visualizerColor = juce::Colour(CustomLookAndFeel::GOLD_TEMPLE);        // Gold for Euclidean
-    else if (isAlgorithmic)
-        visualizerColor = juce::Colour(CustomLookAndFeel::GREEN_VERDIGRIS);    // Verdigris for Algorithmic
-    else if (isStochastic)
-        visualizerColor = juce::Colour(CustomLookAndFeel::VIOLET_ALCHEMY);     // Violet for Stochastic
+    if (generatorType == GeneratorTypeMapping::kEuclidean)
+        visualizerColor = juce::Colour(CustomLookAndFeel::GOLD_TEMPLE);
+    else if (GeneratorTypeMapping::isPolyrhythm(generatorType))
+        visualizerColor = juce::Colour(CustomLookAndFeel::COPPER_STEAM);
+    else if (GeneratorTypeMapping::isAlgorithmic(generatorType))
+        visualizerColor = juce::Colour(CustomLookAndFeel::GREEN_VERDIGRIS);
+    else if (GeneratorTypeMapping::isStochastic(generatorType))
+        visualizerColor = juce::Colour(CustomLookAndFeel::VIOLET_ALCHEMY);
     else
         visualizerColor = juce::Colour(CustomLookAndFeel::AMBER_TESLA);
 
     patternDisplay.setAccentColor(visualizerColor);
 
-    if (generatorType == 0)  // Euclidean
+    if (generatorType == GeneratorTypeMapping::kEuclidean)
     {
         auto& euclidean = audioProcessor.getEuclideanEngine();
         std::vector<bool> pattern(euclidean.getSteps());
@@ -812,18 +817,15 @@ void GenerativeMIDIEditor::timerCallback()
             pattern[i] = euclidean.getStep(i);
 
         patternDisplay.setPattern(pattern);
-
-        // Update current playback position
         int currentStep = audioProcessor.getCurrentStep() % euclidean.getSteps();
         patternDisplay.setCurrentStep(currentStep);
     }
-    else  // Algorithmic or Stochastic — empty pattern (honest; no fabricated steps)
+    else
     {
         patternDisplay.setPattern({});
         patternDisplay.setCurrentStep(0);
     }
 
-    // Update current preset label
     const juce::String& presetName = audioProcessor.getPresetManager().getCurrentPresetName();
     if (presetName.isNotEmpty())
         currentPresetLabel.setText(presetName, juce::dontSendNotification);
@@ -833,24 +835,19 @@ void GenerativeMIDIEditor::timerCallback()
 
 void GenerativeMIDIEditor::updateControlsForGeneratorType(int generatorType)
 {
-    // Generator types (Polyrhythm removed):
-    // 0 = Euclidean
-    // 1-4 = Algorithmic (Markov, L-System, Cellular, Probabilistic)
-    // 5-8 = Stochastic (Brownian, Perlin, Drunk Walk, Lorenz)
+    const bool isEuclideanGen = (generatorType == GeneratorTypeMapping::kEuclidean);
+    const bool isPolyrhythmGen = GeneratorTypeMapping::isPolyrhythm(generatorType);
+    const bool isAlgorithmicGen = GeneratorTypeMapping::isAlgorithmic(generatorType);
+    const bool isStochasticGen = GeneratorTypeMapping::isStochastic(generatorType);
 
-    bool isEuclidean = (generatorType == 0);
-    bool isAlgorithmic = (generatorType >= 1 && generatorType <= 4);
-    bool isStochastic = (generatorType >= 5 && generatorType <= 8);
+    stepsSlider.setEnabled(isEuclideanGen);
+    pulsesSlider.setEnabled(isEuclideanGen);
+    rotationSlider.setEnabled(isEuclideanGen);
+    stepsLabel.setEnabled(isEuclideanGen);
+    pulsesLabel.setEnabled(isEuclideanGen);
+    rotationLabel.setEnabled(isEuclideanGen);
 
-    // Euclidean-specific controls (steps, pulses, rotation)
-    stepsSlider.setEnabled(isEuclidean);
-    pulsesSlider.setEnabled(isEuclidean);
-    rotationSlider.setEnabled(isEuclidean);
-    stepsLabel.setEnabled(isEuclidean);
-    pulsesLabel.setEnabled(isEuclidean);
-    rotationLabel.setEnabled(isEuclidean);
-
-    float euclideanAlpha = isEuclidean ? 1.0f : 0.3f;
+    float euclideanAlpha = isEuclideanGen ? 1.0f : 0.3f;
     stepsSlider.setAlpha(euclideanAlpha);
     pulsesSlider.setAlpha(euclideanAlpha);
     rotationSlider.setAlpha(euclideanAlpha);
@@ -858,15 +855,14 @@ void GenerativeMIDIEditor::updateControlsForGeneratorType(int generatorType)
     pulsesLabel.setAlpha(euclideanAlpha);
     rotationLabel.setAlpha(euclideanAlpha);
 
-    // Stochastic-specific controls (step size, momentum, time scale)
-    stepSizeSlider.setEnabled(isStochastic);
-    momentumSlider.setEnabled(isStochastic);
-    timeScaleSlider.setEnabled(isStochastic);
-    stepSizeLabel.setEnabled(isStochastic);
-    momentumLabel.setEnabled(isStochastic);
-    timeScaleLabel.setEnabled(isStochastic);
+    stepSizeSlider.setEnabled(isStochasticGen);
+    momentumSlider.setEnabled(isStochasticGen);
+    timeScaleSlider.setEnabled(isStochasticGen);
+    stepSizeLabel.setEnabled(isStochasticGen);
+    momentumLabel.setEnabled(isStochasticGen);
+    timeScaleLabel.setEnabled(isStochasticGen);
 
-    float stochasticAlpha = isStochastic ? 1.0f : 0.3f;
+    float stochasticAlpha = isStochasticGen ? 1.0f : 0.3f;
     stepSizeSlider.setAlpha(stochasticAlpha);
     momentumSlider.setAlpha(stochasticAlpha);
     timeScaleSlider.setAlpha(stochasticAlpha);
@@ -874,37 +870,38 @@ void GenerativeMIDIEditor::updateControlsForGeneratorType(int generatorType)
     momentumLabel.setAlpha(stochasticAlpha);
     timeScaleLabel.setAlpha(stochasticAlpha);
 
-    // Density control applies to all generators but with different meanings
     densityLabel.setEnabled(true);
     densitySlider.setEnabled(true);
     densitySlider.setAlpha(1.0f);
     densityLabel.setAlpha(1.0f);
 
-    // Update label based on generator type
-    if (isEuclidean)
+    if (isEuclideanGen)
         densityLabel.setText("Probability", juce::dontSendNotification);
-    else if (isStochastic)
-        densityLabel.setText("Density", juce::dontSendNotification);
     else
         densityLabel.setText("Density", juce::dontSendNotification);
 
-    // Color code generator label based on engine type
     juce::Colour generatorColor;
-    if (isEuclidean)
-        generatorColor = juce::Colour(CustomLookAndFeel::GOLD_TEMPLE);        // Gold for Euclidean
-    else if (isAlgorithmic)
-        generatorColor = juce::Colour(CustomLookAndFeel::GREEN_VERDIGRIS);    // Verdigris for Algorithmic
-    else if (isStochastic)
-        generatorColor = juce::Colour(CustomLookAndFeel::VIOLET_ALCHEMY);     // Violet for Stochastic/Chaos
+    if (isEuclideanGen)
+        generatorColor = juce::Colour(CustomLookAndFeel::GOLD_TEMPLE);
+    else if (isPolyrhythmGen)
+        generatorColor = juce::Colour(CustomLookAndFeel::COPPER_STEAM);
+    else if (isAlgorithmicGen)
+        generatorColor = juce::Colour(CustomLookAndFeel::GREEN_VERDIGRIS);
+    else if (isStochasticGen)
+        generatorColor = juce::Colour(CustomLookAndFeel::VIOLET_ALCHEMY);
     else
         generatorColor = juce::Colour(CustomLookAndFeel::GOLD_TEMPLE);
 
     generatorLabel.setColour(juce::Label::textColourId, generatorColor);
 
-    // All controls that work across all generator types remain fully enabled
-    // (tempo, velocity range, pitch range, scale, swing, humanization, gate length, ratcheting)
+    patternDisplay.setVisible(!isPolyrhythmGen);
+    if (polyLayerEditor)
+    {
+        polyLayerEditor->setVisible(isPolyrhythmGen);
+        if (isPolyrhythmGen)
+            polyLayerEditor->rebuildLayers();
+    }
 
-    // Force repaint and resize to show changes
     resized();
     repaint();
 }

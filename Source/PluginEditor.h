@@ -14,6 +14,7 @@
 #include "UI/CustomLookAndFeel.h"
 #include "UI/PatternVisualizer.h"
 #include "UI/PresetBrowser.h"
+#include "UI/PolyrhythmLayerEditor.h"
 
 class GenerativeMIDIEditor : public juce::AudioProcessorEditor,
                               private juce::Timer
@@ -34,6 +35,7 @@ private:
 
     // Pattern area components
     PatternVisualizer patternDisplay;
+    std::unique_ptr<PolyrhythmLayerEditor> polyLayerEditor;
 
     // Parameter sliders
     juce::Slider tempoSlider;

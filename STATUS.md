@@ -9,9 +9,9 @@
 
 | Claim | Reality |
 |-------|---------|
-| Generators in editor UI | **9** (Euclidean + 4 algorithmic + 4 stochastic) |
+| Generators in editor UI | **10** on `feature/polyrhythm-ui` (Euclidean + Polyrhythm + 4 algorithmic + 4 stochastic). **Master remains 9** until this branch merges. |
 | `stochasticType` APVTS param | **Legacy** — kept for session load; non-automatable; **unused by DSP** (`generatorType` is source of truth) |
-| Polyrhythm | Engine sources retained; **deferred** from UI / APVTS choice list |
+| Polyrhythm | **Experimental restore** on `feature/polyrhythm-ui`: selectable in APVTS/combo, DSP wired, minimal layer editor. Not on master yet. |
 | Modulation matrix | Archived under `archive/modulation_v1/` — not live |
 | AUv3 / iOS | CMake target + docs exist; **not App Store–ready** |
 | Touch / a11y | No dedicated touch redesign claimed |
@@ -36,7 +36,7 @@ Showcase (architecture + evidence): https://joshband.github.io/GenerativeMIDI/
 
 ### v0.6.x — Presets
 - XML `.gmpreset` save/load, browser, import/export
-- **10 factory presets** live (9-generator APVTS indices; Polyrhythm not included)
+- **10 factory presets** live (indices remapped for 10-generator APVTS on this branch)
 
 ### v0.5.x — Ratcheting + layout
 - Probability-based retriggers, decay, gate length / legato
@@ -55,23 +55,34 @@ Showcase (architecture + evidence): https://joshband.github.io/GenerativeMIDI/
 
 ## In progress
 
-None for this refactor wave — see CI for live build status.
+### Polyrhythm restore (`feature/polyrhythm-ui`)
+- Re-added to APVTS choice list + editor combo (index 1; algorithmic/stochastic shifted +1)
+- `polyrhythmEngine` wired into `onSubdivisionHit` / generation path
+- Minimal `PolyrhythmLayerEditor` resurrected (enable / division / length / add-remove layers)
+- Factory presets + Catch2 mapping tests updated for new indices
 
 ## Planned (explicitly deferred)
 
-### Polyrhythm layer editor
-`PolyrhythmEngine` kept for a future branch; no layer UI in the current editor.
+### Polyrhythm polish (post-MVP)
+- Per-layer pitch/velocity slider wiring beyond logging
+- Use layer `division` for true rate scaling (currently all layers advance 1:1 per clock subdivision)
+- Pattern step editing / polymeter visualization polish
+- Session migration for older 9-index user presets that land on shifted algorithmic/stochastic slots
+- Dedicated factory preset for Polyrhythm (APVTS index 1)
 
 ### MIDI expression depth
 UI + per-note emit shipped; continuous CC/PB modulation and MPE remain deferred.
+
+### Modulation matrix
+Still archived — not part of this epic.
 
 ## Project metrics
 
 | Metric | Value |
 |--------|-------|
 | Product version | v0.8.0 |
-| UI generators | 9 |
-| Polyrhythm in UI | Deferred |
+| UI generators (this branch) | 10 |
+| Polyrhythm in UI | Experimental (feature branch) |
 | Build | CI workflow `.github/workflows/ci.yml` |
 | Tests | `ctest` (Catch2 engine tests) |
 | Docs | README, FEATURES, GETTING_STARTED, BUILD, Pages showcase, [SMOKE_CHECKLIST](docs/user/SMOKE_CHECKLIST.md) |
@@ -81,7 +92,7 @@ UI + per-note emit shipped; continuous CC/PB modulation and MPE remain deferred.
 - Prefer CMake; initialize `art/` with `git submodule update --init --recursive`.
 - Unused `BitmapUIComponent` moved to `archive/`.
 - Do not treat session “token budget” notes in historical docs as project status.
-- **Realtime**: Euclidean regen, ratchet offsets, algorithmic single-note path, and EventScheduler are allocation-free on the steady-state audio path (queue pre-reserved in `prepareToPlay`; over-capacity schedules are dropped). Remaining risk: trained Markov still builds a map key vector on lookup (default untrained path is fine).
+- **Realtime**: Euclidean regen, ratchet offsets, algorithmic single-note path, and EventScheduler are allocation-free on the steady-state audio path (queue pre-reserved in `prepareToPlay`; over-capacity schedules are dropped). Remaining risk: trained Markov still builds a map key vector on lookup (default untrained path is fine). Polyrhythm path uses the same `scheduleNote` helper (expression MIDI intact).
 
 **License**: MIT  
 **Repository**: https://github.com/joshband/GenerativeMIDI
