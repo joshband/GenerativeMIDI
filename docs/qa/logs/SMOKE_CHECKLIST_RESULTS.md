@@ -1,6 +1,6 @@
 # Smoke Checklist Results — QA campaign 2026-09-22
 
-**Commit:** `41c51af`  
+**Commit:** `b1e8f0b`  
 **Build:** Debug Standalone rebuilt 2026-09-22 **18:23:48** (`CMAKE_BUILD_TYPE=Debug`)  
 **Permissions:** Accessibility **OK**; Screen Recording **OK** ([`permissions_check.txt`](permissions_check.txt))
 **REAPER MCP:** TwelveTake `user-reaper` — see [`../reaper/MCP_SETUP.md`](../reaper/MCP_SETUP.md)

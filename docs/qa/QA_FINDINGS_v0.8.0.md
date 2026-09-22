@@ -1,7 +1,7 @@
 # GenerativeMIDI QA Findings — v0.8.0
 
 **Date:** 2026-09-22  
-**Commit:** `41c51af` (TwelveTake MCP + Phase C; prior evidence `28f0af4`)  
+**Commit:** `b1e8f0b`  
 **Campaign:** Host QA Exercise Plan + REAPER MCP Phase C
 
 ## 1. Environment
