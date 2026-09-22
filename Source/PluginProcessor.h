@@ -22,6 +22,8 @@
 #include "Core/PresetManager.h"
 #include "DSP/ClockManager.h"
 #include "DSP/EventScheduler.h"
+#include "Modulation/ModLfo.h"
+#include "Modulation/ModulationDestination.h"
 
 class GenerativeMIDIProcessor : public juce::AudioProcessor
 {
@@ -76,6 +78,8 @@ public:
     GateLengthController& getGateLengthController() { return gateLengthController; }
     RatchetEngine& getRatchetEngine() { return ratchetEngine; }
     PresetManager& getPresetManager() { return presetManager; }
+    ModLfo& getModLfo() { return modLfo; }
+    const ModLfo& getModLfo() const { return modLfo; }
 
     // Parameter tree
     juce::AudioProcessorValueTreeState& getValueTreeState() { return parameters; }
@@ -149,10 +153,16 @@ private:
     static constexpr const char* PARAM_CC_NUMBER = "ccNumber";
     static constexpr const char* PARAM_CC_AMOUNT = "ccAmount";
 
+    // Modulation v2 MVP (LFO → velocity); see docs/developer/MODULATION_V2.md
+    static constexpr const char* PARAM_MOD_LFO_ENABLE = "modLfoEnable";
+    static constexpr const char* PARAM_MOD_LFO_RATE = "modLfoRate";
+    static constexpr const char* PARAM_MOD_LFO_DEPTH = "modLfoDepth";
+
     // Processing state
     int64_t currentSamplePosition = 0;
     int lastSubdivisionStep = 0;
     juce::Random rtRandom;
+    ModLfo modLfo;
 
     // Helper methods
     void processGenerativeOutput(juce::MidiBuffer& midiMessages, int numSamples);

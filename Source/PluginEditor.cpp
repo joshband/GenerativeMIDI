@@ -259,6 +259,31 @@ GenerativeMIDIEditor::GenerativeMIDIEditor(GenerativeMIDIProcessor& p)
     ccAmountLabel.setText("CC Amt", juce::dontSendNotification);
     ccAmountLabel.setJustificationType(juce::Justification::centred);
 
+    // Modulation v2 MVP: LFO → velocity
+    addAndMakeVisible(modLfoEnableButton);
+    modLfoEnableButton.setButtonText("LFO Vel");
+    modLfoEnableButton.setClickingTogglesState(true);
+    modLfoEnableAttachment.reset(new juce::AudioProcessorValueTreeState::ButtonAttachment(
+        audioProcessor.getValueTreeState(), "modLfoEnable", modLfoEnableButton));
+
+    addAndMakeVisible(modLfoRateSlider);
+    modLfoRateSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
+    modLfoRateSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 50, 18);
+    modLfoRateAttachment.reset(new juce::AudioProcessorValueTreeState::SliderAttachment(
+        audioProcessor.getValueTreeState(), "modLfoRate", modLfoRateSlider));
+    addAndMakeVisible(modLfoRateLabel);
+    modLfoRateLabel.setText("LFO Hz", juce::dontSendNotification);
+    modLfoRateLabel.setJustificationType(juce::Justification::centred);
+
+    addAndMakeVisible(modLfoDepthSlider);
+    modLfoDepthSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
+    modLfoDepthSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 50, 18);
+    modLfoDepthAttachment.reset(new juce::AudioProcessorValueTreeState::SliderAttachment(
+        audioProcessor.getValueTreeState(), "modLfoDepth", modLfoDepthSlider));
+    addAndMakeVisible(modLfoDepthLabel);
+    modLfoDepthLabel.setText("LFO Depth", juce::dontSendNotification);
+    modLfoDepthLabel.setJustificationType(juce::Justification::centred);
+
     // Ratchet controls
     addAndMakeVisible(ratchetCountSlider);
     ratchetCountSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
@@ -737,6 +762,24 @@ void GenerativeMIDIEditor::resized()
     auto timeScaleArea = advancedSection.removeFromLeft(knobSize);
     timeScaleLabel.setBounds(timeScaleArea.removeFromBottom(20));
     timeScaleSlider.setBounds(timeScaleArea);
+
+    advancedSection.removeFromLeft(spacing * 2);
+
+    // Modulation v2 MVP controls (LFO → velocity)
+    auto modEnableArea = advancedSection.removeFromLeft(48);
+    modLfoEnableButton.setBounds(modEnableArea.withSizeKeepingCentre(48, 28));
+
+    advancedSection.removeFromLeft(6);
+
+    auto modRateArea = advancedSection.removeFromLeft(knobSize);
+    modLfoRateLabel.setBounds(modRateArea.removeFromBottom(20));
+    modLfoRateSlider.setBounds(modRateArea);
+
+    advancedSection.removeFromLeft(spacing);
+
+    auto modDepthArea = advancedSection.removeFromLeft(knobSize);
+    modLfoDepthLabel.setBounds(modDepthArea.removeFromBottom(20));
+    modLfoDepthSlider.setBounds(modDepthArea);
 }
 
 void GenerativeMIDIEditor::timerCallback()
