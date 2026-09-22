@@ -17,7 +17,8 @@
 #include "UI/PolyrhythmLayerEditor.h"
 
 class GenerativeMIDIEditor : public juce::AudioProcessorEditor,
-                              private juce::Timer
+                              private juce::Timer,
+                              private PresetManager::Listener
 {
 public:
     GenerativeMIDIEditor(GenerativeMIDIProcessor&);
@@ -29,6 +30,9 @@ public:
 private:
     void timerCallback() override;
     void updateControlsForGeneratorType(int generatorType);
+    void currentPresetChanged(const juce::String& presetName) override;
+    void syncPresetLabel(const juce::String& presetName);
+    void updateStatusChip();
 
     GenerativeMIDIProcessor& audioProcessor;
     CustomLookAndFeel customLookAndFeel;
@@ -90,10 +94,12 @@ private:
     // Preset controls
     juce::TextButton presetBrowserButton;
     juce::Label currentPresetLabel;
+    juce::Label statusChipLabel;
     std::unique_ptr<PresetBrowser> presetBrowser;
 
     // Labels
     juce::Label titleLabel;
+    juce::Label productLabel;
     juce::Label tempoLabel;
     juce::Label stepsLabel;
     juce::Label pulsesLabel;
@@ -121,6 +127,9 @@ private:
     juce::Label stepSizeLabel;
     juce::Label momentumLabel;
     juce::Label timeScaleLabel;
+    juce::Label advancedRatchetGroupLabel;
+    juce::Label advancedStochasticGroupLabel;
+    juce::Label advancedLfoGroupLabel;
 
     // Slider attachments
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> tempoAttachment;
@@ -164,6 +173,13 @@ private:
     juce::Rectangle<float> generatorPanelBounds;
     juce::Rectangle<float> expressionPanelBounds;
     juce::Rectangle<float> advancedPanelBounds;
+    float advancedDividerX1 = 0.0f;
+    float advancedDividerX2 = 0.0f;
+
+    uint32_t lastNoteActivityCount = 0;
+    float activityPulse = 0.0f;
+    int activitySampleFrames = 0;
+    bool activitySampleHit = false;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(GenerativeMIDIEditor)
 };

@@ -17,6 +17,17 @@
 class PresetManager
 {
 public:
+    class Listener
+    {
+    public:
+        virtual ~Listener() = default;
+        /** Called on the message thread after load/save/nav changes the current preset. */
+        virtual void currentPresetChanged(const juce::String& presetName) = 0;
+    };
+
+    void addListener(Listener* listener) { listeners.add(listener); }
+    void removeListener(Listener* listener) { listeners.remove(listener); }
+
     /**
      * @struct Preset
      * @brief Individual preset with metadata and parameter state
@@ -89,6 +100,9 @@ private:
     PolyrhythmEngine& polyrhythmEngine;
     juce::Array<Preset> presets;
     int currentPresetIndex;
+    juce::ListenerList<Listener> listeners;
+
+    void notifyPresetChanged();
 
     // Helper functions
     juce::ValueTree captureCurrentState() const;

@@ -43,6 +43,9 @@ Showcase: https://joshband.github.io/GenerativeMIDI/
 
 None for the post-merge polish wave — see Planned for remaining MVP gaps.
 
+### UI polish (2026-09-22 surgical)
+P0–P1 header/pattern/preset sync landed on `master`: demoted SYNAPTIK wordmark, Pattern Display activity fallback, PresetManager listener + single-click load sync, Advanced Ratchet|Stochastic|LFO grouping, status chip, light Preset Browser tokens. Screenshots: [`docs/qa/logs/ui_polish_overview.png`](docs/qa/logs/ui_polish_overview.png), [`docs/qa/logs/ui_polish_presets_open.png`](docs/qa/logs/ui_polish_presets_open.png). Deferred: full DNA rewrite, combo popup redesign, Preset Manager restyle, slider-handle unification, MIDI log pane.
+
 ## Planned (explicitly deferred)
 
 ### Polyrhythm polish

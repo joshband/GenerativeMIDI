@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Minimal transport status chip in editor header (`Standalone|Host · free-run|generating|stopped|note`).
+- Pattern Display live activity fallback for non-Euclidean generators (rolling ticks + status line; last-Euclidean ghost).
+- PresetManager `Listener` + editor header sync when factory/user presets load (single-click load in Preset Browser).
+- Advanced section visual grouping: Ratchet | Stochastic | LFO sublabels and subtle dividers.
 - Host/UI QA campaign artefacts under `docs/qa/` (findings, smoke results, Standalone/REAPER evidence).
 - TwelveTake REAPER MCP setup docs and transport-gate helpers (`docs/qa/reaper/`) for agent-driven Play/Stop verification.
 - Headless Catch2 host smoke (`GenerativeMIDIHostSmokeTests`): fake `AudioPlayHead`, note-on emit while playing, stop gate (no new note-ons when stopped); registered in `ctest`.
@@ -15,6 +19,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Accessibility titles (`Component::setTitle`) on key editor, Polyrhythm layer, and Preset Browser controls for System Events / VoiceOver automation.
 
 ### Changed
+- Demoted SYNAPTIK wordmark; product title “Generative MIDI” is the primary header signal (brass + cyan-on-navy unchanged).
+- Knob/label fit: slightly wider knobs, `minimumHorizontalScale` on tight labels (Pulses, R. Prob, etc.).
+- Light Preset Browser token alignment (brass border + button colours).
 - GitHub Pages `docs/index.html` / `docs/engineering.html` proof table aligned with 10 UI generators, 26 `ctest` cases, and REAPER MCP Host QA evidence.
 - `ctest` suite expanded with host playhead smoke, polyrhythm layer persistence, and Markov trained-path lookup coverage.
 - Preset / session schema bumped **1.1 → 1.2** (generator-index migration still only for schemas older than 1.1).

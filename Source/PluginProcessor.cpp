@@ -376,6 +376,7 @@ void GenerativeMIDIProcessor::processBlock(juce::AudioBuffer<float>& buffer, juc
         if (auto position = playHead->getPosition())
             shouldAdvance = position->getIsPlaying();
     }
+    clockAdvancing.store(shouldAdvance, std::memory_order_relaxed);
 
     if (shouldAdvance)
     {
@@ -495,6 +496,8 @@ void GenerativeMIDIProcessor::onSubdivisionHit(int subdivision)
             const float bendNorm = juce::jlimit(0.0f, 1.0f, pitchbendRange / 24.0f);
             eventScheduler.schedulePitchBend(bendNorm, midiChannel, noteOnSample);
         }
+
+        noteActivityCounter.fetch_add(1, std::memory_order_relaxed);
     };
 
     switch (generatorType)

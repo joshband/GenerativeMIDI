@@ -78,6 +78,13 @@ void PresetManager::savePreset(const juce::String& name,
 
     // Write to file
     xml.writeTo(presetFile);
+    notifyPresetChanged();
+}
+
+void PresetManager::notifyPresetChanged()
+{
+    const juce::String name = getCurrentPresetName();
+    listeners.call([&name](Listener& l) { l.currentPresetChanged(name); });
 }
 
 bool PresetManager::loadPreset(int presetIndex)
@@ -88,6 +95,7 @@ bool PresetManager::loadPreset(int presetIndex)
     const auto& preset = presets[presetIndex];
     restoreState(preset.state);
     currentPresetIndex = presetIndex;
+    notifyPresetChanged();
 
     return true;
 }
@@ -126,6 +134,8 @@ void PresetManager::deletePreset(int presetIndex)
         currentPresetIndex = -1;
     else if (currentPresetIndex > presetIndex)
         currentPresetIndex--;
+
+    notifyPresetChanged();
 }
 
 juce::StringArray PresetManager::getPresetNames() const

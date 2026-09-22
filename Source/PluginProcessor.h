@@ -10,6 +10,7 @@
 #pragma once
 
 #include <juce_audio_processors/juce_audio_processors.h>
+#include <atomic>
 #include "Core/EuclideanEngine.h"
 #include "Core/PolyrhythmEngine.h"
 #include "Core/AlgorithmicEngine.h"
@@ -86,6 +87,8 @@ public:
 
     // Playback state
     int getCurrentStep() const { return lastSubdivisionStep; }
+    uint32_t getNoteActivityCount() const { return noteActivityCounter.load(std::memory_order_relaxed); }
+    bool isClockAdvancing() const { return clockAdvancing.load(std::memory_order_relaxed); }
 
 private:
     //==============================================================================
@@ -162,6 +165,8 @@ private:
     // Processing state
     int64_t currentSamplePosition = 0;
     int lastSubdivisionStep = 0;
+    std::atomic<uint32_t> noteActivityCounter { 0 };
+    std::atomic<bool> clockAdvancing { false };
     juce::Random rtRandom;
     ModLfo modLfo;
 

@@ -103,14 +103,29 @@ PresetBrowser::PresetBrowser(PresetManager& manager)
         refreshPresetList();
     };
 
+    // Light brass/cyan token alignment (borders + button chrome)
+    auto styleActionButton = [](juce::TextButton& b)
+    {
+        b.setColour(juce::TextButton::buttonColourId, juce::Colour(CustomLookAndFeel::STEEL_OBSIDIAN));
+        b.setColour(juce::TextButton::buttonOnColourId, juce::Colour(CustomLookAndFeel::BRASS_AGED).darker(0.2f));
+        b.setColour(juce::TextButton::textColourOffId, juce::Colour(CustomLookAndFeel::GOLD_TEMPLE));
+        b.setColour(juce::TextButton::textColourOnId, juce::Colour(CustomLookAndFeel::AETHER_CYAN));
+    };
+    styleActionButton(saveButton);
+    styleActionButton(deleteButton);
+    styleActionButton(importButton);
+    styleActionButton(exportButton);
+    styleActionButton(prevButton);
+    styleActionButton(nextButton);
+
     // Labels
     addAndMakeVisible(presetNameLabel);
-    presetNameLabel.setFont(juce::Font(18.0f, juce::Font::bold));
+    presetNameLabel.setFont(juce::FontOptions(18.0f).withStyle("Bold"));
     presetNameLabel.setColour(juce::Label::textColourId, juce::Colour(CustomLookAndFeel::GOLD_TEMPLE));
     presetNameLabel.setJustificationType(juce::Justification::centred);
 
     addAndMakeVisible(presetInfoLabel);
-    presetInfoLabel.setFont(juce::Font(12.0f));
+    presetInfoLabel.setFont(juce::FontOptions(12.0f));
     presetInfoLabel.setColour(juce::Label::textColourId, juce::Colour(CustomLookAndFeel::COPPER_STEAM));
     presetInfoLabel.setJustificationType(juce::Justification::centredLeft);
 
@@ -143,12 +158,15 @@ void PresetBrowser::paint(juce::Graphics& g)
 
     // Title
     g.setColour(juce::Colour(CustomLookAndFeel::GOLD_TEMPLE));
-    g.setFont(juce::Font(20.0f, juce::Font::bold));
+    g.setFont(juce::FontOptions(18.0f).withStyle("Bold"));
     g.drawText("Preset Browser", 10, 5, getWidth() - 20, 30, juce::Justification::centred);
 
     // Section dividers
-    g.setColour(juce::Colour(CustomLookAndFeel::BRASS_AGED).withAlpha(0.5f));
+    g.setColour(juce::Colour(CustomLookAndFeel::BRASS_AGED).withAlpha(0.55f));
     g.drawLine(10.0f, 40.0f, static_cast<float>(getWidth() - 10), 40.0f, 1.0f);
+
+    g.setColour(juce::Colour(CustomLookAndFeel::BRASS_AGED).withAlpha(0.4f));
+    g.drawRoundedRectangle(getLocalBounds().toFloat().reduced(4.0f), 6.0f, 1.2f);
 }
 
 void PresetBrowser::resized()
@@ -233,6 +251,12 @@ void PresetBrowser::paintListBoxItem(int rowNumber, juce::Graphics& g,
 
 void PresetBrowser::listBoxItemClicked(int row, const juce::MouseEvent&)
 {
+    if (row < 0 || row >= filteredPresetIndices.size())
+        return;
+
+    // Single-click loads so editor header stays in sync with selection
+    const int presetIndex = filteredPresetIndices[row];
+    presetManager.loadPreset(presetIndex);
     updatePresetInfo();
 }
 

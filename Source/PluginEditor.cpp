@@ -22,13 +22,28 @@ GenerativeMIDIEditor::GenerativeMIDIEditor(GenerativeMIDIProcessor& p)
     setResizable(true, true);
     setResizeLimits(1200, 800, 2000, 1300);
 
-    // Title - SYNAPTIK gilded brass logo
+    // Compact brand mark (demoted) + product name
     addAndMakeVisible(titleLabel);
-    titleLabel.setText("S Y N A P T I K", juce::dontSendNotification);
-    titleLabel.setFont(juce::Font(40.0f, juce::Font::bold));
-    titleLabel.setJustificationType(juce::Justification::centred);
-    titleLabel.setColour(juce::Label::textColourId, juce::Colour(CustomLookAndFeel::GOLD_TEMPLE));
+    titleLabel.setText("SYNAPTIK", juce::dontSendNotification);
+    titleLabel.setFont(juce::FontOptions(14.0f).withStyle("Bold"));
+    titleLabel.setJustificationType(juce::Justification::centredLeft);
+    titleLabel.setColour(juce::Label::textColourId, juce::Colour(CustomLookAndFeel::BRASS_AGED));
     titleLabel.setColour(juce::Label::backgroundColourId, juce::Colours::transparentBlack);
+
+    addAndMakeVisible(productLabel);
+    productLabel.setText("Generative MIDI", juce::dontSendNotification);
+    productLabel.setFont(juce::FontOptions(17.0f).withStyle("Bold"));
+    productLabel.setJustificationType(juce::Justification::centredLeft);
+    productLabel.setColour(juce::Label::textColourId, juce::Colour(CustomLookAndFeel::GOLD_TEMPLE));
+    productLabel.setColour(juce::Label::backgroundColourId, juce::Colours::transparentBlack);
+
+    addAndMakeVisible(statusChipLabel);
+    statusChipLabel.setFont(juce::FontOptions(11.0f));
+    statusChipLabel.setJustificationType(juce::Justification::centredLeft);
+    statusChipLabel.setColour(juce::Label::textColourId, juce::Colour(CustomLookAndFeel::AETHER_CYAN));
+    statusChipLabel.setColour(juce::Label::backgroundColourId, juce::Colours::transparentBlack);
+    statusChipLabel.setTitle("Transport Status");
+    updateStatusChip();
 
     // Pattern display + polyrhythm layer editor (swapped by generator type)
     addAndMakeVisible(patternDisplay);
@@ -90,6 +105,7 @@ GenerativeMIDIEditor::GenerativeMIDIEditor(GenerativeMIDIProcessor& p)
     addAndMakeVisible(pulsesLabel);
     pulsesLabel.setText("Pulses", juce::dontSendNotification);
     pulsesLabel.setJustificationType(juce::Justification::centred);
+    pulsesLabel.setMinimumHorizontalScale(0.7f);
 
     addAndMakeVisible(rotationSlider);
     rotationSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
@@ -189,6 +205,7 @@ GenerativeMIDIEditor::GenerativeMIDIEditor(GenerativeMIDIProcessor& p)
     addAndMakeVisible(velocityHumanizeLabel);
     velocityHumanizeLabel.setText("Vel Var", juce::dontSendNotification);
     velocityHumanizeLabel.setJustificationType(juce::Justification::centred);
+    velocityHumanizeLabel.setMinimumHorizontalScale(0.7f);
 
     // Gate length controls
     addAndMakeVisible(gateLengthSlider);
@@ -312,8 +329,9 @@ GenerativeMIDIEditor::GenerativeMIDIEditor(GenerativeMIDIProcessor& p)
     ratchetProbabilityAttachment.reset(new juce::AudioProcessorValueTreeState::SliderAttachment(
         audioProcessor.getValueTreeState(), "ratchetProbability", ratchetProbabilitySlider));
     addAndMakeVisible(ratchetProbabilityLabel);
-    ratchetProbabilityLabel.setText("R Prob", juce::dontSendNotification);
+    ratchetProbabilityLabel.setText("R. Prob", juce::dontSendNotification);
     ratchetProbabilityLabel.setJustificationType(juce::Justification::centred);
+    ratchetProbabilityLabel.setMinimumHorizontalScale(0.65f);
 
     addAndMakeVisible(ratchetDecaySlider);
     ratchetDecaySlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
@@ -321,8 +339,9 @@ GenerativeMIDIEditor::GenerativeMIDIEditor(GenerativeMIDIProcessor& p)
     ratchetDecayAttachment.reset(new juce::AudioProcessorValueTreeState::SliderAttachment(
         audioProcessor.getValueTreeState(), "ratchetDecay", ratchetDecaySlider));
     addAndMakeVisible(ratchetDecayLabel);
-    ratchetDecayLabel.setText("R Decay", juce::dontSendNotification);
+    ratchetDecayLabel.setText("R. Decay", juce::dontSendNotification);
     ratchetDecayLabel.setJustificationType(juce::Justification::centred);
+    ratchetDecayLabel.setMinimumHorizontalScale(0.65f);
 
     // Stochastic/Chaos controls
     addAndMakeVisible(stepSizeSlider);
@@ -333,6 +352,7 @@ GenerativeMIDIEditor::GenerativeMIDIEditor(GenerativeMIDIProcessor& p)
     addAndMakeVisible(stepSizeLabel);
     stepSizeLabel.setText("Step Size", juce::dontSendNotification);
     stepSizeLabel.setJustificationType(juce::Justification::centred);
+    stepSizeLabel.setMinimumHorizontalScale(0.65f);
 
     addAndMakeVisible(momentumSlider);
     momentumSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
@@ -351,6 +371,22 @@ GenerativeMIDIEditor::GenerativeMIDIEditor(GenerativeMIDIProcessor& p)
     addAndMakeVisible(timeScaleLabel);
     timeScaleLabel.setText("Time Scale", juce::dontSendNotification);
     timeScaleLabel.setJustificationType(juce::Justification::centred);
+    timeScaleLabel.setMinimumHorizontalScale(0.65f);
+
+    // Advanced group sublabels (Ratchet | Stochastic | LFO)
+    auto styleGroupLabel = [](juce::Label& label, const juce::String& text)
+    {
+        label.setText(text, juce::dontSendNotification);
+        label.setFont(juce::FontOptions(10.0f).withStyle("Bold"));
+        label.setJustificationType(juce::Justification::centred);
+        label.setColour(juce::Label::textColourId, juce::Colour(CustomLookAndFeel::GOLD_TEMPLE).withAlpha(0.75f));
+    };
+    addAndMakeVisible(advancedRatchetGroupLabel);
+    styleGroupLabel(advancedRatchetGroupLabel, "RATCHET");
+    addAndMakeVisible(advancedStochasticGroupLabel);
+    styleGroupLabel(advancedStochasticGroupLabel, "STOCHASTIC");
+    addAndMakeVisible(advancedLfoGroupLabel);
+    styleGroupLabel(advancedLfoGroupLabel, "LFO");
 
     // Preset browser button
     addAndMakeVisible(presetBrowserButton);
@@ -367,7 +403,7 @@ GenerativeMIDIEditor::GenerativeMIDIEditor(GenerativeMIDIProcessor& p)
         options.content.setNonOwned(presetBrowser.get());
         options.dialogTitle = "Preset Manager";
         options.componentToCentreAround = this;
-        options.dialogBackgroundColour = juce::Colour(0xff0f0f0f);
+        options.dialogBackgroundColour = juce::Colour(CustomLookAndFeel::ABYSS_NAVY);
         options.escapeKeyTriggersCloseButton = true;
         options.useNativeTitleBar = true;
         options.resizable = true;
@@ -377,10 +413,13 @@ GenerativeMIDIEditor::GenerativeMIDIEditor(GenerativeMIDIProcessor& p)
 
     // Current preset label
     addAndMakeVisible(currentPresetLabel);
-    currentPresetLabel.setText("No Preset", juce::dontSendNotification);
-    currentPresetLabel.setFont(juce::Font(12.0f));
+    syncPresetLabel(audioProcessor.getPresetManager().getCurrentPresetName());
+    currentPresetLabel.setFont(juce::FontOptions(12.0f));
     currentPresetLabel.setJustificationType(juce::Justification::centred);
     currentPresetLabel.setColour(juce::Label::textColourId, juce::Colour(CustomLookAndFeel::GREEN_VERDIGRIS));
+    currentPresetLabel.setMinimumHorizontalScale(0.7f);
+
+    audioProcessor.getPresetManager().addListener(this);
 
     // Accessibility titles for System Events / AX automation (avoid unnamed popups)
     setTitle("Generative MIDI");
@@ -423,6 +462,7 @@ GenerativeMIDIEditor::GenerativeMIDIEditor(GenerativeMIDIProcessor& p)
 
 GenerativeMIDIEditor::~GenerativeMIDIEditor()
 {
+    audioProcessor.getPresetManager().removeListener(this);
     setLookAndFeel(nullptr);
 }
 
@@ -598,18 +638,37 @@ void GenerativeMIDIEditor::paint(juce::Graphics& g)
     drawBrassPanel(generatorPanelBounds, "GENERATOR");
     drawBrassPanel(expressionPanelBounds, "EXPRESSION");
     drawBrassPanel(advancedPanelBounds, "ADVANCED");
+
+    // Subtle Advanced group dividers (Ratchet | Stochastic | LFO)
+    if (advancedDividerX1 > 0.0f && advancedDividerX2 > 0.0f)
+    {
+        const float top = advancedPanelBounds.getY() + 26.0f;
+        const float bottom = advancedPanelBounds.getBottom() - 6.0f;
+        g.setColour(juce::Colour(CustomLookAndFeel::BRASS_AGED).withAlpha(0.55f));
+        g.drawLine(advancedDividerX1, top, advancedDividerX1, bottom, 1.25f);
+        g.drawLine(advancedDividerX2, top, advancedDividerX2, bottom, 1.25f);
+        g.setColour(juce::Colour(CustomLookAndFeel::AETHER_CYAN).withAlpha(0.18f));
+        g.drawLine(advancedDividerX1 + 1.0f, top, advancedDividerX1 + 1.0f, bottom, 1.0f);
+        g.drawLine(advancedDividerX2 + 1.0f, top, advancedDividerX2 + 1.0f, bottom, 1.0f);
+    }
 }
 
 void GenerativeMIDIEditor::resized()
 {
     auto area = getLocalBounds();
 
-    // Title and Preset controls
-    auto titleArea = area.removeFromTop(60).reduced(20, 10);
-    auto presetArea = titleArea.removeFromRight(180);
-    presetBrowserButton.setBounds(presetArea.removeFromTop(30).reduced(5));
-    currentPresetLabel.setBounds(presetArea.reduced(5, 0));
-    titleLabel.setBounds(titleArea);
+    // Compact header: brand left, product + status, presets right
+    auto titleArea = area.removeFromTop(52).reduced(20, 6);
+    auto presetArea = titleArea.removeFromRight(170);
+    presetBrowserButton.setBounds(presetArea.removeFromTop(26).reduced(4, 0));
+    currentPresetLabel.setBounds(presetArea.reduced(4, 0));
+
+    auto brandCol = titleArea.removeFromLeft(78);
+    titleLabel.setBounds(brandCol.removeFromTop(18));
+    titleArea.removeFromLeft(10);
+    auto productCol = titleArea.removeFromLeft(280);
+    productLabel.setBounds(productCol.removeFromTop(24));
+    statusChipLabel.setBounds(productCol);
 
     // Pattern display / polyrhythm layers section
     const bool isPolyrhythm = GeneratorTypeMapping::isPolyrhythm(generatorTypeCombo.getSelectedId() - 1);
@@ -628,8 +687,8 @@ void GenerativeMIDIEditor::resized()
     generatorPanelBounds = controlsSection.toFloat();
     controlsSection.removeFromTop(20); // Section label
 
-    int knobSize = 85;
-    int spacing = 15;
+    int knobSize = 90;
+    int spacing = 12;
 
     auto generatorArea = controlsSection.removeFromLeft(150);
     generatorLabel.setBounds(generatorArea.removeFromTop(20));
@@ -771,11 +830,21 @@ void GenerativeMIDIEditor::resized()
     ccAmountLabel.setBounds(ccAmtArea.removeFromBottom(18));
     ccAmountSlider.setBounds(ccAmtArea);
 
-    // Advanced section (ratcheting + stochastic controls)
-    auto advancedOuter = area.removeFromTop(130);
-    auto advancedSection = advancedOuter.reduced(40, 20);
+    // Advanced section: Ratchet | Stochastic | LFO
+    auto advancedOuter = area.removeFromTop(150);
+    auto advancedSection = advancedOuter.reduced(40, 16);
     advancedPanelBounds = advancedSection.toFloat();
-    advancedSection.removeFromTop(20); // Section label
+    advancedSection.removeFromTop(22); // Section label
+
+    auto groupRow = advancedSection.removeFromTop(14);
+    const int groupGap = spacing * 2;
+    const int ratchetGroupW = knobSize * 3 + spacing * 2;
+    const int stochGroupW = knobSize * 3 + spacing * 2;
+    advancedRatchetGroupLabel.setBounds(groupRow.removeFromLeft(ratchetGroupW));
+    groupRow.removeFromLeft(groupGap);
+    advancedStochasticGroupLabel.setBounds(groupRow.removeFromLeft(stochGroupW));
+    groupRow.removeFromLeft(groupGap);
+    advancedLfoGroupLabel.setBounds(groupRow.removeFromLeft(knobSize * 3 + 48 + spacing * 2));
 
     auto ratchetCountArea = advancedSection.removeFromLeft(knobSize);
     ratchetCountLabel.setBounds(ratchetCountArea.removeFromBottom(20));
@@ -793,7 +862,8 @@ void GenerativeMIDIEditor::resized()
     ratchetDecayLabel.setBounds(ratchetDecayArea.removeFromBottom(20));
     ratchetDecaySlider.setBounds(ratchetDecayArea);
 
-    advancedSection.removeFromLeft(spacing * 2);
+    advancedDividerX1 = static_cast<float>(advancedSection.getX() + groupGap / 2);
+    advancedSection.removeFromLeft(groupGap);
 
     auto stepSizeArea = advancedSection.removeFromLeft(knobSize);
     stepSizeLabel.setBounds(stepSizeArea.removeFromBottom(20));
@@ -811,7 +881,8 @@ void GenerativeMIDIEditor::resized()
     timeScaleLabel.setBounds(timeScaleArea.removeFromBottom(20));
     timeScaleSlider.setBounds(timeScaleArea);
 
-    advancedSection.removeFromLeft(spacing * 2);
+    advancedDividerX2 = static_cast<float>(advancedSection.getX() + groupGap / 2);
+    advancedSection.removeFromLeft(groupGap);
 
     // Modulation v2 MVP controls (LFO → velocity)
     auto modEnableArea = advancedSection.removeFromLeft(48);
@@ -854,28 +925,89 @@ void GenerativeMIDIEditor::timerCallback()
 
     patternDisplay.setAccentColor(visualizerColor);
 
-    if (generatorType == GeneratorTypeMapping::kEuclidean)
+    const uint32_t noteCount = audioProcessor.getNoteActivityCount();
+    const bool notesFired = noteCount != lastNoteActivityCount;
+    if (notesFired)
     {
-        auto& euclidean = audioProcessor.getEuclideanEngine();
-        std::vector<bool> pattern(euclidean.getSteps());
-        for (int i = 0; i < euclidean.getSteps(); ++i)
-            pattern[i] = euclidean.getStep(i);
-
-        patternDisplay.setPattern(pattern);
-        int currentStep = audioProcessor.getCurrentStep() % euclidean.getSteps();
-        patternDisplay.setCurrentStep(currentStep);
+        activityPulse = 1.0f;
+        lastNoteActivityCount = noteCount;
     }
     else
     {
-        patternDisplay.setPattern({});
-        patternDisplay.setCurrentStep(0);
+        activityPulse = juce::jmax(0.0f, activityPulse - 0.08f);
     }
 
-    const juce::String& presetName = audioProcessor.getPresetManager().getCurrentPresetName();
+    if (generatorType == GeneratorTypeMapping::kEuclidean)
+    {
+        auto& euclidean = audioProcessor.getEuclideanEngine();
+        const int steps = juce::jmax(1, euclidean.getSteps());
+        std::vector<bool> pattern(static_cast<size_t>(steps));
+        for (int i = 0; i < steps; ++i)
+            pattern[static_cast<size_t>(i)] = euclidean.getStep(i);
+
+        patternDisplay.setPattern(pattern);
+        patternDisplay.setCurrentStep(audioProcessor.getCurrentStep() % steps);
+        patternDisplay.setStatusText({});
+        patternDisplay.setActivityLevel(0.0f);
+    }
+    else if (!GeneratorTypeMapping::isPolyrhythm(generatorType))
+    {
+        patternDisplay.setPattern({});
+        patternDisplay.setCurrentStep(0);
+
+        juce::String genName = generatorTypeCombo.getText();
+        if (genName.isEmpty())
+            genName = "Generator";
+
+        const bool advancing = audioProcessor.isClockAdvancing();
+        juce::String status = genName + (advancing ? " · generating" : " · idle");
+        patternDisplay.setStatusText(status);
+        patternDisplay.setActivityLevel(activityPulse);
+
+        activitySampleHit = activitySampleHit || (notesFired && advancing);
+        if (++activitySampleFrames >= 3)
+        {
+            patternDisplay.pushActivityTick(activitySampleHit);
+            activitySampleHit = false;
+            activitySampleFrames = 0;
+        }
+    }
+
+    updateStatusChip();
+}
+
+void GenerativeMIDIEditor::currentPresetChanged(const juce::String& presetName)
+{
+    syncPresetLabel(presetName);
+}
+
+void GenerativeMIDIEditor::syncPresetLabel(const juce::String& presetName)
+{
     if (presetName.isNotEmpty())
         currentPresetLabel.setText(presetName, juce::dontSendNotification);
     else
         currentPresetLabel.setText("No Preset", juce::dontSendNotification);
+}
+
+void GenerativeMIDIEditor::updateStatusChip()
+{
+    const bool standalone = (audioProcessor.wrapperType
+                             == juce::AudioProcessor::wrapperType_Standalone);
+    const bool advancing = audioProcessor.isClockAdvancing();
+    const juce::String context = standalone ? "Standalone" : "Host";
+    juce::String state;
+    if (!advancing)
+        state = "stopped";
+    else if (activityPulse > 0.35f)
+        state = "note";
+    else if (standalone)
+        state = "free-run";
+    else
+        state = "generating";
+
+    const juce::String chip = context + " · " + state;
+    if (statusChipLabel.getText() != chip)
+        statusChipLabel.setText(chip, juce::dontSendNotification);
 }
 
 void GenerativeMIDIEditor::updateControlsForGeneratorType(int generatorType)
