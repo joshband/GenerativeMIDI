@@ -114,6 +114,16 @@ PresetBrowser::PresetBrowser(PresetManager& manager)
     presetInfoLabel.setColour(juce::Label::textColourId, juce::Colour(CustomLookAndFeel::COPPER_STEAM));
     presetInfoLabel.setJustificationType(juce::Justification::centredLeft);
 
+    setTitle("Preset Manager");
+    presetListBox.setTitle("Preset List");
+    categorySelector.setTitle("Preset Category");
+    saveButton.setTitle("Save Preset");
+    deleteButton.setTitle("Delete Preset");
+    importButton.setTitle("Import Preset");
+    exportButton.setTitle("Export Preset");
+    prevButton.setTitle("Previous Preset");
+    nextButton.setTitle("Next Preset");
+
     // Initialize
     refreshPresetList();
     updatePresetInfo();

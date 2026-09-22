@@ -1,0 +1,9 @@
+Tue Sep 22 19:24:42 EDT 2026
+Generator Type (AX): Polyrhythm
+Evidence: standalone_polyrhythm_layers.png / standalone_polyrhythm_layers_confirm.png
+Layer UI visible: + Add Layer, - Remove Layer, Layer 1 row (enable, pattern, Div=3, Len=16, Pitch=0, Vel=1.00)
+Panel title: POLYRHYTHM LAYERS
+MIDI emit: not instrumented with MIDI monitor this pass; Standalone free-runs without host playhead;
+  headless HostSmokeTests cover play/stop note-on gate; Polyrhythm DSP wired (prior campaign).
+AX layer titles: set in PolyrhythmLayerEditor.h; intermittent System Events enumeration after UI swap
+  (main-window titles for Generator Type / Presets / LFO / Probability verified in ax_names_probe.txt).

@@ -1,0 +1,62 @@
+Presets | role=AXButton | pos=1360,146 | size=170x20
+Generator Type | role=AXPopUpButton | pos=205,391 | size=130x30
+#1 AXButton:minimise
+#2 AXButton:close
+#3 AXButton:Options
+#4 AXGroup:missing value
+#5 AXGroup:Generative MIDI
+#6 AXGroup:missing value
+#7 AXStaticText:S Y N A P T I K
+#8 AXButton:Presets
+#9 AXStaticText:No Preset
+#10 AXGroup:missing value
+#11 AXStaticText:Generator
+#12 AXSlider:Tempo
+#13 AXSlider:Steps
+#14 AXSlider:Pulses
+#15 AXSlider:Rotation
+#16 AXSlider:Probability
+#17 AXPopUpButton:Generator Type
+#18 AXStaticText:MIDI Ch
+#19 AXPopUpButton:MIDI Channel
+#20 AXStaticText:Tempo
+#21 AXStaticText:Steps
+#22 AXStaticText:Pulses
+#23 AXStaticText:Rotation
+#24 AXStaticText:Density
+#25 AXStaticText:Velocity Range
+#26 AXStaticText:Pitch Range
+#27 AXStaticText:Scale
+#28 AXSlider:missing value
+#29 AXSlider:missing value
+#30 AXSlider:missing value
+#31 AXSlider:missing value
+#32 AXButton:Legato
+#33 AXSlider:missing value
+#34 AXSlider:missing value
+#35 AXSlider:missing value
+#36 AXSlider:missing value
+#37 AXPopUpButton:Scale Root
+#38 AXPopUpButton:Scale Type
+#39 AXStaticText:Swing
+#40 AXStaticText:Timing
+#41 AXStaticText:Vel Var
+#42 AXStaticText:Gate
+#43 AXSlider:missing value
+#44 AXSlider:missing value
+#45 AXSlider:missing value
+#46 AXSlider:missing value
+#47 AXButton:Aftertouch Enable
+#48 AXButton:Pitch Bend Enable
+#49 AXButton:CC Enable
+#50 AXStaticText:AT Amt
+#51 AXStaticText:PB Semi
+#52 AXStaticText:CC #
+#53 AXStaticText:CC Amt
+#54 AXSlider:Ratchet Count
+#55 AXSlider:Ratchet Probability
+#56 AXSlider:Ratchet Decay
+#57 AXSlider:Step Size
+#58 AXSlider:Momentum
+#59 AXSlider:Time Scale
+#60 AXSlider:LFO Rate

@@ -1,0 +1,55 @@
+Test project /Users/artbox/Documents/Repos/GenerativeMIDI/build
+      Start  1: EuclideanEngine pulse count matches requested pulses
+ 1/25 Test  #1: EuclideanEngine pulse count matches requested pulses ..............   Passed    0.11 sec
+      Start  2: EuclideanEngine setRotation is idempotent for same value
+ 2/25 Test  #2: EuclideanEngine setRotation is idempotent for same value ..........   Passed    0.09 sec
+      Start  3: EuclideanEngine zero pulses yields empty pattern
+ 3/25 Test  #3: EuclideanEngine zero pulses yields empty pattern ..................   Passed    0.08 sec
+      Start  4: ScaleQuantizer chromatic is identity
+ 4/25 Test  #4: ScaleQuantizer chromatic is identity ..............................   Passed    0.08 sec
+      Start  5: ScaleQuantizer major keeps C in C major
+ 5/25 Test  #5: ScaleQuantizer major keeps C in C major ...........................   Passed    0.08 sec
+      Start  6: GeneratorTypeMapping indices cover ten UI generators
+ 6/25 Test  #6: GeneratorTypeMapping indices cover ten UI generators ..............   Passed    0.09 sec
+      Start  7: GeneratorTypeMapping algorithmic enums
+ 7/25 Test  #7: GeneratorTypeMapping algorithmic enums ............................   Passed    0.09 sec
+      Start  8: GeneratorTypeMapping stochastic enums
+ 8/25 Test  #8: GeneratorTypeMapping stochastic enums .............................   Passed    0.16 sec
+      Start  9: PolyrhythmEngine seeds audible default layer
+ 9/25 Test  #9: PolyrhythmEngine seeds audible default layer ......................   Passed    0.09 sec
+      Start 10: PolyrhythmEngine addLayer seeds distinct pattern
+10/25 Test #10: PolyrhythmEngine addLayer seeds distinct pattern ..................   Passed    0.09 sec
+      Start 11: ClockManager samples per beat at 120 BPM 48kHz
+11/25 Test #11: ClockManager samples per beat at 120 BPM 48kHz ....................   Passed    0.10 sec
+      Start 12: ClockManager subdivision advances with callback
+12/25 Test #12: ClockManager subdivision advances with callback ...................   Passed    0.12 sec
+      Start 13: StochasticEngine respects density extremes
+13/25 Test #13: StochasticEngine respects density extremes ........................   Passed    0.09 sec
+      Start 14: PresetManager initializes non-zero factory presets
+14/25 Test #14: PresetManager initializes non-zero factory presets ................   Passed    0.10 sec
+      Start 15: PresetManager factory loadPreset round-trips key params
+15/25 Test #15: PresetManager factory loadPreset round-trips key params ...........   Passed    0.10 sec
+      Start 16: PresetManager Polyrhythm Layers factory restores layer snapshot
+16/25 Test #16: PresetManager Polyrhythm Layers factory restores layer snapshot ...   Passed    0.10 sec
+      Start 17: PresetManager importPreset rejects unsafe or invalid files
+17/25 Test #17: PresetManager importPreset rejects unsafe or invalid files ........   Passed    0.13 sec
+      Start 18: ModLfo bipolar sine stays in range and advances
+18/25 Test #18: ModLfo bipolar sine stays in range and advances ...................   Passed    0.09 sec
+      Start 19: PolyrhythmEngine ValueTree round-trips layer fields
+19/25 Test #19: PolyrhythmEngine ValueTree round-trips layer fields ...............   Passed    0.09 sec
+      Start 20: migrateGeneratorTypeIndex shifts 9-gen layout
+20/25 Test #20: migrateGeneratorTypeIndex shifts 9-gen layout .....................   Passed    0.09 sec
+      Start 21: migrateApvtsStateIfNeeded rewrites generatorType PARAM
+21/25 Test #21: migrateApvtsStateIfNeeded rewrites generatorType PARAM ............   Passed    0.09 sec
+      Start 22: PolyrhythmEngine division rate diverges over ticks
+22/25 Test #22: PolyrhythmEngine division rate diverges over ticks ................   Passed    0.10 sec
+      Start 23: Host playhead playing: processBlock emits note-ons
+23/25 Test #23: Host playhead playing: processBlock emits note-ons ................   Passed    0.10 sec
+      Start 24: Host playhead stopped: processBlock emits no new note-ons
+24/25 Test #24: Host playhead stopped: processBlock emits no new note-ons .........   Passed    0.10 sec
+      Start 25: Polyrhythm layers round-trip through get/setStateInformation
+25/25 Test #25: Polyrhythm layers round-trip through get/setStateInformation ......   Passed    0.11 sec
+
+100% tests passed, 0 tests failed out of 25
+
+Total Test time (real) =   2.46 sec

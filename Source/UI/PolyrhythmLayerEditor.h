@@ -68,6 +68,15 @@ public:
 
         // Pattern display (mini visualizer)
         addAndMakeVisible(patternDisplay);
+
+        const auto layerPrefix = "Layer " + juce::String(layerIndex + 1) + " ";
+        setTitle(layerPrefix.trimEnd());
+        enableButton.setTitle(layerPrefix + "Enable");
+        divisionSlider.setTitle(layerPrefix + "Division");
+        lengthSlider.setTitle(layerPrefix + "Length");
+        pitchSlider.setTitle(layerPrefix + "Pitch");
+        velocitySlider.setTitle(layerPrefix + "Velocity");
+        patternDisplay.setTitle(layerPrefix + "Pattern");
     }
 
     void paint(juce::Graphics& g) override
@@ -263,6 +272,10 @@ public:
         headersLabel.setFont(juce::Font(10.0f, juce::Font::plain));
         headersLabel.setJustificationType(juce::Justification::left);
         headersLabel.setColour(juce::Label::textColourId, juce::Colour(CustomLookAndFeel::COPPER_STEAM));
+
+        setTitle("Polyrhythm Layers");
+        addLayerButton.setTitle("Add Layer");
+        removeLayerButton.setTitle("Remove Layer");
 
         // Create initial layer rows
         rebuildLayers();

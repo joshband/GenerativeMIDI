@@ -1,0 +1,15 @@
+FOUND: Generator Type
+FOUND: Presets
+FOUND: Probability
+FOUND: LFO Enable
+FOUND: LFO Velocity
+FOUND: LFO Rate
+FOUND: LFO Density
+FOUND: MIDI Channel
+FOUND: Tempo
+FOUND: Ratchet Count
+FOUND: Add Layer
+FOUND: Remove Layer
+FOUND: Layer 1 Division
+FOUND: Polyrhythm Layers
+gen=Polyrhythm

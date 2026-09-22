@@ -382,6 +382,36 @@ GenerativeMIDIEditor::GenerativeMIDIEditor(GenerativeMIDIProcessor& p)
     currentPresetLabel.setJustificationType(juce::Justification::centred);
     currentPresetLabel.setColour(juce::Label::textColourId, juce::Colour(CustomLookAndFeel::GREEN_VERDIGRIS));
 
+    // Accessibility titles for System Events / AX automation (avoid unnamed popups)
+    setTitle("Generative MIDI");
+    generatorTypeCombo.setTitle("Generator Type");
+    midiChannelCombo.setTitle("MIDI Channel");
+    presetBrowserButton.setTitle("Presets");
+    currentPresetLabel.setTitle("Current Preset");
+    densitySlider.setTitle("Probability");
+    tempoSlider.setTitle("Tempo");
+    stepsSlider.setTitle("Steps");
+    pulsesSlider.setTitle("Pulses");
+    rotationSlider.setTitle("Rotation");
+    scaleRootCombo.setTitle("Scale Root");
+    scaleTypeCombo.setTitle("Scale Type");
+    modLfoEnableButton.setTitle("LFO Enable");
+    modLfoRateSlider.setTitle("LFO Rate");
+    modLfoDepthSlider.setTitle("LFO Velocity");
+    modLfoDensityDepthSlider.setTitle("LFO Density");
+    ratchetCountSlider.setTitle("Ratchet Count");
+    ratchetProbabilitySlider.setTitle("Ratchet Probability");
+    ratchetDecaySlider.setTitle("Ratchet Decay");
+    stepSizeSlider.setTitle("Step Size");
+    momentumSlider.setTitle("Momentum");
+    timeScaleSlider.setTitle("Time Scale");
+    aftertouchEnableButton.setTitle("Aftertouch Enable");
+    pitchbendEnableButton.setTitle("Pitch Bend Enable");
+    ccEnableButton.setTitle("CC Enable");
+    legatoButton.setTitle("Legato");
+    if (polyLayerEditor != nullptr)
+        polyLayerEditor->setTitle("Polyrhythm Layers");
+
     // Initialize UI for current generator type
     updateControlsForGeneratorType(generatorTypeCombo.getSelectedId() - 1);
 
