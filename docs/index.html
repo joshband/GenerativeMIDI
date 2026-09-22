@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Josh Band · Generative MIDI</title>
+  <meta name="description" content="Josh Band — full-stack ownership of Generative MIDI: DSP/core engines, AU/VST3 wrappers, and evidence-backed engineering. Hiring-facing project showcase.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Karla:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/site.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="site-nav">
+    <a class="site-nav__mark" href="index.html">Josh Band · Generative MIDI</a>
+    <nav aria-label="Primary">
+      <ul class="site-nav__links">
+        <li><a href="index.html" aria-current="page">Home</a></li>
+        <li><a href="engineering.html">Engineering</a></li>
+        <li><a href="https://github.com/joshband/GenerativeMIDI" rel="noopener noreferrer">GitHub</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <header class="hero">
+    <div class="hero__glow" aria-hidden="true"></div>
+    <div class="hero__inner">
+      <div class="brand-stack">
+        <p class="brand-builder">Josh Band</p>
+        <p class="brand-product">Generative MIDI</p>
+      </div>
+      <h1 class="hero__thesis">Full-stack ownership of a generative MIDI plugin system — engines, host formats, and verification.</h1>
+      <p class="hero__support">A macOS MIDI effect built end-to-end in C++/JUCE, with architecture decisions and build evidence kept on disk for employers who want proof, not pitch.</p>
+      <div class="cta-row">
+        <a class="cta cta--primary" href="engineering.html">Engineering</a>
+        <a class="cta cta--ghost" href="https://github.com/joshband/GenerativeMIDI" rel="noopener noreferrer">GitHub</a>
+      </div>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="section" data-reveal aria-labelledby="proves-title">
+      <div class="section__inner">
+        <p class="section__label">Ownership</p>
+        <h2 class="section__title" id="proves-title">What this proves</h2>
+        <p class="section__lead">Three layers one person owns — not a thin UI over someone else’s engine.</p>
+        <ul class="claim-grid">
+          <li>
+            <h3>DSP / core</h3>
+            <p>Generative engines (Euclidean, algorithmic, stochastic/chaos), scale quantization, swing, gate, and ratchet paths that feed MIDI scheduling.</p>
+          </li>
+          <li>
+            <h3>Format wrapper</h3>
+            <p>macOS <strong>AU</strong>, <strong>VST3</strong>, and <strong>Standalone</strong> build-verified. <strong>AUv3</strong> is a configured CMake target with iOS docs — not store-ready.</p>
+          </li>
+          <li>
+            <h3>Evidence discipline</h3>
+            <p>Status, build verification, design specs, and session notes live in-repo. Claims point at those files — not at enthusiasm.</p>
+          </li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="section section--narrow" data-reveal aria-labelledby="agentic-title">
+      <div class="section__inner">
+        <p class="section__label">Practice</p>
+        <h2 class="section__title" id="agentic-title">Agentic engineering practice</h2>
+        <p class="section__lead">AI-fluent workflow with a human owner as the gate — written decisions before code, re-verification from disk after.</p>
+        <ol class="method-steps">
+          <li>
+            <strong>Written decisions</strong>
+            <span>Capture intent and constraints in status, design, or session notes before changing the realtime path.</span>
+          </li>
+          <li>
+            <strong>Interface plans</strong>
+            <span>Sketch parameter surfaces and UI contracts (LookAndFeel / bitmap specs) so engines and editor stay aligned.</span>
+          </li>
+          <li>
+            <strong>Implementation</strong>
+            <span>Ship C++/JUCE changes across core, processor, and formats — one coherent system, not a demo script.</span>
+          </li>
+          <li>
+            <strong>Independent re-verification</strong>
+            <span>Re-read artifacts from disk: builds, STATUS, and source — not chat memory — before calling work done.</span>
+          </li>
+        </ol>
+        <p class="method-note">The human remains accountable for what ships and what stays deferred. No vendor branding; no “AI built this” framing.</p>
+      </div>
+    </section>
+
+    <section class="section" data-reveal aria-labelledby="system-title">
+      <div class="section__inner">
+        <p class="section__label">System</p>
+        <h2 class="section__title" id="system-title">System at a glance</h2>
+        <p class="section__lead">What exists now: host → format wrapper → processor/params → engines → MIDI out.</p>
+        <figure class="diagram">
+          <img src="assets/signal-path.svg" width="920" height="160" alt="Illustrative signal path from DAW host through format wrapper, processor, engines, to MIDI out">
+          <figcaption>Illustrative signal path — not a measured trace.</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section class="section" data-reveal aria-labelledby="boundary-title">
+      <div class="section__inner">
+        <p class="section__label">Honesty</p>
+        <h2 class="section__title" id="boundary-title">Boundary — shipped vs deferred</h2>
+        <p class="section__lead">Grounded in STATUS.md (v0.8.0) and BUILD_VERIFICATION.md. Development status — not finished product polish.</p>
+        <div class="boundary">
+          <div class="boundary--shipped">
+            <h3>Shipped / verified</h3>
+            <ul>
+              <li><strong>v0.8.0</strong> feature set per STATUS (31 parameters; MIDI channel routing; stochastic UI controls).</li>
+              <li>macOS <strong>AU / VST3 / Standalone</strong> targets build-verified.</li>
+              <li><strong>9 generators</strong> exposed in the current editor UI (Euclidean, Markov, L-System, Cellular, Probabilistic, Brownian, Perlin Noise, Drunk Walk, Lorenz).</li>
+              <li>Polyrhythm engine retained in core/parameter list; not exposed in the current editor dropdown.</li>
+              <li>Evidence: manual testing + build verification (no coverage percentage claimed).</li>
+            </ul>
+          </div>
+          <div class="boundary--deferred">
+            <h3>Deferred / not claimed</h3>
+            <ul>
+              <li>App Store / finished product polish; listening clips for this site.</li>
+              <li>AUv3 as store-ready — configured target + iOS docs only.</li>
+              <li>Windows / Linux distribution builds.</li>
+              <li>MIDI expression UI and polyrhythm layer controls (STATUS roadmap).</li>
+              <li>Automated test suite coverage metrics.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section section--narrow" data-reveal aria-labelledby="about-title">
+      <div class="section__inner">
+        <p class="section__label">Builder</p>
+        <h2 class="section__title" id="about-title">About</h2>
+        <p>Josh Band builds audio software with end-to-end ownership — DSP and architecture through host formats and verification. Generative MIDI is an open-source case study of that practice.</p>
+        <p><a href="https://github.com/joshband/GenerativeMIDI" rel="noopener noreferrer">github.com/joshband/GenerativeMIDI</a><br>
+        <a href="https://github.com/joshband" rel="noopener noreferrer">github.com/joshband</a></p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="site-footer__inner">
+      <p>Josh Band · Generative MIDI · MIT</p>
+      <p><a href="engineering.html">Engineering case study</a> · <a href="https://github.com/joshband/GenerativeMIDI" rel="noopener noreferrer">Source</a></p>
+    </div>
+  </footer>
+
+  <script src="assets/site.js" defer></script>
+</body>
+</html>
