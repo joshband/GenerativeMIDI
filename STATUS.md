@@ -16,7 +16,7 @@
 | Modulation matrix | Archived under `archive/modulation_v1/` — not live |
 | AUv3 / iOS | CMake target + docs; **not App Store–ready** |
 | Touch / a11y | No dedicated touch redesign claimed |
-| Tests | Catch2 + `ctest` (**20+**) in CMake / CI |
+| Tests | Catch2 + `ctest` (**25**, incl. host playhead smoke + polyrhythm layer persistence) in CMake / CI |
 | CI matrix | macOS plugins + iOS AUv3 + Windows/Linux VST3 + pluginval (VST3) |
 | Canonical build | **CMake** (`GenerativeMIDI.jucer` deprecated) |
 
@@ -47,8 +47,7 @@ None for the post-merge polish wave — see Planned for remaining MVP gaps.
 
 ### Polyrhythm polish
 - Pattern step editing / polymeter visualization
-- Layer state XML persistence in DAW sessions
-- Continuous polish beyond pitch/vel transforms and division rate scaling
+- Continuous polish beyond pitch/vel transforms, division rate scaling, and layer XML persistence
 
 ### MIDI expression depth
 Continuous CC/PB modulation and MPE (note-on emit shipped).
@@ -63,14 +62,14 @@ Full router / multi-source panel — not part of current LFO MVP.
 | Product version | v0.8.0 |
 | UI generators | 10 (Polyrhythm experimental) |
 | Build | `.github/workflows/ci.yml` (4 jobs) |
-| Tests | `ctest` (Catch2) |
+| Tests | `ctest` (Catch2; host playhead smoke + polyrhythm layer persistence) |
 | Docs | README, FEATURES, GETTING_STARTED, BUILD, Pages, [SMOKE_CHECKLIST](docs/user/SMOKE_CHECKLIST.md) |
 
 ## Notes
 
 - Prefer CMake; initialize `art/` with `git submodule update --init --recursive`.
 - **Realtime**: Euclidean regen, ratchet, algorithmic single-note, EventScheduler steady-state path allocation-free (queue pre-reserved). Residual: trained Markov map-key vector. Polyrhythm uses shared `scheduleNote` (expression intact).
-- **Host/UI smoke (2026-09-22):** Phase A green (ctest/auval/pluginval). Phase B: Debug Standalone rebuilt; generator menu shows **10 items including Polyrhythm** (earlier miss = stale Debug binary under `CMAKE_BUILD_TYPE=Release`). Phase C: TwelveTake REAPER MCP — insert Generative MIDI VST3 + ReaSynth, play/stop **PASS**. Details: [`docs/qa/QA_FINDINGS_v0.8.0.md`](docs/qa/QA_FINDINGS_v0.8.0.md); MCP setup: [`docs/qa/reaper/MCP_SETUP.md`](docs/qa/reaper/MCP_SETUP.md).
+- **Host/UI smoke (2026-09-22):** Phase A green (ctest/auval/pluginval). Phase B: Debug Standalone rebuilt; generator menu shows **10 items including Polyrhythm** (earlier miss = stale Debug binary under `CMAKE_BUILD_TYPE=Release`). Phase C: TwelveTake REAPER MCP — insert Generative MIDI VST3 + ReaSynth, play/stop **PASS**. **Headless host smoke:** `GenerativeMIDIHostSmokeTests` (fake `AudioPlayHead`, note-ons while playing + stop gate). **Polyrhythm layers** persist in session (`get`/`setStateInformation`) and preset XML (`PolyrhythmLayers` ValueTree child, schema **1.2**). Details: [`docs/qa/QA_FINDINGS_v0.8.0.md`](docs/qa/QA_FINDINGS_v0.8.0.md); MCP setup: [`docs/qa/reaper/MCP_SETUP.md`](docs/qa/reaper/MCP_SETUP.md).
 
 **License**: MIT  
 **Repository**: https://github.com/joshband/GenerativeMIDI

@@ -72,7 +72,7 @@
         <ul class="hard-parts">
           <li>
             <h3>Realtime / scheduling</h3>
-            <p>Note generation must respect host block timing. Gate length and ratchet features are described in STATUS with sample-accurate intent. Steady-state hot path is allocation-hardened (Euclidean regen, ratchet offsets, algorithmic single-note, EventScheduler pre-reserved queue; over-capacity schedules dropped). Residual risk called out in STATUS: trained Markov map-key vector on lookup. Engine behavior is covered by Catch2 / <code>ctest</code> in CI (<strong>20</strong> tests); host transport gating is exercised via REAPER + TwelveTake MCP and the manual <a href="https://github.com/joshband/GenerativeMIDI/blob/master/docs/user/SMOKE_CHECKLIST.md" rel="noopener noreferrer">smoke checklist</a> — not a published latency bench suite.</p>
+            <p>Note generation must respect host block timing. Gate length and ratchet features are described in STATUS with sample-accurate intent. Steady-state hot path is allocation-hardened (Euclidean regen, ratchet offsets, algorithmic single-note, EventScheduler pre-reserved queue; over-capacity schedules dropped). Residual risk called out in STATUS: trained Markov map-key vector on lookup. Engine behavior is covered by Catch2 / <code>ctest</code> in CI (<strong>25</strong> tests, incl. headless host playhead smoke + polyrhythm layer persistence); host transport gating is also exercised via REAPER + TwelveTake MCP and the manual <a href="https://github.com/joshband/GenerativeMIDI/blob/master/docs/user/SMOKE_CHECKLIST.md" rel="noopener noreferrer">smoke checklist</a> — not a published latency bench suite.</p>
           </li>
           <li>
             <h3>Parameter bridging</h3>
@@ -84,7 +84,7 @@
           </li>
           <li>
             <h3>Measurement contracts</h3>
-            <p>On-disk contracts are STATUS.md, BUILD_VERIFICATION.md, CHANGELOG, CI (<code>.github/workflows/ci.yml</code> + Catch2 / <code>ctest</code> ×20), <a href="https://github.com/joshband/GenerativeMIDI/blob/master/docs/qa/QA_FINDINGS_v0.8.0.md" rel="noopener noreferrer">QA findings</a>, and the manual <a href="https://github.com/joshband/GenerativeMIDI/blob/master/docs/user/SMOKE_CHECKLIST.md" rel="noopener noreferrer">SMOKE_CHECKLIST</a> — not invented coverage percentages. Prefer “build passed / tests ran / feature listed / smoke steps exercised” over marketing metrics.</p>
+            <p>On-disk contracts are STATUS.md, BUILD_VERIFICATION.md, CHANGELOG, CI (<code>.github/workflows/ci.yml</code> + Catch2 / <code>ctest</code> ×25), <a href="https://github.com/joshband/GenerativeMIDI/blob/master/docs/qa/QA_FINDINGS_v0.8.0.md" rel="noopener noreferrer">QA findings</a>, and the manual <a href="https://github.com/joshband/GenerativeMIDI/blob/master/docs/user/SMOKE_CHECKLIST.md" rel="noopener noreferrer">SMOKE_CHECKLIST</a> — not invented coverage percentages. Prefer “build passed / tests ran / feature listed / smoke steps exercised” over marketing metrics.</p>
           </li>
         </ul>
       </div>
@@ -112,12 +112,12 @@
               </tr>
               <tr>
                 <td>.github/workflows/ci.yml</td>
-                <td>Canonical CI: macOS plugin build + <code>ctest</code> (20); iOS AUv3 build job; pluginval VST3</td>
+                <td>Canonical CI: macOS plugin build + <code>ctest</code> (25); iOS AUv3 build job; pluginval VST3</td>
                 <td><a href="https://github.com/joshband/GenerativeMIDI/blob/master/.github/workflows/ci.yml" rel="noopener noreferrer">blob</a></td>
               </tr>
               <tr>
                 <td>Tests/EngineTests.cpp</td>
-                <td>Catch2 suite (20 cases): engines, mapping, migration, clock, factory round-trip, import hardening, ModLfo, polyrhythm rate</td>
+                <td>Catch2 suite (25 cases): engines, mapping, migration, clock, factory round-trip, import hardening, ModLfo, polyrhythm rate/persistence, headless host playhead smoke</td>
                 <td><a href="https://github.com/joshband/GenerativeMIDI/blob/master/Tests/EngineTests.cpp" rel="noopener noreferrer">blob</a></td>
               </tr>
               <tr>
@@ -127,7 +127,7 @@
               </tr>
               <tr>
                 <td>docs/qa/QA_FINDINGS_v0.8.0.md</td>
-                <td>Host/UI campaign: ctest/auval/pluginval, Standalone Polyrhythm menu proof, REAPER transport gate via TwelveTake MCP</td>
+                <td>Host/UI campaign: ctest/auval/pluginval, Standalone Polyrhythm menu proof, REAPER transport gate via TwelveTake MCP; headless stop-gate + layer persistence follow-ups</td>
                 <td><a href="https://github.com/joshband/GenerativeMIDI/blob/master/docs/qa/QA_FINDINGS_v0.8.0.md" rel="noopener noreferrer">blob</a></td>
               </tr>
               <tr>

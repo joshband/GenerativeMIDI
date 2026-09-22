@@ -66,8 +66,12 @@ namespace GeneratorTypeMapping
         }
     }
 
-    /** Preset / session schema: "1.1" = 10-generator layout (Polyrhythm at index 1). */
-    constexpr const char* kPresetSchemaVersion = "1.1";
+    /**
+     * Preset / session schema:
+     * - "1.1" = 10-generator layout (Polyrhythm at index 1)
+     * - "1.2" = + PolyrhythmLayers ValueTree child (patterns/offsets)
+     */
+    constexpr const char* kPresetSchemaVersion = "1.2";
 
     /**
      * Map a pre-Polyrhythm (9-gen) generatorType index to the 10-gen layout.
@@ -84,6 +88,7 @@ namespace GeneratorTypeMapping
     /**
      * If schema is older than 1.1 (or missing), shift generatorType PARAM values 1..8 → 2..9.
      * Expects APVTS-style children: PARAM with property "id" == "generatorType".
+     * Schemas 1.1+ (including 1.2 layer persistence) are left unchanged.
      */
     inline void migrateApvtsStateIfNeeded(juce::ValueTree& state, const juce::String& schemaVersion)
     {

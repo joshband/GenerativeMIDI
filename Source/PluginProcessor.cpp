@@ -27,7 +27,7 @@ GenerativeMIDIProcessor::GenerativeMIDIProcessor()
     :
 #endif
     parameters(*this, nullptr, juce::Identifier("GenerativeMIDI"), createParameterLayout()),
-    presetManager(parameters)
+    presetManager(parameters, polyrhythmEngine)
 {
     // Setup clock manager callback
     clockManager.onSubdivisionHit = [this](int subdivision) {
@@ -640,13 +640,32 @@ void GenerativeMIDIProcessor::setStateInformation(const void* data, int sizeInBy
         auto tree = juce::ValueTree::fromXml(*xmlState);
         const auto schema = xmlState->getStringAttribute("generativeMidiSchema");
         GeneratorTypeMapping::migrateApvtsStateIfNeeded(tree, schema);
+
+        // Strip non-PARAM child before APVTS replace; apply layers when present (schema 1.2+).
+        auto layersNode = tree.getChildWithName(PolyrhythmEngine::kStateTreeType);
+        juce::ValueTree layersCopy;
+        if (layersNode.isValid())
+        {
+            layersCopy = layersNode.createCopy();
+            tree.removeChild(layersNode, nullptr);
+        }
+
         parameters.replaceState(tree);
+
+        if (layersCopy.isValid())
+            polyrhythmEngine.loadFromValueTree(layersCopy);
     }
 }
 
 void GenerativeMIDIProcessor::getStateInformation(juce::MemoryBlock& destData)
 {
     auto state = parameters.copyState();
+
+    auto existing = state.getChildWithName(PolyrhythmEngine::kStateTreeType);
+    if (existing.isValid())
+        state.removeChild(existing, nullptr);
+    state.appendChild(polyrhythmEngine.toValueTree(), nullptr);
+
     std::unique_ptr<juce::XmlElement> xml(state.createXml());
     if (xml != nullptr)
         xml->setAttribute("generativeMidiSchema", GeneratorTypeMapping::kPresetSchemaVersion);

@@ -10,9 +10,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Host/UI QA campaign artefacts under `docs/qa/` (findings, smoke results, Standalone/REAPER evidence).
 - TwelveTake REAPER MCP setup docs and transport-gate helpers (`docs/qa/reaper/`) for agent-driven Play/Stop verification.
+- Headless Catch2 host smoke (`GenerativeMIDIHostSmokeTests`): fake `AudioPlayHead`, note-on emit while playing, stop gate (no new note-ons when stopped); registered in `ctest`.
+- Polyrhythm layer persistence: `PolyrhythmLayers` ValueTree child in session state and presets (patterns, divisions, phase, pitch/velocity transforms); schema **1.2**.
 
 ### Changed
-- GitHub Pages `docs/index.html` / `docs/engineering.html` proof table aligned with 10 UI generators, 20 `ctest` cases, and REAPER MCP Host QA evidence.
+- GitHub Pages `docs/index.html` / `docs/engineering.html` proof table aligned with 10 UI generators, 25 `ctest` cases, and REAPER MCP Host QA evidence.
+- `ctest` suite expanded with host playhead smoke and polyrhythm layer persistence coverage.
+- Preset / session schema bumped **1.1 → 1.2** (generator-index migration still only for schemas older than 1.1).
 
 ## [0.8.0] - 2025-10-18
 

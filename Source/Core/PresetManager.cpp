@@ -18,8 +18,8 @@ namespace
     }
 }
 
-PresetManager::PresetManager(juce::AudioProcessorValueTreeState& apvts)
-    : valueTreeState(apvts), currentPresetIndex(-1)
+PresetManager::PresetManager(juce::AudioProcessorValueTreeState& apvts, PolyrhythmEngine& polyEngine)
+    : valueTreeState(apvts), polyrhythmEngine(polyEngine), currentPresetIndex(-1)
 {
     initializeFactoryPresets();
     scanUserPresets();
@@ -303,12 +303,32 @@ bool PresetManager::importPreset(const juce::File& presetFile)
 
 juce::ValueTree PresetManager::captureCurrentState() const
 {
-    return valueTreeState.copyState();
+    auto state = valueTreeState.copyState();
+
+    auto existing = state.getChildWithName(PolyrhythmEngine::kStateTreeType);
+    if (existing.isValid())
+        state.removeChild(existing, nullptr);
+    state.appendChild(polyrhythmEngine.toValueTree(), nullptr);
+
+    return state;
 }
 
 void PresetManager::restoreState(const juce::ValueTree& state)
 {
-    valueTreeState.replaceState(state);
+    auto tree = state.createCopy();
+
+    auto layersNode = tree.getChildWithName(PolyrhythmEngine::kStateTreeType);
+    juce::ValueTree layersCopy;
+    if (layersNode.isValid())
+    {
+        layersCopy = layersNode.createCopy();
+        tree.removeChild(layersNode, nullptr);
+    }
+
+    valueTreeState.replaceState(tree);
+
+    if (layersCopy.isValid())
+        polyrhythmEngine.loadFromValueTree(layersCopy);
 }
 
 juce::File PresetManager::getDefaultPresetDirectory() const
@@ -402,6 +422,12 @@ PresetManager::Preset PresetManager::createPolyrhythmPreset()
     setFactoryParam(state, "pitchMin", 48.0f);
     setFactoryParam(state, "pitchMax", 72.0f);
     setFactoryParam(state, "gateLength", 0.6f);
+
+    // Snapshot default seeded layers so factory load restores a known pattern set.
+    auto existing = state.getChildWithName(PolyrhythmEngine::kStateTreeType);
+    if (existing.isValid())
+        state.removeChild(existing, nullptr);
+    state.appendChild(polyrhythmEngine.toValueTree(), nullptr);
 
     return Preset(
         "Polyrhythm Layers",

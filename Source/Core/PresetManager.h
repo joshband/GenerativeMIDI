@@ -2,6 +2,7 @@
 
 #include <juce_audio_processors/juce_audio_processors.h>
 #include <juce_data_structures/juce_data_structures.h>
+#include "PolyrhythmEngine.h"
 
 /**
  * @class PresetManager
@@ -47,7 +48,7 @@ public:
         }
     };
 
-    PresetManager(juce::AudioProcessorValueTreeState& apvts);
+    PresetManager(juce::AudioProcessorValueTreeState& apvts, PolyrhythmEngine& polyEngine);
     ~PresetManager() = default;
 
     // Preset Management
@@ -85,6 +86,7 @@ public:
 
 private:
     juce::AudioProcessorValueTreeState& valueTreeState;
+    PolyrhythmEngine& polyrhythmEngine;
     juce::Array<Preset> presets;
     int currentPresetIndex;
 

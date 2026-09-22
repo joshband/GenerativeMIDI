@@ -191,3 +191,159 @@ void PolyrhythmEngine::setTempo(double bpm)
 {
     tempo = juce::jlimit(20.0, 400.0, bpm);
 }
+
+namespace
+{
+    constexpr int kMaxPersistedLayers = 32;
+
+    juce::String boolVectorToCsv(const std::vector<bool>& values)
+    {
+        juce::String out;
+        for (size_t i = 0; i < values.size(); ++i)
+        {
+            if (i > 0)
+                out << ',';
+            out << (values[i] ? '1' : '0');
+        }
+        return out;
+    }
+
+    juce::String floatVectorToCsv(const std::vector<float>& values)
+    {
+        juce::String out;
+        for (size_t i = 0; i < values.size(); ++i)
+        {
+            if (i > 0)
+                out << ',';
+            out << values[i];
+        }
+        return out;
+    }
+
+    juce::String intVectorToCsv(const std::vector<int>& values)
+    {
+        juce::String out;
+        for (size_t i = 0; i < values.size(); ++i)
+        {
+            if (i > 0)
+                out << ',';
+            out << values[i];
+        }
+        return out;
+    }
+
+    void parseBoolCsv(const juce::String& csv, std::vector<bool>& out, int expectedLength)
+    {
+        out.assign(static_cast<size_t>(expectedLength), false);
+        if (csv.isEmpty() || expectedLength <= 0)
+            return;
+
+        int index = 0;
+        juce::StringArray tokens;
+        tokens.addTokens(csv, ",", "");
+        for (const auto& token : tokens)
+        {
+            if (index >= expectedLength)
+                break;
+            out[static_cast<size_t>(index)] = (token.getIntValue() != 0);
+            ++index;
+        }
+    }
+
+    void parseFloatCsv(const juce::String& csv, std::vector<float>& out, int expectedLength, float fill)
+    {
+        out.assign(static_cast<size_t>(expectedLength), fill);
+        if (csv.isEmpty() || expectedLength <= 0)
+            return;
+
+        int index = 0;
+        juce::StringArray tokens;
+        tokens.addTokens(csv, ",", "");
+        for (const auto& token : tokens)
+        {
+            if (index >= expectedLength)
+                break;
+            out[static_cast<size_t>(index)] = juce::jlimit(0.0f, 1.0f, token.getFloatValue());
+            ++index;
+        }
+    }
+
+    void parseIntCsv(const juce::String& csv, std::vector<int>& out, int expectedLength, int fill)
+    {
+        out.assign(static_cast<size_t>(expectedLength), fill);
+        if (csv.isEmpty() || expectedLength <= 0)
+            return;
+
+        int index = 0;
+        juce::StringArray tokens;
+        tokens.addTokens(csv, ",", "");
+        for (const auto& token : tokens)
+        {
+            if (index >= expectedLength)
+                break;
+            out[static_cast<size_t>(index)] = juce::jlimit(0, 127, token.getIntValue());
+            ++index;
+        }
+    }
+}
+
+juce::ValueTree PolyrhythmEngine::toValueTree() const
+{
+    juce::ValueTree root(kStateTreeType);
+
+    for (const auto& layer : layers)
+    {
+        juce::ValueTree node("Layer");
+        node.setProperty("division", layer.division, nullptr);
+        node.setProperty("length", layer.length, nullptr);
+        node.setProperty("phase", layer.phase, nullptr);
+        node.setProperty("enabled", layer.enabled, nullptr);
+        node.setProperty("pitchOffset", layer.pitchOffset, nullptr);
+        node.setProperty("velocityMultiplier", layer.velocityMultiplier, nullptr);
+        node.setProperty("pattern", boolVectorToCsv(layer.pattern), nullptr);
+        node.setProperty("velocities", floatVectorToCsv(layer.velocities), nullptr);
+        node.setProperty("pitches", intVectorToCsv(layer.pitches), nullptr);
+        root.appendChild(node, nullptr);
+    }
+
+    return root;
+}
+
+void PolyrhythmEngine::loadFromValueTree(const juce::ValueTree& tree)
+{
+    if (!tree.hasType(kStateTreeType))
+        return;
+
+    std::vector<PolyrhythmLayer> loaded;
+    const int numChildren = juce::jmin(tree.getNumChildren(), kMaxPersistedLayers);
+
+    for (int i = 0; i < numChildren; ++i)
+    {
+        const auto node = tree.getChild(i);
+        if (!node.hasType("Layer"))
+            continue;
+
+        PolyrhythmLayer layer;
+        const int length = juce::jlimit(1, 128, static_cast<int>(node.getProperty("length", 16)));
+        layer.resize(length);
+        layer.division = juce::jlimit(1, 64, static_cast<int>(node.getProperty("division", 4)));
+        layer.phase = juce::jlimit(0.0f, 1.0f, static_cast<float>(node.getProperty("phase", 0.0f)));
+        layer.enabled = static_cast<bool>(node.getProperty("enabled", true));
+        layer.pitchOffset = juce::jlimit(-24, 24, static_cast<int>(node.getProperty("pitchOffset", 0)));
+        layer.velocityMultiplier = juce::jlimit(
+            0.0f, 2.0f, static_cast<float>(node.getProperty("velocityMultiplier", 1.0f)));
+
+        parseBoolCsv(node.getProperty("pattern").toString(), layer.pattern, length);
+        parseFloatCsv(node.getProperty("velocities").toString(), layer.velocities, length, 0.8f);
+        parseIntCsv(node.getProperty("pitches").toString(), layer.pitches, length, 60);
+
+        layer.currentStep = static_cast<int>(layer.phase * static_cast<float>(layer.length));
+        layer.tickCounter = 0;
+        loaded.push_back(std::move(layer));
+    }
+
+    if (loaded.empty())
+        return;
+
+    layers = std::move(loaded);
+}

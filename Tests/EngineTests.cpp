@@ -249,7 +249,8 @@ TEST_CASE("PresetManager initializes non-zero factory presets", "[preset]")
     juce::ScopedJuceInitialiser_GUI juceInit;
 
     MinimalPresetTestProcessor processor;
-    PresetManager manager(processor.apvts);
+    PolyrhythmEngine polyEngine;
+    PresetManager manager(processor.apvts, polyEngine);
 
     int factoryCount = 0;
     for (int i = 0; i < manager.getNumPresets(); ++i)
@@ -273,6 +274,14 @@ TEST_CASE("PresetManager initializes non-zero factory presets", "[preset]")
 
     REQUIRE(manager.loadPresetByName("Polyrhythm Layers"));
     REQUIRE(static_cast<int>(gen->load()) == 1);
+
+    // Factory Polyrhythm Layers embeds a PolyrhythmLayers snapshot
+    const PresetManager::Preset* polyPreset = nullptr;
+    for (int i = 0; i < manager.getNumPresets(); ++i)
+        if (manager.getPreset(i).name == "Polyrhythm Layers")
+            polyPreset = &manager.getPreset(i);
+    REQUIRE(polyPreset != nullptr);
+    REQUIRE(polyPreset->state.getChildWithName(PolyrhythmEngine::kStateTreeType).isValid());
 
     // Factory ValueTrees must carry PARAM children with remapped IDs
     const PresetManager::Preset* brownianPtr = nullptr;
@@ -327,7 +336,8 @@ TEST_CASE("PresetManager factory loadPreset round-trips key params", "[preset]")
     juce::ScopedJuceInitialiser_GUI juceInit;
 
     MinimalPresetTestProcessor processor;
-    PresetManager manager(processor.apvts);
+    PolyrhythmEngine polyEngine;
+    PresetManager manager(processor.apvts, polyEngine);
 
     struct FactoryExpectation
     {
@@ -380,12 +390,37 @@ TEST_CASE("PresetManager factory loadPreset round-trips key params", "[preset]")
     REQUIRE(rawParam(processor.apvts, "momentum") == Catch::Approx(0.85f));
 }
 
+TEST_CASE("PresetManager Polyrhythm Layers factory restores layer snapshot", "[preset][persist]")
+{
+    juce::ScopedJuceInitialiser_GUI juceInit;
+
+    MinimalPresetTestProcessor processor;
+    PolyrhythmEngine polyEngine;
+    PresetManager manager(processor.apvts, polyEngine);
+
+    const int factoryLayers = polyEngine.getNumLayers();
+    REQUIRE(factoryLayers >= 1);
+    const int factoryDivision = polyEngine.getLayer(0)->division;
+
+    // Mutate away from the factory snapshot captured at PresetManager construction.
+    polyEngine.addLayer();
+    polyEngine.setLayerDivision(0, 11);
+    polyEngine.clearLayer(0);
+    REQUIRE(polyEngine.getNumLayers() == factoryLayers + 1);
+    REQUIRE(polyEngine.getLayer(0)->division == 11);
+
+    REQUIRE(manager.loadPresetByName("Polyrhythm Layers"));
+    REQUIRE(polyEngine.getNumLayers() == factoryLayers);
+    REQUIRE(polyEngine.getLayer(0)->division == factoryDivision);
+}
+
 TEST_CASE("PresetManager importPreset rejects unsafe or invalid files", "[preset][import]")
 {
     juce::ScopedJuceInitialiser_GUI juceInit;
 
     MinimalPresetTestProcessor processor;
-    PresetManager manager(processor.apvts);
+    PolyrhythmEngine polyEngine;
+    PresetManager manager(processor.apvts, polyEngine);
     const int baselineCount = manager.getNumPresets();
 
     SECTION("oversized file")
@@ -466,6 +501,59 @@ TEST_CASE("ModLfo bipolar sine stays in range and advances", "[modulation]")
     REQUIRE(static_cast<int>(ModulationDestination::Velocity) == 0);
 }
 
+TEST_CASE("PolyrhythmEngine ValueTree round-trips layer fields", "[polyrhythm][persist]")
+{
+    PolyrhythmEngine engine;
+    engine.clearLayer(0);
+    engine.setLayerDivision(0, 5);
+    engine.setLayerLength(0, 8);
+    engine.setLayerPhase(0, 0.25f);
+    engine.setLayerPitchOffset(0, -7);
+    engine.setLayerVelocityMultiplier(0, 1.5f);
+    engine.setStep(0, 0, true, 0.9f, 62);
+    engine.setStep(0, 3, true, 0.55f, 67);
+    engine.setStep(0, 7, true, 0.7f, 69);
+
+    const int layer1 = engine.addLayer();
+    engine.setLayerDivision(layer1, 7);
+    engine.setLayerEnabled(layer1, false);
+    engine.setLayerPitchOffset(layer1, 12);
+    engine.clearLayer(layer1);
+    engine.setStep(layer1, 1, true, 1.0f, 48);
+
+    const auto tree = engine.toValueTree();
+    REQUIRE(tree.hasType(PolyrhythmEngine::kStateTreeType));
+    REQUIRE(tree.getNumChildren() == 2);
+
+    PolyrhythmEngine restored;
+    restored.loadFromValueTree(tree);
+
+    REQUIRE(restored.getNumLayers() == 2);
+
+    auto* a = restored.getLayer(0);
+    auto* b = restored.getLayer(1);
+    REQUIRE(a != nullptr);
+    REQUIRE(b != nullptr);
+
+    REQUIRE(a->division == 5);
+    REQUIRE(a->length == 8);
+    REQUIRE(a->phase == Catch::Approx(0.25f));
+    REQUIRE(a->pitchOffset == -7);
+    REQUIRE(a->velocityMultiplier == Catch::Approx(1.5f));
+    REQUIRE(a->pattern[0]);
+    REQUIRE_FALSE(a->pattern[1]);
+    REQUIRE(a->pattern[3]);
+    REQUIRE(a->pattern[7]);
+    REQUIRE(a->velocities[0] == Catch::Approx(0.9f));
+    REQUIRE(a->pitches[3] == 67);
+
+    REQUIRE(b->division == 7);
+    REQUIRE_FALSE(b->enabled);
+    REQUIRE(b->pitchOffset == 12);
+    REQUIRE(b->pattern[1]);
+    REQUIRE(b->pitches[1] == 48);
+}
+
 TEST_CASE("migrateGeneratorTypeIndex shifts 9-gen layout", "[mapping][migration]")
 {
     REQUIRE(GeneratorTypeMapping::migrateGeneratorTypeIndex(0) == 0);
@@ -495,6 +583,16 @@ TEST_CASE("migrateApvtsStateIfNeeded rewrites generatorType PARAM", "[mapping][m
     state2.appendChild(param2, nullptr);
     GeneratorTypeMapping::migrateApvtsStateIfNeeded(state2, "1.1");
     REQUIRE((float) state2.getChildWithProperty("id", "generatorType").getProperty("value")
+            == Catch::Approx(1.0f));
+
+    // 1.2 (layer persistence) must not re-shift generatorType
+    juce::ValueTree state3("GenerativeMIDI");
+    juce::ValueTree param3("PARAM");
+    param3.setProperty("id", "generatorType", nullptr);
+    param3.setProperty("value", 1.0f, nullptr);
+    state3.appendChild(param3, nullptr);
+    GeneratorTypeMapping::migrateApvtsStateIfNeeded(state3, "1.2");
+    REQUIRE((float) state3.getChildWithProperty("id", "generatorType").getProperty("value")
             == Catch::Approx(1.0f));
 }
 

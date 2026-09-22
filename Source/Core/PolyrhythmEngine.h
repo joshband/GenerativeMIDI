@@ -81,6 +81,15 @@ public:
     void setTimeSignature(int numerator, int denominator);
     void setTempo(double bpm);
 
+    /** ValueTree type used in session / preset XML (child of APVTS root). */
+    static constexpr const char* kStateTreeType = "PolyrhythmLayers";
+
+    /** Serialize editable layer fields (not live playback counters). */
+    juce::ValueTree toValueTree() const;
+
+    /** Replace all layers from a PolyrhythmLayers tree. No-op if type mismatches. */
+    void loadFromValueTree(const juce::ValueTree& tree);
+
 private:
     std::vector<PolyrhythmLayer> layers;
     int timeSignatureNum = 4;

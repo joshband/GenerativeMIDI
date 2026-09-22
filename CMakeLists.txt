@@ -144,6 +144,38 @@ target_link_libraries(GenerativeMIDITests PRIVATE
     juce::juce_events
 )
 
+# Headless host smoke: links full GenerativeMIDI shared code + fake AudioPlayHead
+add_executable(GenerativeMIDIHostSmokeTests
+    Tests/HostSmokeTests.cpp
+)
+
+target_include_directories(GenerativeMIDIHostSmokeTests PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/Source
+)
+
+# GenerativeMIDI links JUCE PRIVATE; re-link modules so include paths / flags reach this exe.
+target_link_libraries(GenerativeMIDIHostSmokeTests PRIVATE
+    Catch2::Catch2WithMain
+    GenerativeMIDI
+    juce::juce_audio_basics
+    juce::juce_audio_devices
+    juce::juce_audio_formats
+    juce::juce_audio_processors
+    juce::juce_audio_utils
+    juce::juce_core
+    juce::juce_data_structures
+    juce::juce_events
+    juce::juce_graphics
+    juce::juce_gui_basics
+    juce::juce_gui_extra
+)
+
+target_compile_definitions(GenerativeMIDIHostSmokeTests PRIVATE
+    JUCE_WEB_BROWSER=0
+    JUCE_USE_CURL=0
+)
+
 include(CTest)
 include(Catch)
 catch_discover_tests(GenerativeMIDITests)
+catch_discover_tests(GenerativeMIDIHostSmokeTests)
