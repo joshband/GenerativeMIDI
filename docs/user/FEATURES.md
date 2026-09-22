@@ -909,3 +909,17 @@ Product status is tracked as **v0.8.0** in [STATUS.md](../../STATUS.md) (not a s
 - Preset XML format and browser
 
 *Last Updated: 2026-09-22 (v0.8.0 honesty pass)*
+
+---
+
+## License
+
+MIT License — free and open source. See [LICENSE](../../LICENSE).
+
+## Support & Community
+
+- Documentation: this file and [README.md](../../README.md)
+- Roadmap: [ENHANCEMENTS.md](../developer/ENHANCEMENTS.md)
+- Status: [STATUS.md](../../STATUS.md)
+- Showcase: https://joshband.github.io/GenerativeMIDI/
+- Issues / Discussions: GitHub

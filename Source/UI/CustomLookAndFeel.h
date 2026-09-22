@@ -149,7 +149,7 @@ public:
             g.setGradientFill(aetherGlow);
             g.fillEllipse(centreX - glowRadius, centreY - glowRadius, glowRadius * 2.0f, glowRadius * 2.0f);
 
-            // Draw the actual knob image from SynaptikUIToolkit
+            // Draw the loaded knob bitmap (art/ submodule) when available
             auto knobSize = radius * 2.0f;
             g.setOpacity(1.0f);
             g.drawImageWithin(knobOrnate,
@@ -564,7 +564,7 @@ public:
     const juce::Image& getButtonOrnate() const { return buttonOrnate; }
 
 private:
-    // UI asset images from SynaptikUIToolkit
+    // UI asset images from art/themes/victorian-steampunk (optional)
     juce::Image knobOrnate;
     juce::Image knobConcentric;
     juce::Image knobSimple;
