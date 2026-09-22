@@ -57,7 +57,7 @@
           </li>
           <li>
             <h3>Evidence discipline</h3>
-            <p>Status, build verification, design specs, and session notes live in-repo. Claims point at those files — not at enthusiasm.</p>
+            <p>Status, build verification, design specs, smoke checklist, and session notes live in-repo. Claims point at those files — not at enthusiasm.</p>
           </li>
         </ul>
       </div>
@@ -99,6 +99,10 @@
           <img src="assets/signal-path.svg?v=2" width="920" height="160" alt="Illustrative signal path from DAW host through format wrapper, processor, engines, to MIDI out">
           <figcaption>Illustrative signal path — not a measured trace.</figcaption>
         </figure>
+        <figure class="diagram">
+          <img src="assets/editor-chrome.svg" width="920" height="420" alt="Illustrative Generative MIDI editor chrome showing pattern display, generator controls, and expression panel">
+          <figcaption>Editor chrome illustration (v0.8.0 surface) — not a live Standalone screenshot.</figcaption>
+        </figure>
       </div>
     </section>
 
@@ -117,7 +121,8 @@
               <li>Polyrhythm engine retained in core sources only; <strong>not</strong> in APVTS or the editor dropdown (deferred).</li>
               <li><strong>10 factory presets</strong> live (9-generator APVTS indices; Polyrhythm not included).</li>
               <li><strong>MIDI expression</strong> — EXPRESSION section controls; note-on emit for AT / PB / CC (static PB offset — not MPE or continuous LFO modulation).</li>
-              <li>Evidence: Catch2 / <code>ctest</code> in CI (14 tests) plus historical format builds — no coverage percentage claimed.</li>
+              <li><strong>Realtime hot-path hardening</strong> — steady-state audio path allocation-free for Euclidean regen, ratchet offsets, algorithmic single-note, and EventScheduler (queue pre-reserved; over-capacity schedules dropped). Honest residual: trained Markov map-key vector on lookup.</li>
+              <li>Evidence: Catch2 / <code>ctest</code> in CI (<strong>14</strong> tests) plus historical format builds — no coverage percentage claimed. Manual UI/host smoke: <a href="https://github.com/joshband/GenerativeMIDI/blob/master/docs/user/SMOKE_CHECKLIST.md" rel="noopener noreferrer">SMOKE_CHECKLIST.md</a>.</li>
             </ul>
           </div>
           <div class="boundary--deferred">

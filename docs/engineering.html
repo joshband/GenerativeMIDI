@@ -52,11 +52,15 @@
           <li><strong>MIDI path</strong> — MIDIGenerator, clock/event scheduling, gate and ratchet controllers.</li>
           <li><strong>PluginProcessor</strong> — parameters (31), generator dispatch, host callbacks.</li>
           <li><strong>Formats</strong> — AU, VST3, Standalone verified locally historically; AUv3 configured in CMake with iOS docs (not store-ready). CI: <code>.github/workflows/ci.yml</code>.</li>
-          <li><strong>Editor</strong> — LookAndFeel / steampunk craft; bitmap UI path documented; Polyrhythm not in APVTS or dropdown; 10 factory presets.</li>
+          <li><strong>Editor</strong> — LookAndFeel / steampunk craft; bitmap UI path documented; Polyrhythm not in APVTS or dropdown; 10 factory presets; MIDI expression (AT/PB/CC note-on emit).</li>
         </ul>
         <figure class="diagram">
           <img src="assets/signal-path.svg?v=2" width="920" height="160" alt="Illustrative signal path from DAW host through format wrapper, processor, engines, to MIDI out">
           <figcaption>Illustrative signal path — not a measured trace.</figcaption>
+        </figure>
+        <figure class="diagram">
+          <img src="assets/editor-chrome.svg" width="920" height="420" alt="Illustrative Generative MIDI editor chrome showing pattern display, generator controls, and expression panel">
+          <figcaption>Editor chrome illustration (v0.8.0 surface) — not a live Standalone screenshot.</figcaption>
         </figure>
       </div>
     </section>
@@ -68,7 +72,7 @@
         <ul class="hard-parts">
           <li>
             <h3>Realtime / scheduling</h3>
-            <p>Note generation must respect host block timing. Gate length and ratchet features are described in STATUS with sample-accurate intent. Engine behavior is covered by Catch2 / <code>ctest</code> in CI; host timing still relies on historical format builds and manual checks — not a published latency bench suite.</p>
+            <p>Note generation must respect host block timing. Gate length and ratchet features are described in STATUS with sample-accurate intent. Steady-state hot path is allocation-hardened (Euclidean regen, ratchet offsets, algorithmic single-note, EventScheduler pre-reserved queue; over-capacity schedules dropped). Residual risk called out in STATUS: trained Markov map-key vector on lookup. Engine behavior is covered by Catch2 / <code>ctest</code> in CI (<strong>14</strong> tests); host timing still relies on historical format builds and the manual <a href="https://github.com/joshband/GenerativeMIDI/blob/master/docs/user/SMOKE_CHECKLIST.md" rel="noopener noreferrer">smoke checklist</a> — not a published latency bench suite.</p>
           </li>
           <li>
             <h3>Parameter bridging</h3>
@@ -80,7 +84,7 @@
           </li>
           <li>
             <h3>Measurement contracts</h3>
-            <p>On-disk contracts are STATUS.md, BUILD_VERIFICATION.md, CHANGELOG, and CI (<code>.github/workflows/ci.yml</code> + Catch2 / <code>ctest</code>) — not invented coverage percentages. Prefer “build passed / tests ran / feature listed” over marketing metrics.</p>
+            <p>On-disk contracts are STATUS.md, BUILD_VERIFICATION.md, CHANGELOG, CI (<code>.github/workflows/ci.yml</code> + Catch2 / <code>ctest</code> ×14), and the manual <a href="https://github.com/joshband/GenerativeMIDI/blob/master/docs/user/SMOKE_CHECKLIST.md" rel="noopener noreferrer">SMOKE_CHECKLIST</a> — not invented coverage percentages. Prefer “build passed / tests ran / feature listed / smoke steps exercised” over marketing metrics.</p>
           </li>
         </ul>
       </div>
@@ -103,18 +107,23 @@
             <tbody>
               <tr>
                 <td>STATUS.md</td>
-                <td>v0.8.0 honest snapshot: 9 UI generators, 10 factory presets, MIDI expression note-on emit, Catch2/CI</td>
+                <td>v0.8.0 honest snapshot: 9 UI generators, 10 factory presets, MIDI expression note-on emit, realtime hot-path notes, Catch2/CI</td>
                 <td><a href="https://github.com/joshband/GenerativeMIDI/blob/master/STATUS.md" rel="noopener noreferrer">blob</a></td>
               </tr>
               <tr>
                 <td>.github/workflows/ci.yml</td>
-                <td>Canonical CI: macOS plugin build + <code>ctest</code>; iOS AUv3 build job</td>
+                <td>Canonical CI: macOS plugin build + <code>ctest</code> (14); iOS AUv3 build job</td>
                 <td><a href="https://github.com/joshband/GenerativeMIDI/blob/master/.github/workflows/ci.yml" rel="noopener noreferrer">blob</a></td>
               </tr>
               <tr>
                 <td>Tests/EngineTests.cpp</td>
                 <td>Catch2 suite (14 cases): engines, mapping, clock, factory round-trip + import hardening</td>
                 <td><a href="https://github.com/joshband/GenerativeMIDI/blob/master/Tests/EngineTests.cpp" rel="noopener noreferrer">blob</a></td>
+              </tr>
+              <tr>
+                <td>docs/user/SMOKE_CHECKLIST.md</td>
+                <td>Manual Standalone/DAW smoke: 9 generators, 10 factories, expression, channel routing (not automated UI tests)</td>
+                <td><a href="https://github.com/joshband/GenerativeMIDI/blob/master/docs/user/SMOKE_CHECKLIST.md" rel="noopener noreferrer">blob</a></td>
               </tr>
               <tr>
                 <td>BUILD_VERIFICATION.md</td>

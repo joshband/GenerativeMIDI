@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 420" role="img" aria-labelledby="ecTitle ecDesc">
+  <title id="ecTitle">Illustrative editor chrome  Generative MIDI</title>
+  <desc id="ecDesc">Labeled illustration of the Standalone editor layout: pattern display, generator controls, expression panel, and presets. Not a photograph.</desc>
+  <rect width="920" height="420" fill="#0c1014"/>
+
+  <!-- Outer chassis -->
+  <rect x="24" y="28" width="872" height="364" rx="4" fill="#141a1f" stroke="#c9954a" stroke-width="1.75"/>
+  <rect x="32" y="36" width="856" height="348" rx="2" fill="#0f1419" stroke="rgba(201,149,74,0.22)" stroke-width="1"/>
+
+  <!-- Title bar -->
+  <text x="52" y="64" font-family="Fraunces, Georgia, serif" font-size="18" fill="#e8d5b0">Generative MIDI</text>
+  <text x="210" y="64" font-family="Karla, Segoe UI, sans-serif" font-size="11" fill="#8a939c">v0.8.0 · illustration</text>
+  <rect x="700" y="46" width="168" height="26" rx="2" fill="#1a2229" stroke="#4a8ca8" stroke-width="1"/>
+  <text x="784" y="63" text-anchor="middle" font-family="Karla, Segoe UI, sans-serif" font-size="11" fill="#7a9eae">Presets · 10 factory</text>
+
+  <!-- Pattern display -->
+  <rect x="48" y="84" width="824" height="72" rx="2" fill="#0c1014" stroke="rgba(74,140,168,0.45)" stroke-width="1"/>
+  <text x="60" y="104" font-family="Karla, Segoe UI, sans-serif" font-size="10" fill="#8a939c" letter-spacing="0.08em">PATTERN</text>
+  <!-- Euclidean step dots -->
+  <g id="steps">
+    <circle cx="80" cy="128" r="7" fill="#c9954a"/>
+    <circle cx="112" cy="128" r="7" fill="#1a2229" stroke="#4a8ca8" stroke-width="1"/>
+    <circle cx="144" cy="128" r="7" fill="#c9954a"/>
+    <circle cx="176" cy="128" r="7" fill="#1a2229" stroke="#4a8ca8" stroke-width="1"/>
+    <circle cx="208" cy="128" r="7" fill="#c9954a"/>
+    <circle cx="240" cy="128" r="7" fill="#1a2229" stroke="#4a8ca8" stroke-width="1"/>
+    <circle cx="272" cy="128" r="7" fill="#1a2229" stroke="#4a8ca8" stroke-width="1"/>
+    <circle cx="304" cy="128" r="7" fill="#c9954a"/>
+    <circle cx="336" cy="128" r="7" fill="#1a2229" stroke="#4a8ca8" stroke-width="1"/>
+    <circle cx="368" cy="128" r="7" fill="#c9954a"/>
+    <circle cx="400" cy="128" r="7" fill="#1a2229" stroke="#4a8ca8" stroke-width="1"/>
+    <circle cx="432" cy="128" r="7" fill="#1a2229" stroke="#4a8ca8" stroke-width="1"/>
+    <circle cx="464" cy="128" r="7" fill="#c9954a"/>
+    <circle cx="496" cy="128" r="7" fill="#1a2229" stroke="#4a8ca8" stroke-width="1"/>
+    <circle cx="528" cy="128" r="7" fill="#c9954a"/>
+    <circle cx="560" cy="128" r="7" fill="#1a2229" stroke="#4a8ca8" stroke-width="1"/>
+    <!-- playhead -->
+    <line x1="208" y1="112" x2="208" y2="144" stroke="#7a9eae" stroke-width="1.5" opacity="0.9"/>
+  </g>
+  <text x="800" y="132" text-anchor="middle" font-family="Karla, Segoe UI, sans-serif" font-size="11" fill="#8a939c">Euclidean playhead</text>
+
+  <!-- Generator column -->
+  <rect x="48" y="172" width="220" height="192" rx="2" fill="#141a1f" stroke="rgba(201,149,74,0.35)" stroke-width="1"/>
+  <text x="60" y="194" font-family="Karla, Segoe UI, sans-serif" font-size="10" fill="#c9954a" letter-spacing="0.08em">GENERATOR</text>
+  <rect x="60" y="206" width="196" height="28" rx="2" fill="#0c1014" stroke="#4a8ca8" stroke-width="1"/>
+  <text x="72" y="224" font-family="Karla, Segoe UI, sans-serif" font-size="12" fill="#e8d5b0">Euclidean ¾</text>
+  <text x="60" y="256" font-family="Karla, Segoe UI, sans-serif" font-size="10" fill="#8a939c">MIDI ch · Tempo</text>
+  <rect x="60" y="266" width="88" height="24" rx="2" fill="#0c1014" stroke="rgba(138,147,156,0.4)" stroke-width="1"/>
+  <text x="104" y="282" text-anchor="middle" font-family="Karla, Segoe UI, sans-serif" font-size="11" fill="#d8dde2">Ch 1</text>
+  <rect x="160" y="266" width="96" height="24" rx="2" fill="#0c1014" stroke="rgba(138,147,156,0.4)" stroke-width="1"/>
+  <text x="208" y="282" text-anchor="middle" font-family="Karla, Segoe UI, sans-serif" font-size="11" fill="#d8dde2">120 BPM</text>
+  <text x="60" y="318" font-family="Karla, Segoe UI, sans-serif" font-size="10" fill="#8a939c">9 engines in UI</text>
+  <text x="60" y="338" font-family="Karla, Segoe UI, sans-serif" font-size="11" fill="#7a9eae">Markov · L-System · Cellular</text>
+  <text x="60" y="356" font-family="Karla, Segoe UI, sans-serif" font-size="11" fill="#7a9eae">+ stochastic / chaos set</text>
+
+  <!-- Knobs row -->
+  <rect x="284" y="172" width="360" height="192" rx="2" fill="#141a1f" stroke="rgba(201,149,74,0.35)" stroke-width="1"/>
+  <text x="296" y="194" font-family="Karla, Segoe UI, sans-serif" font-size="10" fill="#c9954a" letter-spacing="0.08em">CORE CONTROLS</text>
+  <g font-family="Karla, Segoe UI, sans-serif" font-size="10" text-anchor="middle" fill="#8a939c">
+    <!-- Steps -->
+    <circle cx="340" cy="250" r="28" fill="#0c1014" stroke="#c9954a" stroke-width="2"/>
+    <circle cx="340" cy="250" r="6" fill="#e8d5b0"/>
+    <line x1="340" y1="250" x2="340" y2="228" stroke="#e8d5b0" stroke-width="2" stroke-linecap="round"/>
+    <text x="340" y="298">Steps</text>
+    <!-- Pulses -->
+    <circle cx="424" cy="250" r="28" fill="#0c1014" stroke="#c9954a" stroke-width="2"/>
+    <circle cx="424" cy="250" r="6" fill="#e8d5b0"/>
+    <line x1="424" y1="250" x2="442" y2="236" stroke="#e8d5b0" stroke-width="2" stroke-linecap="round"/>
+    <text x="424" y="298">Pulses</text>
+    <!-- Density -->
+    <circle cx="508" cy="250" r="28" fill="#0c1014" stroke="#c9954a" stroke-width="2"/>
+    <circle cx="508" cy="250" r="6" fill="#e8d5b0"/>
+    <line x1="508" y1="250" x2="492" y2="232" stroke="#e8d5b0" stroke-width="2" stroke-linecap="round"/>
+    <text x="508" y="298">Density</text>
+    <!-- Gate -->
+    <circle cx="592" cy="250" r="28" fill="#0c1014" stroke="#4a8ca8" stroke-width="2"/>
+    <circle cx="592" cy="250" r="6" fill="#7a9eae"/>
+    <line x1="592" y1="250" x2="608" y2="234" stroke="#7a9eae" stroke-width="2" stroke-linecap="round"/>
+    <text x="592" y="298">Gate</text>
+  </g>
+  <text x="464" y="340" text-anchor="middle" font-family="Karla, Segoe UI, sans-serif" font-size="11" fill="#8a939c">Scale · swing · humanize · ratchet</text>
+
+  <!-- Expression panel -->
+  <rect x="660" y="172" width="212" height="192" rx="2" fill="#141a1f" stroke="rgba(74,140,168,0.5)" stroke-width="1.25"/>
+  <text x="672" y="194" font-family="Karla, Segoe UI, sans-serif" font-size="10" fill="#4a8ca8" letter-spacing="0.08em">EXPRESSION</text>
+  <text x="672" y="220" font-family="Karla, Segoe UI, sans-serif" font-size="11" fill="#e8d5b0">AT · PB · CC</text>
+  <text x="672" y="242" font-family="Karla, Segoe UI, sans-serif" font-size="11" fill="#8a939c">Note-on emit</text>
+  <rect x="672" y="258" width="188" height="22" rx="2" fill="#0c1014" stroke="rgba(74,140,168,0.35)" stroke-width="1"/>
+  <text x="766" y="273" text-anchor="middle" font-family="Karla, Segoe UI, sans-serif" font-size="10" fill="#7a9eae">Aftertouch</text>
+  <rect x="672" y="288" width="188" height="22" rx="2" fill="#0c1014" stroke="rgba(74,140,168,0.35)" stroke-width="1"/>
+  <text x="766" y="303" text-anchor="middle" font-family="Karla, Segoe UI, sans-serif" font-size="10" fill="#7a9eae">Pitch bend (static)</text>
+  <rect x="672" y="318" width="188" height="22" rx="2" fill="#0c1014" stroke="rgba(74,140,168,0.35)" stroke-width="1"/>
+  <text x="766" y="333" text-anchor="middle" font-family="Karla, Segoe UI, sans-serif" font-size="10" fill="#7a9eae">CC</text>
+  <text x="766" y="358" text-anchor="middle" font-family="Karla, Segoe UI, sans-serif" font-size="9" fill="#8a939c">not MPE / continuous LFO</text>
+
+  <!-- Honesty banner -->
+  <text x="460" y="408" text-anchor="middle" font-family="Karla, Segoe UI, sans-serif" font-size="11" fill="#8a939c">UI chrome illustration  not a live Standalone screenshot</text>
+</svg>
