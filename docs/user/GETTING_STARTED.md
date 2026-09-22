@@ -134,7 +134,7 @@ Step Size, Momentum, Time Scale: start mid-range and audition
 - Swing + timing / velocity humanization
 - MIDI channel 1–16
 
-MIDI expression UI (aftertouch / CC / pitch bend) is on the STATUS roadmap — velocity always works.
+MIDI expression (aftertouch / CC / pitch bend) is in the EXPRESSION section — enable each and set amount/range; emitted on note-on (not MPE). Velocity always works.
 
 ## Tips and Tricks
 

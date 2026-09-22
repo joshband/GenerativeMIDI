@@ -482,9 +482,9 @@ Result: Loose, sloppy, experimental jazz
 - **Velocity**: Dynamic range control with humanization
 - **Gate Length**: 1-200% of step duration
 - **Ratchet Decay**: Exponential velocity falloff for repeats
-- **Polyphonic Aftertouch**: Per-note pressure (available via MIDIGenerator)
-- **Control Change (CC)**: Parameter automation (available via MIDIGenerator)
-- **Pitch Bend**: Micro-tonal control (available via MIDIGenerator)
+- **Polyphonic Aftertouch**: Per-note pressure on note-on when AT enabled (EXPRESSION UI)
+- **Control Change (CC)**: CC number + amount on note-on when CC enabled (EXPRESSION UI)
+- **Pitch Bend**: Static wheel offset from PB Semi (1–24) when PB enabled — not continuous/MPE
 
 ### Timing
 
@@ -545,6 +545,9 @@ Result: Loose, sloppy, experimental jazz
 - **Swing**: Groove timing knob (6 templates)
 - **Timing**: Humanization knob (0-50ms)
 - **Vel Var**: Velocity randomness knob (0-100%)
+- **AT / AT Amt**: Polyphonic aftertouch enable + pressure (emitted on note-on)
+- **PB / PB Semi**: Pitch bend enable + range in semitones (static wheel offset, not MPE)
+- **CC / CC # / CC Amt**: Control-change enable, CC number (1–127), amount
 
 #### 6. ARTICULATION
 - **Gate Length**: Note duration (1-200%)

@@ -16,10 +16,10 @@ GenerativeMIDIEditor::GenerativeMIDIEditor(GenerativeMIDIProcessor& p)
 {
     setLookAndFeel(&customLookAndFeel);
 
-    // Window size (modulation panel commented out)
-    setSize(1400, 750);
+    // Window size (expression row for MIDI AT/PB/CC)
+    setSize(1400, 820);
     setResizable(true, true);
-    setResizeLimits(1200, 750, 2000, 1200);
+    setResizeLimits(1200, 800, 2000, 1300);
 
     // Title - SYNAPTIK gilded brass logo
     addAndMakeVisible(titleLabel);
@@ -202,6 +202,62 @@ GenerativeMIDIEditor::GenerativeMIDIEditor(GenerativeMIDIProcessor& p)
     legatoButton.setClickingTogglesState(true);
     legatoAttachment.reset(new juce::AudioProcessorValueTreeState::ButtonAttachment(
         audioProcessor.getValueTreeState(), "legatoMode", legatoButton));
+
+    // MIDI expression (aftertouch / pitch bend / CC) — APVTS params already exist
+    addAndMakeVisible(aftertouchEnableButton);
+    aftertouchEnableButton.setButtonText("AT");
+    aftertouchEnableButton.setClickingTogglesState(true);
+    aftertouchEnableAttachment.reset(new juce::AudioProcessorValueTreeState::ButtonAttachment(
+        audioProcessor.getValueTreeState(), "aftertouchEnable", aftertouchEnableButton));
+
+    addAndMakeVisible(aftertouchAmountSlider);
+    aftertouchAmountSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
+    aftertouchAmountSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 50, 18);
+    aftertouchAmountAttachment.reset(new juce::AudioProcessorValueTreeState::SliderAttachment(
+        audioProcessor.getValueTreeState(), "aftertouchAmount", aftertouchAmountSlider));
+    addAndMakeVisible(aftertouchAmountLabel);
+    aftertouchAmountLabel.setText("AT Amt", juce::dontSendNotification);
+    aftertouchAmountLabel.setJustificationType(juce::Justification::centred);
+
+    addAndMakeVisible(pitchbendEnableButton);
+    pitchbendEnableButton.setButtonText("PB");
+    pitchbendEnableButton.setClickingTogglesState(true);
+    pitchbendEnableAttachment.reset(new juce::AudioProcessorValueTreeState::ButtonAttachment(
+        audioProcessor.getValueTreeState(), "pitchbendEnable", pitchbendEnableButton));
+
+    addAndMakeVisible(pitchbendRangeSlider);
+    pitchbendRangeSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
+    pitchbendRangeSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 50, 18);
+    pitchbendRangeAttachment.reset(new juce::AudioProcessorValueTreeState::SliderAttachment(
+        audioProcessor.getValueTreeState(), "pitchbendRange", pitchbendRangeSlider));
+    addAndMakeVisible(pitchbendRangeLabel);
+    pitchbendRangeLabel.setText("PB Semi", juce::dontSendNotification);
+    pitchbendRangeLabel.setJustificationType(juce::Justification::centred);
+
+    addAndMakeVisible(ccEnableButton);
+    ccEnableButton.setButtonText("CC");
+    ccEnableButton.setClickingTogglesState(true);
+    ccEnableAttachment.reset(new juce::AudioProcessorValueTreeState::ButtonAttachment(
+        audioProcessor.getValueTreeState(), "ccEnable", ccEnableButton));
+
+    addAndMakeVisible(ccNumberSlider);
+    ccNumberSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
+    ccNumberSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 50, 18);
+    ccNumberSlider.setNumDecimalPlacesToDisplay(0);
+    ccNumberAttachment.reset(new juce::AudioProcessorValueTreeState::SliderAttachment(
+        audioProcessor.getValueTreeState(), "ccNumber", ccNumberSlider));
+    addAndMakeVisible(ccNumberLabel);
+    ccNumberLabel.setText("CC #", juce::dontSendNotification);
+    ccNumberLabel.setJustificationType(juce::Justification::centred);
+
+    addAndMakeVisible(ccAmountSlider);
+    ccAmountSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
+    ccAmountSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 50, 18);
+    ccAmountAttachment.reset(new juce::AudioProcessorValueTreeState::SliderAttachment(
+        audioProcessor.getValueTreeState(), "ccAmount", ccAmountSlider));
+    addAndMakeVisible(ccAmountLabel);
+    ccAmountLabel.setText("CC Amt", juce::dontSendNotification);
+    ccAmountLabel.setJustificationType(juce::Justification::centred);
 
     // Ratchet controls
     addAndMakeVisible(ratchetCountSlider);
@@ -539,66 +595,108 @@ void GenerativeMIDIEditor::resized()
     densityLabel.setBounds(densityArea.removeFromBottom(20));
     densitySlider.setBounds(densityArea);
 
-    // Expression & range section
-    auto expressionOuter = area.removeFromTop(170);
+    // Expression & range section (row 1: ranges/humanize; row 2: MIDI expression)
+    auto expressionOuter = area.removeFromTop(250);
     auto rangeSection = expressionOuter.reduced(40, 20);
     expressionPanelBounds = rangeSection.toFloat();
     rangeSection.removeFromTop(20); // Section label
 
-    auto velocityArea = rangeSection.removeFromLeft(120);
+    auto expressionTop = rangeSection.removeFromTop(120);
+    auto expressionMidi = rangeSection; // remaining height for AT/PB/CC row
+
+    auto velocityArea = expressionTop.removeFromLeft(120);
     velocityLabel.setBounds(velocityArea.removeFromTop(20));
     auto vSliders = velocityArea.reduced(10, 0);
     velocityMinSlider.setBounds(vSliders.removeFromLeft(50));
     vSliders.removeFromLeft(10);
     velocityMaxSlider.setBounds(vSliders);
 
-    rangeSection.removeFromLeft(40);
+    expressionTop.removeFromLeft(40);
 
-    auto pitchArea = rangeSection.removeFromLeft(120);
+    auto pitchArea = expressionTop.removeFromLeft(120);
     pitchLabel.setBounds(pitchArea.removeFromTop(20));
     auto pSliders = pitchArea.reduced(10, 0);
     pitchMinSlider.setBounds(pSliders.removeFromLeft(50));
     pSliders.removeFromLeft(10);
     pitchMaxSlider.setBounds(pSliders);
 
-    rangeSection.removeFromLeft(40);
+    expressionTop.removeFromLeft(40);
 
     // Scale controls
-    auto scaleArea = rangeSection.removeFromLeft(150);
+    auto scaleArea = expressionTop.removeFromLeft(150);
     scaleLabel.setBounds(scaleArea.removeFromTop(20));
     scaleRootCombo.setBounds(scaleArea.removeFromTop(25).reduced(5, 0));
     scaleArea.removeFromTop(5);
     scaleTypeCombo.setBounds(scaleArea.removeFromTop(25).reduced(5, 0));
 
-    rangeSection.removeFromLeft(spacing);
+    expressionTop.removeFromLeft(spacing);
 
     // Humanization knobs
-    auto swingArea = rangeSection.removeFromLeft(knobSize);
+    auto swingArea = expressionTop.removeFromLeft(knobSize);
     swingLabel.setBounds(swingArea.removeFromBottom(20));
     swingSlider.setBounds(swingArea);
 
-    rangeSection.removeFromLeft(spacing);
+    expressionTop.removeFromLeft(spacing);
 
-    auto timingArea = rangeSection.removeFromLeft(knobSize);
+    auto timingArea = expressionTop.removeFromLeft(knobSize);
     timingHumanizeLabel.setBounds(timingArea.removeFromBottom(20));
     timingHumanizeSlider.setBounds(timingArea);
 
-    rangeSection.removeFromLeft(spacing);
+    expressionTop.removeFromLeft(spacing);
 
-    auto velVarArea = rangeSection.removeFromLeft(knobSize);
+    auto velVarArea = expressionTop.removeFromLeft(knobSize);
     velocityHumanizeLabel.setBounds(velVarArea.removeFromBottom(20));
     velocityHumanizeSlider.setBounds(velVarArea);
 
-    rangeSection.removeFromLeft(spacing);
+    expressionTop.removeFromLeft(spacing);
 
-    auto gateArea = rangeSection.removeFromLeft(knobSize);
+    auto gateArea = expressionTop.removeFromLeft(knobSize);
     gateLengthLabel.setBounds(gateArea.removeFromBottom(20));
     gateLengthSlider.setBounds(gateArea);
 
-    rangeSection.removeFromLeft(spacing);
+    expressionTop.removeFromLeft(spacing);
 
-    auto legatoArea = rangeSection.removeFromLeft(knobSize);
+    auto legatoArea = expressionTop.removeFromLeft(knobSize);
     legatoButton.setBounds(legatoArea.removeFromTop(50).reduced(5));
+
+    // Compact MIDI expression row (aftertouch / pitch bend / CC)
+    const int midiKnob = 70;
+    const int midiBtnW = 56;
+    expressionMidi.removeFromTop(4);
+
+    auto atBtnArea = expressionMidi.removeFromLeft(midiBtnW);
+    aftertouchEnableButton.setBounds(atBtnArea.removeFromTop(36).reduced(2, 4));
+    expressionMidi.removeFromLeft(6);
+
+    auto atAmtArea = expressionMidi.removeFromLeft(midiKnob);
+    aftertouchAmountLabel.setBounds(atAmtArea.removeFromBottom(18));
+    aftertouchAmountSlider.setBounds(atAmtArea);
+
+    expressionMidi.removeFromLeft(spacing);
+
+    auto pbBtnArea = expressionMidi.removeFromLeft(midiBtnW);
+    pitchbendEnableButton.setBounds(pbBtnArea.removeFromTop(36).reduced(2, 4));
+    expressionMidi.removeFromLeft(6);
+
+    auto pbRangeArea = expressionMidi.removeFromLeft(midiKnob);
+    pitchbendRangeLabel.setBounds(pbRangeArea.removeFromBottom(18));
+    pitchbendRangeSlider.setBounds(pbRangeArea);
+
+    expressionMidi.removeFromLeft(spacing);
+
+    auto ccBtnArea = expressionMidi.removeFromLeft(midiBtnW);
+    ccEnableButton.setBounds(ccBtnArea.removeFromTop(36).reduced(2, 4));
+    expressionMidi.removeFromLeft(6);
+
+    auto ccNumArea = expressionMidi.removeFromLeft(midiKnob);
+    ccNumberLabel.setBounds(ccNumArea.removeFromBottom(18));
+    ccNumberSlider.setBounds(ccNumArea);
+
+    expressionMidi.removeFromLeft(spacing);
+
+    auto ccAmtArea = expressionMidi.removeFromLeft(midiKnob);
+    ccAmountLabel.setBounds(ccAmtArea.removeFromBottom(18));
+    ccAmountSlider.setBounds(ccAmtArea);
 
     // Advanced section (ratcheting + stochastic controls)
     auto advancedOuter = area.removeFromTop(130);

@@ -68,7 +68,7 @@ Repository → **Settings** → **Pages** → Build and deployment → Source: *
 - **16 Scale Types** - Major, Minor, Modes, Pentatonic, Blues, Whole Tone, Chromatic
 - **MIDI Channel Routing** - Route to any MIDI channel (1-16)
 - **Swing & Humanization** - 6 swing groove templates, timing & velocity humanization
-- **MIDI Expression** - Velocity always; aftertouch / CC / pitch bend UI is STATUS roadmap (not claimed complete)
+- **MIDI Expression** - Velocity always; aftertouch / CC / pitch bend via EXPRESSION UI (per-note emit; not MPE)
 - **Gate & Ratcheting** - Gate length control with legato mode, note retriggering
 - **Real-time Visualization** - Live playback position and pattern display
 - **31 Parameters** - Full DAW automation support

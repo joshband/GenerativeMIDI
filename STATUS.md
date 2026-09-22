@@ -27,6 +27,7 @@ Showcase (architecture + evidence): https://joshband.github.io/GenerativeMIDI/
 - Color-coded generator labels
 - Live Euclidean pattern playhead
 - Context-aware control enablement
+- MIDI expression UI (AT / PB / CC) with per-note emit on note-on
 
 ### v0.7.x — Stochastic / chaos + dynamic UI
 - Brownian, Perlin, Drunk Walk, Lorenz
@@ -57,11 +58,11 @@ None for this refactor wave — see CI for live build status.
 
 ## Planned (explicitly deferred)
 
-### MIDI expression UI
-Params / MIDIGenerator capabilities exist; full aftertouch / CC / pitch-bend **UI** is roadmap — not claimed complete.
-
 ### Polyrhythm layer editor
 `PolyrhythmEngine` kept for a future branch; no layer UI in the current editor.
+
+### MIDI expression depth
+UI + per-note emit shipped; continuous CC/PB modulation and MPE remain deferred.
 
 ## Project metrics
 

@@ -392,17 +392,40 @@ void GenerativeMIDIProcessor::onSubdivisionHit(int subdivision)
     const float density = parameters.getRawParameterValue(PARAM_NOTE_DENSITY)->load();
     const int samplesPerStep = static_cast<int>(clockManager.getSamplesPerSubdivision(16));
 
+    const bool aftertouchEnable = parameters.getRawParameterValue(PARAM_AFTERTOUCH_ENABLE)->load() > 0.5f;
+    const float aftertouchAmount = parameters.getRawParameterValue(PARAM_AFTERTOUCH_AMOUNT)->load();
+    const bool pitchbendEnable = parameters.getRawParameterValue(PARAM_PITCHBEND_ENABLE)->load() > 0.5f;
+    const float pitchbendRange = parameters.getRawParameterValue(PARAM_PITCHBEND_RANGE)->load();
+    const bool ccEnable = parameters.getRawParameterValue(PARAM_CC_ENABLE)->load() > 0.5f;
+    const int ccNumber = static_cast<int>(parameters.getRawParameterValue(PARAM_CC_NUMBER)->load());
+    const float ccAmount = parameters.getRawParameterValue(PARAM_CC_AMOUNT)->load();
+
     auto scheduleNote = [&](int pitch, float velocity, int stepForSwing)
     {
         velocity = swingEngine.humanizeVelocity(velocity);
         const int timingOffset = swingEngine.calculateTotalTimingOffset(
             stepForSwing, samplesPerStep, getSampleRate());
         const bool useRatcheting = ratchetEngine.shouldRatchet();
+        const int64_t noteOnSample = currentSamplePosition + timingOffset;
 
         NoteSchedulerHelpers::scheduleGeneratedNote(
             eventScheduler, ratchetEngine, gateLengthController,
             pitch, velocity, midiChannel, currentSamplePosition,
             timingOffset, samplesPerStep, useRatcheting);
+
+        // Minimal MIDI expression emit (RT-safe via existing EventScheduler path)
+        if (aftertouchEnable)
+            eventScheduler.scheduleAftertouch(pitch, aftertouchAmount, midiChannel, noteOnSample);
+
+        if (ccEnable)
+            eventScheduler.scheduleCC(ccNumber, ccAmount, midiChannel, noteOnSample);
+
+        if (pitchbendEnable)
+        {
+            // Map PB range (1–24 semitones) to a fraction of full MIDI bend wheel
+            const float bendNorm = juce::jlimit(0.0f, 1.0f, pitchbendRange / 24.0f);
+            eventScheduler.schedulePitchBend(bendNorm, midiChannel, noteOnSample);
+        }
     };
 
     switch (generatorType)

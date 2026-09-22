@@ -57,6 +57,15 @@ private:
     juce::Slider gateLengthSlider;
     juce::TextButton legatoButton;
 
+    // MIDI expression controls (aftertouch / pitch bend / CC)
+    juce::TextButton aftertouchEnableButton;
+    juce::Slider aftertouchAmountSlider;
+    juce::TextButton pitchbendEnableButton;
+    juce::Slider pitchbendRangeSlider;
+    juce::TextButton ccEnableButton;
+    juce::Slider ccNumberSlider;
+    juce::Slider ccAmountSlider;
+
     // Ratchet controls
     juce::Slider ratchetCountSlider;
     juce::Slider ratchetProbabilitySlider;
@@ -90,6 +99,10 @@ private:
     juce::Label timingHumanizeLabel;
     juce::Label velocityHumanizeLabel;
     juce::Label gateLengthLabel;
+    juce::Label aftertouchAmountLabel;
+    juce::Label pitchbendRangeLabel;
+    juce::Label ccNumberLabel;
+    juce::Label ccAmountLabel;
     juce::Label ratchetCountLabel;
     juce::Label ratchetProbabilityLabel;
     juce::Label ratchetDecayLabel;
@@ -113,6 +126,13 @@ private:
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> velocityHumanizeAttachment;
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> gateLengthAttachment;
     std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment> legatoAttachment;
+    std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment> aftertouchEnableAttachment;
+    std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> aftertouchAmountAttachment;
+    std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment> pitchbendEnableAttachment;
+    std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> pitchbendRangeAttachment;
+    std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment> ccEnableAttachment;
+    std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> ccNumberAttachment;
+    std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> ccAmountAttachment;
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> ratchetCountAttachment;
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> ratchetProbabilityAttachment;
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> ratchetDecayAttachment;
