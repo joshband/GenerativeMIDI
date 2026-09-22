@@ -1,7 +1,7 @@
 # GenerativeMIDI QA Findings — v0.8.0
 
 **Date:** 2026-09-22  
-**Commit:** (see latest `master`; AX + Polyrhythm UI confirm follow `b146357`)  
+**Commit:** `7b038d3` (AX titles + Polyrhythm UI confirm; builds on `b146357`)  
 **Campaign:** Host QA Exercise Plan + REAPER MCP Phase C + AX titles
 
 ## 1. Environment
