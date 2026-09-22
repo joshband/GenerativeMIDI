@@ -3,6 +3,7 @@
     EuclideanEngine.cpp
 
     Implementation of Björklund's algorithm for Euclidean rhythms
+    (O(steps) remainder form — equivalent distribution, no heap)
 
   ==============================================================================
 */
@@ -16,7 +17,7 @@ EuclideanEngine::EuclideanEngine()
 
 void EuclideanEngine::setSteps(int numSteps)
 {
-    const int newSteps = juce::jlimit(1, 64, numSteps);
+    const int newSteps = juce::jlimit(1, kMaxSteps, numSteps);
     if (newSteps == steps)
         return;
     steps = newSteps;
@@ -42,36 +43,42 @@ void EuclideanEngine::setRotation(int rot)
     regeneratePattern();
 }
 
-void EuclideanEngine::setAccentPattern(const std::vector<float>& accents)
+void EuclideanEngine::setAccentPattern(const float* accents, int count)
 {
-    accentPattern = accents;
+    accentCount = juce::jlimit(0, kMaxSteps, count);
+    for (int i = 0; i < accentCount; ++i)
+        accentPattern[i] = accents[i];
     regeneratePattern();
 }
 
 bool EuclideanEngine::getStep(int stepIndex) const
 {
-    if (stepIndex < 0 || stepIndex >= pattern.size())
+    if (stepIndex < 0 || stepIndex >= steps)
         return false;
     return pattern[stepIndex];
 }
 
 float EuclideanEngine::getVelocity(int stepIndex) const
 {
-    if (stepIndex < 0 || stepIndex >= velocities.size())
+    if (stepIndex < 0 || stepIndex >= steps)
         return 0.8f;
     return velocities[stepIndex];
 }
 
 void EuclideanEngine::rotate(int amount)
 {
+    if (steps <= 0)
+        return;
     rotation = (rotation + amount) % steps;
+    if (rotation < 0)
+        rotation += steps;
     regeneratePattern();
 }
 
 void EuclideanEngine::randomize(float density)
 {
     pulses = static_cast<int>(steps * juce::jlimit(0.0f, 1.0f, density));
-    rotation = random.nextInt(steps);
+    rotation = (steps > 0) ? random.nextInt(steps) : 0;
     regeneratePattern();
 }
 
@@ -82,97 +89,45 @@ void EuclideanEngine::regeneratePattern()
 
 void EuclideanEngine::generateEuclideanPattern()
 {
-    // Generate base Euclidean pattern using Björklund's algorithm
-    pattern = bjorklund(pulses, steps);
-
-    // Apply rotation
-    if (rotation != 0)
+    // Even distribution (Björklund-equivalent remainder form). Stack-only.
+    if (pulses <= 0 || steps <= 0)
     {
-        std::vector<bool> rotated(steps);
         for (int i = 0; i < steps; ++i)
-        {
-            rotated[i] = pattern[(i + rotation) % steps];
-        }
-        pattern = rotated;
+            pattern[i] = false;
+    }
+    else if (pulses >= steps)
+    {
+        for (int i = 0; i < steps; ++i)
+            pattern[i] = true;
+    }
+    else
+    {
+        for (int i = 0; i < steps; ++i)
+            pattern[i] = (((i * pulses) % steps) < pulses);
     }
 
-    // Generate velocities with accent pattern
-    velocities.resize(steps);
+    // Apply rotation via stack temp
+    if (rotation != 0 && steps > 0)
+    {
+        bool rotated[kMaxSteps];
+        for (int i = 0; i < steps; ++i)
+            rotated[i] = pattern[(i + rotation) % steps];
+        for (int i = 0; i < steps; ++i)
+            pattern[i] = rotated[i];
+    }
+
     for (int i = 0; i < steps; ++i)
     {
         if (pattern[i])
         {
-            if (!accentPattern.empty())
-            {
-                int accentIndex = i % accentPattern.size();
-                velocities[i] = accentPattern[accentIndex];
-            }
+            if (accentCount > 0)
+                velocities[i] = accentPattern[i % accentCount];
             else
-            {
-                velocities[i] = 0.8f; // Default velocity
-            }
+                velocities[i] = 0.8f;
         }
         else
         {
             velocities[i] = 0.0f;
         }
     }
-}
-
-std::vector<bool> EuclideanEngine::bjorklund(int pulses, int steps)
-{
-    if (pulses < 0 || steps <= 0 || pulses > steps)
-        return std::vector<bool>(steps, false);
-
-    if (pulses == 0)
-        return std::vector<bool>(steps, false);
-
-    if (pulses == steps)
-        return std::vector<bool>(steps, true);
-
-    // Björklund's algorithm using groups
-    std::vector<std::vector<bool>> groups;
-
-    // Initialize with 'pulses' groups containing [1]
-    for (int i = 0; i < pulses; ++i)
-        groups.push_back({true});
-
-    // And 'steps - pulses' groups containing [0]
-    for (int i = 0; i < steps - pulses; ++i)
-        groups.push_back({false});
-
-    // Distribute groups
-    int splitIndex = pulses;
-
-    while (splitIndex > 0 && splitIndex < groups.size())
-    {
-        int numToDistribute = std::min(splitIndex, static_cast<int>(groups.size() - splitIndex));
-
-        if (numToDistribute <= 0)
-            break;
-
-        // Append second half groups to first half
-        for (int i = 0; i < numToDistribute; ++i)
-        {
-            auto& target = groups[i];
-            auto& source = groups[splitIndex + i];
-            target.insert(target.end(), source.begin(), source.end());
-        }
-
-        // Remove appended groups
-        groups.erase(groups.begin() + splitIndex, groups.begin() + splitIndex + numToDistribute);
-
-        // Update split index
-        splitIndex = numToDistribute;
-    }
-
-    // Flatten result
-    std::vector<bool> result;
-    for (const auto& group : groups)
-    {
-        for (bool val : group)
-            result.push_back(val);
-    }
-
-    return result;
 }

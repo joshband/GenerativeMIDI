@@ -152,6 +152,7 @@ private:
     // Processing state
     int64_t currentSamplePosition = 0;
     int lastSubdivisionStep = 0;
+    juce::Random rtRandom;
 
     // Helper methods
     void processGenerativeOutput(juce::MidiBuffer& midiMessages, int numSamples);

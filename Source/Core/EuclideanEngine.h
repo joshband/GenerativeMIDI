@@ -11,11 +11,12 @@
 #pragma once
 
 #include <juce_audio_processors/juce_audio_processors.h>
-#include <vector>
 
 class EuclideanEngine
 {
 public:
+    static constexpr int kMaxSteps = 64;
+
     EuclideanEngine();
     ~EuclideanEngine() = default;
 
@@ -23,7 +24,7 @@ public:
     void setSteps(int numSteps);
     void setPulses(int numPulses);
     void setRotation(int rotation);
-    void setAccentPattern(const std::vector<float>& accents);
+    void setAccentPattern(const float* accents, int count);
 
     // Pattern retrieval
     bool getStep(int stepIndex) const;
@@ -41,15 +42,16 @@ public:
 
 private:
     void generateEuclideanPattern();
-    std::vector<bool> bjorklund(int pulses, int steps);
 
     int steps = 16;
     int pulses = 4;
     int rotation = 0;
 
-    std::vector<bool> pattern;
-    std::vector<float> velocities;
-    std::vector<float> accentPattern;
+    // Fixed-capacity storage — regenerate never heap-allocates after construction
+    bool pattern[kMaxSteps] {};
+    float velocities[kMaxSteps] {};
+    float accentPattern[kMaxSteps] {};
+    int accentCount = 0;
 
     juce::Random random;
 

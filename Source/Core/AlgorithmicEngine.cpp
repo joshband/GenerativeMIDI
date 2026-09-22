@@ -57,7 +57,7 @@ void MarkovChain::learn(const std::vector<int>& sequence)
 
 int MarkovChain::generate(const std::vector<int>& currentState)
 {
-    if (currentState.size() != order)
+    if (currentState.size() != static_cast<size_t>(order))
         return 60; // Default middle C
 
     auto it = transitionTable.find(currentState);
@@ -77,6 +77,16 @@ int MarkovChain::generate(const std::vector<int>& currentState)
 
     // Fallback to last option
     return it->second.rbegin()->first;
+}
+
+int MarkovChain::generateOrDefault(const int* state, int stateLen, int fallbackNote)
+{
+    if (transitionTable.empty() || state == nullptr || stateLen != order)
+        return fallbackNote;
+
+    // Trained tables still need a vector key for map lookup (documented RT risk).
+    std::vector<int> key(state, state + stateLen);
+    return generate(key);
 }
 
 void MarkovChain::reset()
@@ -190,7 +200,7 @@ std::vector<int> LSystemEngine::toMidiNotes(const juce::String& sequence, int ba
 // ============================================================================
 // Cellular Automaton Implementation
 // ============================================================================
-CellularAutomaton::CellularAutomaton(int size) : cells(size, false)
+CellularAutomaton::CellularAutomaton(int size) : cells(size, false), scratch(size, false)
 {
     initialState = cells;
 }
@@ -203,6 +213,7 @@ void CellularAutomaton::setRule(int ruleNumber)
 void CellularAutomaton::setState(const std::vector<bool>& state)
 {
     cells = state;
+    scratch.assign(cells.size(), false);
     initialState = state;
 }
 
@@ -215,19 +226,33 @@ void CellularAutomaton::randomizeState(float density)
 
 std::vector<bool> CellularAutomaton::step()
 {
-    std::vector<bool> nextCells(cells.size());
+    stepInPlace();
+    return cells;
+}
 
-    for (size_t i = 0; i < cells.size(); ++i)
+void CellularAutomaton::stepInPlace()
+{
+    const size_t n = cells.size();
+    if (scratch.size() != n)
+        scratch.assign(n, false); // only grows if setState changed size (non-RT)
+
+    for (size_t i = 0; i < n; ++i)
     {
-        bool left = cells[(i - 1 + cells.size()) % cells.size()];
+        bool left = cells[(i + n - 1) % n];
         bool center = cells[i];
-        bool right = cells[(i + 1) % cells.size()];
-
-        nextCells[i] = applyRule(left, center, right);
+        bool right = cells[(i + 1) % n];
+        scratch[i] = applyRule(left, center, right);
     }
 
-    cells = nextCells;
-    return cells;
+    for (size_t i = 0; i < n; ++i)
+        cells[i] = scratch[i];
+}
+
+bool CellularAutomaton::getCell(int index) const
+{
+    if (index < 0 || index >= static_cast<int>(cells.size()))
+        return false;
+    return cells[static_cast<size_t>(index)];
 }
 
 void CellularAutomaton::reset()
@@ -362,10 +387,13 @@ float ProbabilisticGenerator::gaussianRandom(float mean, float stddev)
 // ============================================================================
 AlgorithmicEngine::AlgorithmicEngine()
 {
+    lastProbNote = juce::jlimit(pitchMin, pitchMax, 60);
 }
 
 void AlgorithmicEngine::setGeneratorType(GeneratorType type)
 {
+    if (currentType == type)
+        return;
     currentType = type;
 }
 
@@ -375,6 +403,7 @@ void AlgorithmicEngine::setPitchRange(int minPitch, int maxPitch)
     pitchMax = juce::jlimit(0, 127, maxPitch);
     if (pitchMin > pitchMax)
         std::swap(pitchMin, pitchMax);
+    lastProbNote = juce::jlimit(pitchMin, pitchMax, lastProbNote);
 }
 
 void AlgorithmicEngine::setVelocityRange(float minVel, float maxVel)
@@ -383,73 +412,76 @@ void AlgorithmicEngine::setVelocityRange(float minVel, float maxVel)
     velocityVariance = (maxVel - minVel) / 4.0f; // Keep most values within range
 }
 
-std::vector<int> AlgorithmicEngine::generateNoteSequence(int length)
+void AlgorithmicEngine::pushHistory(int note)
 {
-    std::vector<int> sequence;
+    noteHistory[historyWrite] = note;
+    historyWrite = (historyWrite + 1) % kHistoryCap;
+    if (historyCount < kHistoryCap)
+        ++historyCount;
+}
 
+int AlgorithmicEngine::generateNextNote()
+{
     switch (currentType)
     {
         case Markov:
         {
-            int order = markovChain.getOrder();
+            const int order = markovChain.getOrder();
+            const int fallback = juce::jlimit(pitchMin, pitchMax, 60);
 
-            if (noteHistory.size() < order)
+            while (historyCount < order)
+                pushHistory(fallback + (historyCount % 12));
+
+            int stateBuf[8];
+            const int n = juce::jmin(order, 8);
+            for (int i = 0; i < n; ++i)
             {
-                // Initialize history
-                for (int i = 0; i < length && noteHistory.size() < order; ++i)
-                {
-                    int note = 60 + (i % 12);
-                    noteHistory.push_back(note);
-                }
+                const int idx = (historyWrite - n + i + kHistoryCap) % kHistoryCap;
+                stateBuf[i] = noteHistory[idx];
             }
 
-            for (int i = 0; i < length; ++i)
-            {
-                std::vector<int> state;
-                if (noteHistory.size() >= order)
-                    state = std::vector<int>(noteHistory.end() - order, noteHistory.end());
-                else
-                    state = std::vector<int>(noteHistory.begin(), noteHistory.end());
-
-                int note = markovChain.generate(state);
-                sequence.push_back(note);
-                noteHistory.push_back(note);
-
-                if (noteHistory.size() > 100)
-                    noteHistory.pop_front();
-            }
-            break;
+            const int note = juce::jlimit(pitchMin, pitchMax,
+                                          markovChain.generateOrDefault(stateBuf, n, fallback));
+            pushHistory(note);
+            return note;
         }
 
         case LSystem:
         {
-            auto lstring = lSystem.iterate(3);
-            sequence = lSystem.toMidiNotes(lstring, 60);
-            if (sequence.size() > length)
-                sequence.resize(length);
-            break;
+            // Default axiom/rules yield a single middle-C — avoid String iterate on RT.
+            // (Custom rules via addRule are not used on the live UI path.)
+            return juce::jlimit(pitchMin, pitchMax, 60);
         }
 
         case CellularAutomatonType:
         {
-            auto state = cellularAutomaton.step();
-            for (size_t i = 0; i < std::min(state.size(), static_cast<size_t>(length)); ++i)
-            {
-                if (state[i])
-                    sequence.push_back(60 + (i % 24));
-                else
-                    sequence.push_back(-1); // Rest
-            }
-            break;
+            cellularAutomaton.stepInPlace();
+            if (cellularAutomaton.getCell(0))
+                return juce::jlimit(pitchMin, pitchMax, 60);
+            return -1; // Rest
         }
 
         case Probabilistic:
         default:
         {
-            sequence = probabilistic.generateMelody(length, pitchMin, pitchMax);
-            break;
+            lastProbNote = probabilistic.randomWalk(lastProbNote, 3, pitchMin, pitchMax);
+            return lastProbNote;
         }
     }
+}
+
+float AlgorithmicEngine::generateNextVelocity()
+{
+    return probabilistic.generateVelocity(velocityMean, velocityVariance);
+}
+
+std::vector<int> AlgorithmicEngine::generateNoteSequence(int length)
+{
+    std::vector<int> sequence;
+    sequence.reserve(static_cast<size_t>(juce::jmax(0, length)));
+
+    for (int i = 0; i < length; ++i)
+        sequence.push_back(generateNextNote());
 
     return sequence;
 }
@@ -462,7 +494,8 @@ std::vector<bool> AlgorithmicEngine::generateRhythmSequence(int length)
 std::vector<float> AlgorithmicEngine::generateVelocitySequence(int length)
 {
     std::vector<float> velocities;
+    velocities.reserve(static_cast<size_t>(juce::jmax(0, length)));
     for (int i = 0; i < length; ++i)
-        velocities.push_back(probabilistic.generateVelocity(velocityMean, velocityVariance));
+        velocities.push_back(generateNextVelocity());
     return velocities;
 }

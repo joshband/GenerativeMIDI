@@ -256,6 +256,10 @@ void GenerativeMIDIProcessor::prepareToPlay(double sampleRate, int samplesPerBlo
     algorithmicEngine.setPitchRange(pitchMin, pitchMax);
     algorithmicEngine.setVelocityRange(velocityMin, velocityMax);
 
+    // Reserve event queue so schedule/process stay within capacity on the audio thread
+    const int queueCap = juce::jmax(256, samplesPerBlock * 8);
+    eventScheduler.prepare(queueCap);
+
     // PolyrhythmEngine retained for a future feature branch; not prepared on the live path.
 
     clockManager.start();
@@ -436,7 +440,7 @@ void GenerativeMIDIProcessor::onSubdivisionHit(int subdivision)
         {
             const int step = lastSubdivisionStep % euclideanEngine.getSteps();
             if (euclideanEngine.getStep(step)
-                && juce::Random::getSystemRandom().nextFloat() < density)
+                && rtRandom.nextFloat() < density)
             {
                 const float rawVelocity = euclideanEngine.getVelocity(step);
                 const float velocity = velocityMin + (rawVelocity * (velocityMax - velocityMin));
@@ -465,18 +469,17 @@ void GenerativeMIDIProcessor::onSubdivisionHit(int subdivision)
             }
             algorithmicEngine.setGeneratorType(algoType);
 
-            if (juce::Random::getSystemRandom().nextFloat() < density)
+            if (rtRandom.nextFloat() < density)
             {
                 algorithmicEngine.setPitchRange(pitchMin, pitchMax);
                 algorithmicEngine.setVelocityRange(velocityMin, velocityMax);
 
-                auto notes = algorithmicEngine.generateNoteSequence(1);
-                if (!notes.empty() && notes[0] >= 0)
+                const int rawNote = algorithmicEngine.generateNextNote();
+                if (rawNote >= 0)
                 {
-                    const int rawPitch = juce::jlimit(pitchMin, pitchMax, notes[0]);
+                    const int rawPitch = juce::jlimit(pitchMin, pitchMax, rawNote);
                     const int pitch = scaleQuantizer.quantize(rawPitch);
-                    auto velocities = algorithmicEngine.generateVelocitySequence(1);
-                    const float rawVelocity = velocities.empty() ? 0.7f : velocities[0];
+                    const float rawVelocity = algorithmicEngine.generateNextVelocity();
                     const float velocity = velocityMin + (rawVelocity * (velocityMax - velocityMin));
                     scheduleNote(pitch, velocity, lastSubdivisionStep);
                 }

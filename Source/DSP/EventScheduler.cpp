@@ -2,7 +2,7 @@
   ==============================================================================
     EventScheduler.cpp
 
-    Event scheduling implementation
+    Event scheduling implementation — vector heap with reserved capacity
 
   ==============================================================================
 */
@@ -11,16 +11,27 @@
 
 EventScheduler::EventScheduler()
 {
+    eventStorage.reserve(256);
+}
+
+void EventScheduler::prepare(int capacity)
+{
+    eventStorage.reserve(static_cast<size_t>(juce::jmax(16, capacity)));
 }
 
 void EventScheduler::scheduleEvent(const juce::MidiMessage& message, int64_t sampleTime, int priority)
 {
+    // Stay within reserved capacity — never grow on the audio thread
+    if (eventStorage.size() >= eventStorage.capacity())
+        return;
+
     ScheduledEvent event;
     event.message = message;
     event.scheduledSample = sampleTime;
     event.priority = priority;
 
-    eventQueue.push(event);
+    eventStorage.push_back(event);
+    std::push_heap(eventStorage.begin(), eventStorage.end());
 }
 
 void EventScheduler::scheduleNoteOn(int note, float velocity, int channel, int64_t sampleTime)
@@ -69,23 +80,23 @@ void EventScheduler::processEvents(int64_t currentSample, juce::MidiBuffer& outp
 {
     int64_t endSample = currentSample + bufferSize;
 
-    while (!eventQueue.empty())
+    while (!eventStorage.empty())
     {
-        const auto& event = eventQueue.top();
+        // Peek heap top (front after make/push_heap)
+        const auto& event = eventStorage.front();
 
-        // Check if event should fire in this buffer
         if (event.scheduledSample < endSample)
         {
-            // Calculate sample offset within buffer
             int sampleOffset = static_cast<int>(event.scheduledSample - currentSample);
             sampleOffset = juce::jlimit(0, bufferSize - 1, sampleOffset);
 
             outputBuffer.addEvent(event.message, sampleOffset);
-            eventQueue.pop();
+
+            std::pop_heap(eventStorage.begin(), eventStorage.end());
+            eventStorage.pop_back();
         }
         else
         {
-            // Event is in the future, stop processing
             break;
         }
     }
@@ -93,29 +104,29 @@ void EventScheduler::processEvents(int64_t currentSample, juce::MidiBuffer& outp
 
 void EventScheduler::clearAll()
 {
-    while (!eventQueue.empty())
-        eventQueue.pop();
+    eventStorage.clear(); // retains capacity
 }
 
 void EventScheduler::clearFutureEvents(int64_t fromSample)
 {
-    std::priority_queue<ScheduledEvent> newQueue;
-
-    while (!eventQueue.empty())
+    // Filter in place — no secondary queue allocation
+    size_t write = 0;
+    for (size_t read = 0; read < eventStorage.size(); ++read)
     {
-        auto event = eventQueue.top();
-        eventQueue.pop();
-
-        if (event.scheduledSample < fromSample)
-            newQueue.push(event);
+        if (eventStorage[read].scheduledSample < fromSample)
+        {
+            if (write != read)
+                eventStorage[write] = std::move(eventStorage[read]);
+            ++write;
+        }
     }
-
-    eventQueue = std::move(newQueue);
+    eventStorage.resize(write);
+    std::make_heap(eventStorage.begin(), eventStorage.end());
 }
 
 int EventScheduler::getQueueSize() const
 {
-    return eventQueue.size();
+    return static_cast<int>(eventStorage.size());
 }
 
 void EventScheduler::setLookahead(int samples)

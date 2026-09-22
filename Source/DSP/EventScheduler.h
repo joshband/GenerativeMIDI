@@ -11,7 +11,7 @@
 #pragma once
 
 #include <juce_audio_processors/juce_audio_processors.h>
-#include <queue>
+#include <algorithm>
 #include <vector>
 
 struct ScheduledEvent
@@ -33,6 +33,9 @@ class EventScheduler
 public:
     EventScheduler();
     ~EventScheduler() = default;
+
+    /** Pre-reserve queue storage (call from prepareToPlay — not realtime). */
+    void prepare(int capacity);
 
     // Event scheduling
     void scheduleEvent(const juce::MidiMessage& message, int64_t sampleTime, int priority = 0);
@@ -60,7 +63,7 @@ public:
     int getLookahead() const { return lookaheadSamples; }
 
 private:
-    std::priority_queue<ScheduledEvent> eventQueue;
+    std::vector<ScheduledEvent> eventStorage;
     int lookaheadSamples = 0;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(EventScheduler)

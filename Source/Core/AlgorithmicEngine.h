@@ -13,7 +13,6 @@
 #include <juce_audio_processors/juce_audio_processors.h>
 #include <vector>
 #include <map>
-#include <deque>
 
 // ============================================================================
 // Markov Chain Generator
@@ -26,6 +25,9 @@ public:
     void addTransition(const std::vector<int>& state, int nextValue, float probability = 1.0f);
     void learn(const std::vector<int>& sequence);
     int generate(const std::vector<int>& currentState);
+    /** RT-friendlier: returns default when table empty (no map key alloc). */
+    int generateOrDefault(const int* state, int stateLen, int fallbackNote = 60);
+    bool hasTransitions() const { return !transitionTable.empty(); }
     void reset();
     void setOrder(int newOrder);
     int getOrder() const { return order; }
@@ -75,11 +77,16 @@ public:
     void setState(const std::vector<bool>& initialState);
     void randomizeState(float density = 0.5f);
     std::vector<bool> step();
+    /** Advance one generation in-place (no heap after construction). */
+    void stepInPlace();
+    bool getCell(int index) const;
+    int getSize() const { return static_cast<int>(cells.size()); }
     std::vector<bool> getState() const { return cells; }
     void reset();
 
 private:
     std::vector<bool> cells;
+    std::vector<bool> scratch; // same size as cells — used by stepInPlace
     int rule = 30; // Default to Rule 30
     std::vector<bool> initialState;
     juce::Random random;
@@ -141,16 +148,24 @@ public:
     CellularAutomaton& getCellularAutomaton() { return cellularAutomaton; }
     ProbabilisticGenerator& getProbabilistic() { return probabilistic; }
 
-    // Generate sequence
+    // Generate sequence (may allocate — prefer generateNext* on audio thread)
     std::vector<int> generateNoteSequence(int length);
     std::vector<bool> generateRhythmSequence(int length);
     std::vector<float> generateVelocitySequence(int length);
+
+    /** Realtime-safe single-note / velocity (no heap on the hot path). */
+    int generateNextNote();
+    float generateNextVelocity();
 
     // Set parameter ranges
     void setPitchRange(int minPitch, int maxPitch);
     void setVelocityRange(float minVel, float maxVel);
 
 private:
+    static constexpr int kHistoryCap = 128;
+
+    void pushHistory(int note);
+
     GeneratorType currentType = Probabilistic;
 
     MarkovChain markovChain;
@@ -158,7 +173,10 @@ private:
     CellularAutomaton cellularAutomaton;
     ProbabilisticGenerator probabilistic;
 
-    std::deque<int> noteHistory;
+    int noteHistory[kHistoryCap] {};
+    int historyCount = 0;
+    int historyWrite = 0;
+    int lastProbNote = 60;
 
     // Parameter ranges
     int pitchMin = 48;

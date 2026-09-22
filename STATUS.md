@@ -81,6 +81,7 @@ UI + per-note emit shipped; continuous CC/PB modulation and MPE remain deferred.
 - Prefer CMake; initialize `art/` with `git submodule update --init --recursive`.
 - Unused `BitmapUIComponent` moved to `archive/`.
 - Do not treat session “token budget” notes in historical docs as project status.
+- **Realtime**: Euclidean regen, ratchet offsets, algorithmic single-note path, and EventScheduler are allocation-free on the steady-state audio path (queue pre-reserved in `prepareToPlay`; over-capacity schedules are dropped). Remaining risk: trained Markov still builds a map key vector on lookup (default untrained path is fine).
 
 **License**: MIT  
 **Repository**: https://github.com/joshband/GenerativeMIDI
