@@ -112,10 +112,11 @@
             <h3>Shipped / verified</h3>
             <ul>
               <li><strong>v0.8.0</strong> feature set per STATUS (31 parameters; MIDI channel routing; stochastic UI controls).</li>
-              <li>macOS <strong>AU / VST3 / Standalone</strong> targets build-verified.</li>
+              <li>macOS <strong>AU / VST3 / Standalone</strong> verified locally historically; CI builds macOS plugins via <code>.github/workflows/ci.yml</code>.</li>
               <li><strong>9 generators</strong> exposed in the current editor UI (Euclidean, Markov, L-System, Cellular, Probabilistic, Brownian, Perlin Noise, Drunk Walk, Lorenz).</li>
-              <li>Polyrhythm engine retained in core sources only; removed from APVTS and the editor dropdown (9 live generators).</li>
-              <li>Evidence: manual testing + build verification (no coverage percentage claimed).</li>
+              <li>Polyrhythm engine retained in core sources only; <strong>not</strong> in APVTS or the editor dropdown (deferred).</li>
+              <li><strong>10 factory presets</strong> live (9-generator APVTS indices; Polyrhythm not included).</li>
+              <li>Evidence: Catch2 / <code>ctest</code> in CI (12+ engine tests) plus historical format builds — no coverage percentage claimed.</li>
             </ul>
           </div>
           <div class="boundary--deferred">
@@ -125,7 +126,7 @@
               <li>AUv3 as store-ready — configured target + iOS docs only.</li>
               <li>Windows / Linux distribution builds.</li>
               <li>MIDI expression UI and polyrhythm layer controls (STATUS roadmap).</li>
-              <li>Automated test suite coverage metrics.</li>
+              <li>Dedicated touch / accessibility redesign; test coverage percentages.</li>
             </ul>
           </div>
         </div>

@@ -51,8 +51,8 @@
           <li><strong>Core engines</strong> — Euclidean, Algorithmic (Markov, L-System, Cellular, Probabilistic), Stochastic (Brownian, Perlin, Drunk Walk, Lorenz); Polyrhythm retained in core.</li>
           <li><strong>MIDI path</strong> — MIDIGenerator, clock/event scheduling, gate and ratchet controllers.</li>
           <li><strong>PluginProcessor</strong> — parameters (31), generator dispatch, host callbacks.</li>
-          <li><strong>Formats</strong> — AU, VST3, Standalone build-verified; AUv3 configured in CMake with iOS documentation.</li>
-          <li><strong>Editor</strong> — LookAndFeel / steampunk craft; bitmap UI path documented; Polyrhythm not in current dropdown.</li>
+          <li><strong>Formats</strong> — AU, VST3, Standalone verified locally historically; AUv3 configured in CMake with iOS docs (not store-ready). CI: <code>.github/workflows/ci.yml</code>.</li>
+          <li><strong>Editor</strong> — LookAndFeel / steampunk craft; bitmap UI path documented; Polyrhythm not in APVTS or dropdown; 10 factory presets.</li>
         </ul>
         <figure class="diagram">
           <img src="assets/signal-path.svg?v=2" width="920" height="160" alt="Illustrative signal path from DAW host through format wrapper, processor, engines, to MIDI out">
@@ -68,19 +68,19 @@
         <ul class="hard-parts">
           <li>
             <h3>Realtime / scheduling</h3>
-            <p>Note generation must respect host block timing. Gate length and ratchet features are described in STATUS with sample-accurate intent; verification today is manual testing plus successful format builds — not a published latency bench suite.</p>
+            <p>Note generation must respect host block timing. Gate length and ratchet features are described in STATUS with sample-accurate intent. Engine behavior is covered by Catch2 / <code>ctest</code> in CI; host timing still relies on historical format builds and manual checks — not a published latency bench suite.</p>
           </li>
           <li>
             <h3>Parameter bridging</h3>
-            <p>APVTS choices drive engines and UI. The live generator choice list matches the editor: <strong>nine</strong> generators (Euclidean + 4 algorithmic + 4 stochastic). Polyrhythm remains in core sources only — deferred from APVTS and the dropdown.</p>
+            <p>APVTS choices drive engines and UI. The live generator choice list matches the editor: <strong>nine</strong> generators (Euclidean + 4 algorithmic + 4 stochastic). Polyrhythm remains in core sources only — deferred from APVTS and the dropdown (no UI/param mismatch claim).</p>
           </li>
           <li>
             <h3>Bypass / lifecycle</h3>
-            <p>JUCE plugin client lifecycle (prepare, process, editor attach) plus COPY_PLUGIN_AFTER_BUILD install paths. Host integration is evidenced by build artifacts and developer build docs, not by claiming every DAW certified.</p>
+            <p>JUCE plugin client lifecycle (prepare, process, editor attach) plus COPY_PLUGIN_AFTER_BUILD install paths. Host integration is evidenced by build artifacts, CI, and developer build docs, not by claiming every DAW certified.</p>
           </li>
           <li>
             <h3>Measurement contracts</h3>
-            <p>On-disk contracts are STATUS.md, BUILD_VERIFICATION.md, and CHANGELOG — not invented coverage percentages. Prefer “build passed / feature listed” over marketing metrics.</p>
+            <p>On-disk contracts are STATUS.md, BUILD_VERIFICATION.md, CHANGELOG, and CI (<code>.github/workflows/ci.yml</code> + Catch2 / <code>ctest</code>) — not invented coverage percentages. Prefer “build passed / tests ran / feature listed” over marketing metrics.</p>
           </li>
         </ul>
       </div>
@@ -103,12 +103,22 @@
             <tbody>
               <tr>
                 <td>STATUS.md</td>
-                <td>v0.8.0 feature checklist, 31 parameters, manual testing note, roadmap</td>
+                <td>v0.8.0 honest snapshot: 9 UI generators, 10 factory presets, Catch2/CI, roadmap</td>
                 <td><a href="https://github.com/joshband/GenerativeMIDI/blob/master/STATUS.md" rel="noopener noreferrer">blob</a></td>
               </tr>
               <tr>
+                <td>.github/workflows/ci.yml</td>
+                <td>Canonical CI: macOS plugin build + <code>ctest</code>; iOS AUv3 build job</td>
+                <td><a href="https://github.com/joshband/GenerativeMIDI/blob/master/.github/workflows/ci.yml" rel="noopener noreferrer">blob</a></td>
+              </tr>
+              <tr>
+                <td>Tests/EngineTests.cpp</td>
+                <td>Catch2 suite (12+ cases): engines, mapping, clock, factory-preset smoke</td>
+                <td><a href="https://github.com/joshband/GenerativeMIDI/blob/master/Tests/EngineTests.cpp" rel="noopener noreferrer">blob</a></td>
+              </tr>
+              <tr>
                 <td>BUILD_VERIFICATION.md</td>
-                <td>macOS AU / VST3 / Standalone build pass after submodule migration</td>
+                <td>Historical local macOS AU / VST3 / Standalone build pass after submodule migration</td>
                 <td><a href="https://github.com/joshband/GenerativeMIDI/blob/master/BUILD_VERIFICATION.md" rel="noopener noreferrer">blob</a></td>
               </tr>
               <tr>
@@ -118,13 +128,18 @@
               </tr>
               <tr>
                 <td>CMakeLists.txt</td>
-                <td>Plugin formats: AU, AUv3, VST3, Standalone; manufacturer codes</td>
+                <td>Plugin formats: AU, AUv3, VST3, Standalone; Catch2 / <code>ctest</code> wiring</td>
                 <td><a href="https://github.com/joshband/GenerativeMIDI/blob/master/CMakeLists.txt" rel="noopener noreferrer">blob</a></td>
               </tr>
               <tr>
                 <td>docs/developer/BUILD.md</td>
-                <td>Build and install instructions for developers</td>
+                <td>Build, install, and <code>ctest</code> instructions for developers</td>
                 <td><a href="https://github.com/joshband/GenerativeMIDI/blob/master/docs/developer/BUILD.md" rel="noopener noreferrer">blob</a></td>
+              </tr>
+              <tr>
+                <td>docs/user/PRESET_GUIDE.md</td>
+                <td>10 factory presets on the live 9-generator APVTS surface</td>
+                <td><a href="https://github.com/joshband/GenerativeMIDI/blob/master/docs/user/PRESET_GUIDE.md" rel="noopener noreferrer">blob</a></td>
               </tr>
               <tr>
                 <td>docs/design/SYNAPTIK_UI_SPEC.md</td>
@@ -166,7 +181,7 @@
           </li>
           <li>
             <strong>Polyrhythm deferred from UI</strong>
-            <span>Engine and parameter choice retained; editor dropdown currently lists nine generators. Boundary is explicit until UI and params are reconciled.</span>
+            <span>Engine sources retained for a future branch; removed from APVTS and the editor dropdown. Live surface is nine generators — no fake “still in params” mismatch claim.</span>
           </li>
         </ul>
       </div>
