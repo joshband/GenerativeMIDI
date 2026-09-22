@@ -38,10 +38,11 @@ Logs upload as `pluginval-logs-{macOS,Windows,Linux}` (warn if empty so a failed
 ## Known gaps / watch-outs
 
 1. **MIDI effect + pluginval:** Strictness >5 or GUI tests may flake on MIDI-only buses; raise carefully.
-2. **Linux WebKit / ALSA:** Browser module is disabled (`JUCE_WEB_BROWSER=0`); audio deps are apt-installed for JUCE. JACK is optional runtime.
-3. **Windows artifact paths:** Multi-config VS layout under `build/GenerativeMIDI_artefacts/Release/…`.
-4. **iOS signing:** Unsigned CI build (`CODE_SIGNING_REQUIRED=NO`) — device/TestFlight needs local signing.
-5. **COPY_PLUGIN_AFTER_BUILD:** May attempt user plugin folders on the runner; CI still consumes in-tree artefacts for upload/pluginval.
+2. **Linux WebKit / ALSA:** Browser module is disabled (`JUCE_WEB_BROWSER=0`); audio deps are apt-installed for JUCE. JACK is optional runtime. pkg-config may still warn about missing `libcurl` / WebKit / GTK — harmless with those flags off.
+3. **Windows + Visual Studio discovery:** Configure/build use the default PowerShell shell. Running `cmake -G "Visual Studio 17 2022"` from Git Bash often fails with “could not find any instance of Visual Studio.” JUCE is cloned into `./JUCE` (no symlink) so Windows does not depend on `ln`.
+4. **Windows artifact paths:** Multi-config VS layout under `build/GenerativeMIDI_artefacts/Release/…`.
+5. **iOS signing:** Unsigned CI build (`CODE_SIGNING_REQUIRED=NO`) — device/TestFlight needs local signing.
+6. **COPY_PLUGIN_AFTER_BUILD:** May attempt user plugin folders on the runner; CI still consumes in-tree artefacts for upload/pluginval.
 
 ## Local pluginval (macOS)
 

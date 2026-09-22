@@ -32,8 +32,7 @@ jobs:
 
     - name: Install JUCE
       run: |
-        git clone --depth 1 --branch "${JUCE_VERSION}" https://github.com/juce-framework/JUCE.git ~/JUCE
-        ln -sf ~/JUCE JUCE
+        git clone --depth 1 --branch "${JUCE_VERSION}" https://github.com/juce-framework/JUCE.git JUCE
 
     - name: Generate Xcode Project
       run: |
@@ -78,8 +77,7 @@ jobs:
 
     - name: Install JUCE
       run: |
-        git clone --depth 1 --branch "${JUCE_VERSION}" https://github.com/juce-framework/JUCE.git ~/JUCE
-        ln -sf ~/JUCE JUCE
+        git clone --depth 1 --branch "${JUCE_VERSION}" https://github.com/juce-framework/JUCE.git JUCE
 
     - name: Build Plugins
       run: |
@@ -138,24 +136,20 @@ jobs:
       with:
         submodules: recursive
 
+    # Clone into ./JUCE (no symlink). Configure/build use default pwsh so
+    # CMake can discover Visual Studio — Git Bash often cannot.
     - name: Install JUCE
       shell: bash
       run: |
-        git clone --depth 1 --branch "${JUCE_VERSION}" https://github.com/juce-framework/JUCE.git ~/JUCE
-        ln -sf ~/JUCE JUCE
+        git clone --depth 1 --branch "${JUCE_VERSION}" https://github.com/juce-framework/JUCE.git JUCE
 
     - name: Configure
-      shell: bash
-      run: |
-        mkdir -p build
-        cmake -S . -B build -G "Visual Studio 17 2022" -A x64
+      run: cmake -S . -B build -G "Visual Studio 17 2022" -A x64
 
     - name: Build Plugins
-      shell: bash
       run: cmake --build build --config Release
 
     - name: Run unit tests
-      shell: bash
       run: |
         cd build
         ctest --output-on-failure -C Release
@@ -215,19 +209,20 @@ jobs:
           pkg-config \
           libasound2-dev \
           libfreetype6-dev \
+          libfontconfig1-dev \
           libx11-dev \
           libxcomposite-dev \
           libxcursor-dev \
           libxext-dev \
           libxinerama-dev \
           libxrandr-dev \
+          libxrender-dev \
           libglu1-mesa-dev \
           libjack-jackd2-dev
 
     - name: Install JUCE
       run: |
-        git clone --depth 1 --branch "${JUCE_VERSION}" https://github.com/juce-framework/JUCE.git ~/JUCE
-        ln -sf ~/JUCE JUCE
+        git clone --depth 1 --branch "${JUCE_VERSION}" https://github.com/juce-framework/JUCE.git JUCE
 
     - name: Configure
       run: |

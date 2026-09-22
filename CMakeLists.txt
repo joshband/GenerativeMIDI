@@ -58,8 +58,6 @@ set(SOURCE_FILES
     Source/DSP/ClockManager.h
     Source/DSP/EventScheduler.cpp
     Source/DSP/EventScheduler.h
-    Source/Modulation/ModLfo.h
-    Source/Modulation/ModulationDestination.h
     Source/Core/PresetManager.cpp
     Source/Core/PresetManager.h
     Source/UI/PresetBrowser.cpp
