@@ -1,12 +1,19 @@
 # Generative MIDI
 
-A powerful open-source generative MIDI processor with 10 algorithmic engines for creating Euclidean rhythms, polyrhythmic sequences, and complex algorithmic patterns. Available as AU, VST3, and standalone application for macOS.
+Open-source generative MIDI processor for macOS (AU / VST3 / Standalone). Development status tracked in [STATUS.md](STATUS.md) (currently **v0.8.0**). Nine generators are exposed in the current editor UI; see the showcase for an honest ownership and evidence summary.
 
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20iOS%20%7C%20iPadOS-lightgrey.svg)](https://github.com/joshband/GenerativeMIDI/releases)
 [![Release](https://img.shields.io/github/v/release/joshband/GenerativeMIDI)](https://github.com/joshband/GenerativeMIDI/releases/latest)
 
-![Generative MIDI Interface](docs/design/screenshots/main-interface.png)
+## Showcase
+
+Hiring-facing project site (architecture, ownership, and on-disk evidence):
+**https://joshband.github.io/GenerativeMIDI/**
+
+### GitHub Pages setup
+
+Repository → **Settings** → **Pages** → Build and deployment → Source: **Deploy from a branch** → Branch: `master` → Folder: `/docs` → Save.
 
 ---
 
@@ -56,11 +63,11 @@ A powerful open-source generative MIDI processor with 10 algorithmic engines for
 
 ## ✨ Features
 
-### 10 Generative Engines
+### Generative Engines
 
 #### Rhythmic Generators
 - **Euclidean Rhythm** - Björklund's algorithm for perfectly distributed rhythmic patterns
-- **Polyrhythm** - Multi-layer polyrhythmic sequencer with independent timing divisions
+- **Polyrhythm** - Multi-layer polyrhythmic sequencer (engine retained; not in current editor dropdown)
 
 #### Algorithmic Generators
 - **Markov Chain** - Melodic generation based on probability matrices

@@ -1,10 +1,17 @@
 # GenerativeMIDI Documentation
 
-Complete documentation for the GenerativeMIDI plugin - a generative MIDI processor with Euclidean rhythms, polyrhythms, and algorithmic pattern generation.
+**Public face:** the hiring-facing GitHub Pages site —
+
+- [Home](index.html) — ownership skim
+- [Engineering](engineering.html) — architecture and proof table
+
+Live URL (when Pages is enabled): **https://joshband.github.io/GenerativeMIDI/**
+
+The markdown below is **internal / developer evidence** (build notes, design specs, session logs). Prefer the HTML pages for employer-facing narrative; use these files for drill-down detail.
 
 ---
 
-## 📚 Documentation Index
+## Documentation Index
 
 ### For Users
 
@@ -26,8 +33,6 @@ Complete documentation for the GenerativeMIDI plugin - a generative MIDI process
 - **[Color Palettes](design/COLOR_PALETTE.md)** - Color system and usage guidelines
 - **[Component Specs](design/COMPONENT_SPECS.md)** - Individual component specifications
 - **[Project Summary](design/PROJECT_SUMMARY.md)** - High-level project overview
-- **[UI Specification](design/SYNAPTIK_UI_SPEC.md)** - Complete UI design specification
-- **[Project Summary](design/PROJECT_SUMMARY.md)** - High-level project overview
 
 ### Deployment
 
@@ -41,12 +46,18 @@ Complete documentation for the GenerativeMIDI plugin - a generative MIDI process
 - [2025-10-17](sessions/2025-10-17.md) - Gate Length Control (v0.4.0)
 - [2025-10-18](sessions/2025-10-18.md) - Ratcheting (v0.5.0), UI Fixes (v0.5.1), Asset Catalog
 
+### Showcase design
+
+- [Pages showcase design spec](superpowers/specs/2026-09-21-github-pages-showcase-design.md)
+
 ---
 
-## 🚀 Quick Links
+## Quick Links
 
 | I want to... | Go to... |
 |--------------|----------|
+| Skim the hiring site | [Home](index.html) |
+| Read the engineering case study | [Engineering](engineering.html) |
 | Use the plugin | [Getting Started](user/GETTING_STARTED.md) |
 | Build from source | [Build Instructions](developer/BUILD.md) |
 | Build for iOS | [iOS Build Guide](developer/BUILDING-iOS.md) |
@@ -56,12 +67,15 @@ Complete documentation for the GenerativeMIDI plugin - a generative MIDI process
 
 ---
 
-## 📁 Repository Structure
+## Repository Structure
 
 ```
 GenerativeMIDI/
-├── docs/              # Documentation (you are here)
-├── art/               # Visual assets and design files
+├── docs/              # Pages site + markdown evidence (you are here)
+│   ├── index.html
+│   ├── engineering.html
+│   └── assets/
+├── art/               # Visual assets and design files (submodule)
 ├── Source/            # C++ source code
 ├── Resources/         # Embedded resources
 ├── CHANGELOG.md       # Version history
@@ -71,4 +85,4 @@ GenerativeMIDI/
 
 ---
 
-**Last Updated**: 2025-10-18
+**Last Updated**: 2026-09-21
