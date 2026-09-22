@@ -181,6 +181,7 @@ Complete documentation is available in the [docs/](docs/) directory:
 - **[Getting Started Guide](docs/user/GETTING_STARTED.md)** - Quick start tutorial
 - **[Features Guide](docs/user/FEATURES.md)** - Complete feature reference
 - **[Preset Guide](docs/user/PRESET_GUIDE.md)** - Creating and managing presets
+- **[Smoke Checklist](docs/user/SMOKE_CHECKLIST.md)** - Manual Standalone/DAW smoke (v0.8.0)
 - **[REAPER Quick Start](docs/user/REAPER_QUICK_START.md)** - REAPER-specific setup
 
 ### Developer Documentation

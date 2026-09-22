@@ -17,6 +17,7 @@ The markdown below is **internal / developer evidence** (build notes, design spe
 
 - **[Getting Started](user/GETTING_STARTED.md)** - Quick start guide for end users
 - **[Features Guide](user/FEATURES.md)** - Complete feature list and usage instructions
+- **[Smoke Checklist](user/SMOKE_CHECKLIST.md)** - Manual Standalone/DAW smoke (v0.8.0)
 - **[REAPER Quick Start](user/REAPER_QUICK_START.md)** - DAW-specific integration guide
 
 ### For Developers
@@ -59,6 +60,7 @@ The markdown below is **internal / developer evidence** (build notes, design spe
 | Skim the hiring site | [Home](index.html) |
 | Read the engineering case study | [Engineering](engineering.html) |
 | Use the plugin | [Getting Started](user/GETTING_STARTED.md) |
+| Run a manual Standalone/DAW smoke | [Smoke Checklist](user/SMOKE_CHECKLIST.md) |
 | Build from source | [Build Instructions](developer/BUILD.md) |
 | Build for iOS | [iOS Build Guide](developer/BUILDING-iOS.md) |
 | Understand the features | [Features Guide](user/FEATURES.md) |

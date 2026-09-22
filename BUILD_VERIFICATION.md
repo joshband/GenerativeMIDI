@@ -1,6 +1,6 @@
 # Build Verification - Submodule Migration
 
-> **Historical note:** This log records a one-time submodule migration (Oct 2025). For current build status use CI (`ci.yml`) and [STATUS.md](STATUS.md). Paths below are placeholders (`${REPO_ROOT}`), not a machine-specific checkout.
+> **Historical note:** This log records a one-time submodule migration (Oct 2025). For current build status use CI (`ci.yml`) and [STATUS.md](STATUS.md). For post-build Standalone/DAW UI smoke (manual), see [docs/user/SMOKE_CHECKLIST.md](docs/user/SMOKE_CHECKLIST.md). Paths below are placeholders (`${REPO_ROOT}`), not a machine-specific checkout.
 
 **Date**: October 18, 2025, 4:27 PM
 **Status**: ✅ **PASSED** (historical)

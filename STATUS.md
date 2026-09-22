@@ -73,7 +73,7 @@ UI + per-note emit shipped; continuous CC/PB modulation and MPE remain deferred.
 | Polyrhythm in UI | Deferred |
 | Build | CI workflow `.github/workflows/ci.yml` |
 | Tests | `ctest` (Catch2 engine tests) |
-| Docs | README, FEATURES, GETTING_STARTED, BUILD, Pages showcase |
+| Docs | README, FEATURES, GETTING_STARTED, BUILD, Pages showcase, [SMOKE_CHECKLIST](docs/user/SMOKE_CHECKLIST.md) |
 
 ## Notes
 
