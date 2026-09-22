@@ -243,3 +243,157 @@ TEST_CASE("PresetManager initializes non-zero factory presets", "[preset]")
     REQUIRE((float) brownianPtr->state.getChildWithProperty("id", "generatorType").getProperty("value")
             == Catch::Approx(5.0f));
 }
+
+namespace
+{
+    float rawParam(juce::AudioProcessorValueTreeState& apvts, const char* id)
+    {
+        auto* p = apvts.getRawParameterValue(id);
+        REQUIRE(p != nullptr);
+        return p->load();
+    }
+
+    juce::File writeTempPresetFile(const juce::String& fileName, const juce::String& contents)
+    {
+        auto dir = juce::File::getSpecialLocation(juce::File::tempDirectory)
+                       .getChildFile("GenerativeMIDIPresetTests");
+        dir.createDirectory();
+        auto file = dir.getChildFile(fileName);
+        file.replaceWithText(contents);
+        return file;
+    }
+
+    juce::String minimalValidPresetXml(const juce::String& name)
+    {
+        // APVTS state type for MinimalPresetTestProcessor is "GenerativeMIDI"
+        return juce::String()
+            + "<GenerativeMIDIPreset name=\"" + name + "\" author=\"Test\" "
+            + "category=\"Test\" description=\"round-trip\" version=\"1.0\">"
+            + "<GenerativeMIDI>"
+            + "<PARAM id=\"generatorType\" value=\"0.0\"/>"
+            + "<PARAM id=\"tempo\" value=\"120.0\"/>"
+            + "</GenerativeMIDI>"
+            + "</GenerativeMIDIPreset>";
+    }
+}
+
+TEST_CASE("PresetManager factory loadPreset round-trips key params", "[preset]")
+{
+    juce::ScopedJuceInitialiser_GUI juceInit;
+
+    MinimalPresetTestProcessor processor;
+    PresetManager manager(processor.apvts);
+
+    struct FactoryExpectation
+    {
+        const char* name;
+        int generatorType;
+    };
+
+    // Order matches initializeFactoryPresets() — indices 0..9 are always factories.
+    const FactoryExpectation expected[] = {
+        { "Euclidean Basic", 0 },
+        { "Euclidean Complex", 0 },
+        { "Brownian Drift", 5 },
+        { "Markov Melody", 1 },
+        { "L-System Fractal", 2 },
+        { "Cellular Automata", 3 },
+        { "Probabilistic Sparse", 4 },
+        { "Ratchet Groove", 0 },
+        { "Ambient Drift", 4 },
+        { "Percussive Hits", 0 },
+    };
+
+    REQUIRE(manager.getNumPresets() >= 10);
+
+    for (int i = 0; i < 10; ++i)
+    {
+        const auto& preset = manager.getPreset(i);
+        REQUIRE(preset.isFactory);
+        REQUIRE(preset.name == expected[i].name);
+        REQUIRE(manager.loadPreset(i));
+        REQUIRE(static_cast<int>(rawParam(processor.apvts, "generatorType")) == expected[i].generatorType);
+    }
+
+    // Euclidean Basic: steps / pulses / rotation
+    REQUIRE(manager.loadPreset(0));
+    REQUIRE(static_cast<int>(rawParam(processor.apvts, "euclideanSteps")) == 16);
+    REQUIRE(static_cast<int>(rawParam(processor.apvts, "euclideanPulses")) == 4);
+    REQUIRE(static_cast<int>(rawParam(processor.apvts, "euclideanRotation")) == 0);
+
+    // Euclidean Complex: rotated uneven pattern
+    REQUIRE(manager.loadPreset(1));
+    REQUIRE(static_cast<int>(rawParam(processor.apvts, "euclideanSteps")) == 23);
+    REQUIRE(static_cast<int>(rawParam(processor.apvts, "euclideanPulses")) == 7);
+    REQUIRE(static_cast<int>(rawParam(processor.apvts, "euclideanRotation")) == 3);
+
+    // Brownian Drift: stochastic fields
+    REQUIRE(manager.loadPresetByName("Brownian Drift"));
+    REQUIRE(rawParam(processor.apvts, "noteDensity") == Catch::Approx(0.55f));
+    REQUIRE(rawParam(processor.apvts, "stepSize") == Catch::Approx(0.15f));
+    REQUIRE(rawParam(processor.apvts, "momentum") == Catch::Approx(0.85f));
+}
+
+TEST_CASE("PresetManager importPreset rejects unsafe or invalid files", "[preset][import]")
+{
+    juce::ScopedJuceInitialiser_GUI juceInit;
+
+    MinimalPresetTestProcessor processor;
+    PresetManager manager(processor.apvts);
+    const int baselineCount = manager.getNumPresets();
+
+    SECTION("oversized file")
+    {
+        auto dir = juce::File::getSpecialLocation(juce::File::tempDirectory)
+                       .getChildFile("GenerativeMIDIPresetTests");
+        dir.createDirectory();
+        auto huge = dir.getChildFile("oversized.gmpreset");
+        // Just over the 1 MiB import hard limit
+        juce::MemoryBlock blob(1024 * 1024 + 8, true);
+        REQUIRE(huge.replaceWithData(blob.getData(), blob.getSize()));
+        REQUIRE_FALSE(manager.importPreset(huge));
+        REQUIRE(manager.getNumPresets() == baselineCount);
+        huge.deleteFile();
+    }
+
+    SECTION("path traversal name")
+    {
+        auto file = writeTempPresetFile("traversal.gmpreset", minimalValidPresetXml("../evil"));
+        REQUIRE_FALSE(manager.importPreset(file));
+        REQUIRE(manager.getNumPresets() == baselineCount);
+        file.deleteFile();
+    }
+
+    SECTION("malformed XML")
+    {
+        auto file = writeTempPresetFile("malformed.gmpreset", "not xml at all {{{");
+        REQUIRE_FALSE(manager.importPreset(file));
+        REQUIRE(manager.getNumPresets() == baselineCount);
+        file.deleteFile();
+    }
+
+    SECTION("wrong root tag")
+    {
+        const juce::String xml =
+            "<WrongRoot name=\"Sneaky\" author=\"Test\" category=\"Test\" description=\"x\">"
+            "<GenerativeMIDI>"
+            "<PARAM id=\"generatorType\" value=\"0.0\"/>"
+            "</GenerativeMIDI>"
+            "</WrongRoot>";
+        auto file = writeTempPresetFile("wrongroot.gmpreset", xml);
+        REQUIRE_FALSE(manager.importPreset(file));
+        REQUIRE(manager.getNumPresets() == baselineCount);
+        file.deleteFile();
+    }
+
+    SECTION("missing state child fails closed")
+    {
+        const juce::String xml =
+            "<GenerativeMIDIPreset name=\"NoState\" author=\"Test\" "
+            "category=\"Test\" description=\"x\" version=\"1.0\"/>";
+        auto file = writeTempPresetFile("nostate.gmpreset", xml);
+        REQUIRE_FALSE(manager.importPreset(file));
+        REQUIRE(manager.getNumPresets() == baselineCount);
+        file.deleteFile();
+    }
+}
