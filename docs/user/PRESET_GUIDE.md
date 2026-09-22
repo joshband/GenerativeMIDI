@@ -4,7 +4,7 @@
 
 The preset system allows you to save, load, and share your favorite configurations.
 
-> Factory presets are temporarily disabled in code pending a final enable flip; helpers are remapped to the live **9-generator** indices. Polyrhythm is not a selectable category in the current editor.
+> **10 factory presets** ship with the plugin (Euclidean, Brownian, Markov, L-System, Cellular, Probabilistic, ratchet, ambient, percussive). They use the live **9-generator** APVTS indices. Polyrhythm is not a selectable category in the current editor.
 
 ---
 
@@ -172,12 +172,12 @@ All parameter values are stored as normalized 0.0-1.0 values.
 
 ---
 
-## Known Limitations (v0.6.1)
+## Known Limitations (v0.8.0)
 
-- **No Factory Presets**: Factory presets temporarily disabled pending refactor
 - **No Preset Preview**: Can't audition presets before loading
 - **No Preset Tags**: Only one category per preset (no multiple tags)
 - **No Preset Search**: Must browse or filter by category
+- **Factory set is focused**: 10 built-ins covering the live 9 generators (not a huge library)
 
 These will be addressed in future updates!
 
@@ -187,12 +187,12 @@ These will be addressed in future updates!
 
 Planned for upcoming versions:
 
-- **Factory Presets** (v0.6.2): 20+ included presets showcasing all features
-- **Preset Preview** (v0.7.0): Audition presets before loading
-- **Preset Tags** (v0.7.0): Multiple tags per preset for better organization
-- **Preset Search** (v0.7.0): Search by name, author, description, or tags
-- **Preset Banks** (v0.8.0): Group related presets into banks
-- **Randomize/Mutate** (v0.8.0): Generate variations of existing presets
+- **More Factory Presets**: Expand the built-in library beyond the starter set
+- **Preset Preview**: Audition presets before loading
+- **Preset Tags**: Multiple tags per preset for better organization
+- **Preset Search**: Search by name, author, description, or tags
+- **Preset Banks**: Group related presets into banks
+- **Randomize/Mutate**: Generate variations of existing presets
 
 ---
 
@@ -204,5 +204,5 @@ For development questions, see [docs/developer/](../developer/).
 
 ---
 
-**Last Updated**: 2025-10-18
-**Version**: v0.6.1
+**Last Updated**: 2026-09-22
+**Version**: v0.8.0

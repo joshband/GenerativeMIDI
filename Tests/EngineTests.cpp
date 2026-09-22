@@ -134,3 +134,112 @@ TEST_CASE("StochasticEngine respects density extremes", "[stochastic]")
     }
     REQUIRE(triggers == 0);
 }
+
+// ---------------------------------------------------------------------------
+// PresetManager factory smoke (minimal APVTS + stub processor)
+// ---------------------------------------------------------------------------
+
+#include "Core/PresetManager.h"
+#include <juce_audio_processors/juce_audio_processors.h>
+
+namespace
+{
+    class MinimalPresetTestProcessor : public juce::AudioProcessor
+    {
+    public:
+        MinimalPresetTestProcessor()
+            : juce::AudioProcessor(BusesProperties()),
+              apvts(*this, nullptr, juce::Identifier("GenerativeMIDI"), createLayout())
+        {
+        }
+
+        static juce::AudioProcessorValueTreeState::ParameterLayout createLayout()
+        {
+            std::vector<std::unique_ptr<juce::RangedAudioParameter>> params;
+            params.push_back(std::make_unique<juce::AudioParameterFloat>("tempo", "Tempo", 20.0f, 400.0f, 120.0f));
+            params.push_back(std::make_unique<juce::AudioParameterInt>("euclideanSteps", "Euclidean Steps", 1, 64, 16));
+            params.push_back(std::make_unique<juce::AudioParameterInt>("euclideanPulses", "Euclidean Pulses", 0, 64, 4));
+            params.push_back(std::make_unique<juce::AudioParameterInt>("euclideanRotation", "Euclidean Rotation", 0, 64, 0));
+            params.push_back(std::make_unique<juce::AudioParameterChoice>(
+                "generatorType", "Generator Type",
+                juce::StringArray{"Euclidean", "Markov", "L-System", "Cellular", "Probabilistic",
+                                  "Brownian", "Perlin Noise", "Drunk Walk", "Lorenz"},
+                0));
+            params.push_back(std::make_unique<juce::AudioParameterFloat>("noteDensity", "Note Density", 0.0f, 1.0f, 0.5f));
+            params.push_back(std::make_unique<juce::AudioParameterFloat>("velocityMin", "Velocity Min", 0.0f, 1.0f, 0.5f));
+            params.push_back(std::make_unique<juce::AudioParameterFloat>("velocityMax", "Velocity Max", 0.0f, 1.0f, 1.0f));
+            params.push_back(std::make_unique<juce::AudioParameterInt>("pitchMin", "Pitch Min", 0, 127, 48));
+            params.push_back(std::make_unique<juce::AudioParameterInt>("pitchMax", "Pitch Max", 0, 127, 84));
+            params.push_back(std::make_unique<juce::AudioParameterFloat>("gateLength", "Gate Length", 0.01f, 2.0f, 0.8f));
+            params.push_back(std::make_unique<juce::AudioParameterBool>("legatoMode", "Legato Mode", false));
+            params.push_back(std::make_unique<juce::AudioParameterInt>("ratchetCount", "Ratchet Count", 1, 16, 1));
+            params.push_back(std::make_unique<juce::AudioParameterFloat>("ratchetProbability", "Ratchet Probability", 0.0f, 1.0f, 0.0f));
+            params.push_back(std::make_unique<juce::AudioParameterFloat>("ratchetDecay", "Ratchet Decay", 0.0f, 1.0f, 0.5f));
+            params.push_back(std::make_unique<juce::AudioParameterFloat>("stepSize", "Step Size", 0.01f, 1.0f, 0.1f));
+            params.push_back(std::make_unique<juce::AudioParameterFloat>("momentum", "Momentum", 0.0f, 1.0f, 0.9f));
+            return { params.begin(), params.end() };
+        }
+
+        const juce::String getName() const override { return "MinimalPresetTest"; }
+        void prepareToPlay(double, int) override {}
+        void releaseResources() override {}
+        void processBlock(juce::AudioBuffer<float>&, juce::MidiBuffer&) override {}
+        double getTailLengthSeconds() const override { return 0.0; }
+        bool acceptsMidi() const override { return true; }
+        bool producesMidi() const override { return true; }
+        bool isMidiEffect() const override { return true; }
+        int getNumPrograms() override { return 1; }
+        int getCurrentProgram() override { return 0; }
+        void setCurrentProgram(int) override {}
+        const juce::String getProgramName(int) override { return {}; }
+        void changeProgramName(int, const juce::String&) override {}
+        void getStateInformation(juce::MemoryBlock&) override {}
+        void setStateInformation(const void*, int) override {}
+        bool hasEditor() const override { return false; }
+        juce::AudioProcessorEditor* createEditor() override { return nullptr; }
+
+        juce::AudioProcessorValueTreeState apvts;
+    };
+}
+
+TEST_CASE("PresetManager initializes non-zero factory presets", "[preset]")
+{
+    juce::ScopedJuceInitialiser_GUI juceInit;
+
+    MinimalPresetTestProcessor processor;
+    PresetManager manager(processor.apvts);
+
+    int factoryCount = 0;
+    for (int i = 0; i < manager.getNumPresets(); ++i)
+    {
+        if (manager.getPreset(i).isFactory)
+            ++factoryCount;
+    }
+
+    REQUIRE(factoryCount == 10);
+    REQUIRE(manager.getNumPresets() >= 10);
+
+    // Load Euclidean Basic and confirm generatorType lands on index 0
+    REQUIRE(manager.loadPresetByName("Euclidean Basic"));
+    auto* gen = processor.apvts.getRawParameterValue("generatorType");
+    REQUIRE(gen != nullptr);
+    REQUIRE(static_cast<int>(gen->load()) == 0);
+
+    // Load Brownian Drift and confirm generatorType index 5
+    REQUIRE(manager.loadPresetByName("Brownian Drift"));
+    REQUIRE(static_cast<int>(gen->load()) == 5);
+
+    // Factory ValueTrees must carry PARAM children with remapped IDs
+    const PresetManager::Preset* brownianPtr = nullptr;
+    for (int i = 0; i < manager.getNumPresets(); ++i)
+        if (manager.getPreset(i).name == "Brownian Drift")
+            brownianPtr = &manager.getPreset(i);
+    REQUIRE(brownianPtr != nullptr);
+    REQUIRE(brownianPtr->isFactory);
+    REQUIRE(brownianPtr->state.isValid());
+    REQUIRE(brownianPtr->state.getNumChildren() > 0);
+    REQUIRE(brownianPtr->state.getChildWithProperty("id", "generatorType").isValid());
+    REQUIRE(brownianPtr->state.getChildWithProperty("id", "stepSize").isValid());
+    REQUIRE((float) brownianPtr->state.getChildWithProperty("id", "generatorType").getProperty("value")
+            == Catch::Approx(5.0f));
+}

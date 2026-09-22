@@ -108,6 +108,7 @@ add_executable(GenerativeMIDITests
     Tests/EngineTests.cpp
     Source/Core/EuclideanEngine.cpp
     Source/Core/StochasticEngine.cpp
+    Source/Core/PresetManager.cpp
     Source/DSP/ClockManager.cpp
 )
 

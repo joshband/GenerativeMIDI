@@ -95,7 +95,7 @@ private:
 
     // Factory preset creation helpers (indices match GeneratorTypeMapping / 9-item UI)
     juce::ValueTree makeFactoryParamTree() const;
-    void setFactoryParam(juce::ValueTree& state, const juce::String& id, float normalisedValue) const;
+    void setFactoryParam(juce::ValueTree& state, const juce::String& id, float denormalisedValue) const;
     Preset createEuclideanBasicPreset();
     Preset createEuclideanComplexPreset();
     Preset createBrownianPreset();
