@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 160" role="img" aria-labelledby="spTitle spDesc">
   <title id="spTitle">Illustrative signal path</title>
   <desc id="spDesc">Host to format wrapper to processor to engines to MIDI out</desc>
@@ -7,7 +8,6 @@
       <path d="M0,0 L6,3 L0,6 Z" fill="#4a8ca8"/>
     </marker>
   </defs>
-  <!-- boxes -->
   <g font-family="Karla, Segoe UI, sans-serif" font-size="13" text-anchor="middle">
     <rect x="20" y="48" width="140" height="64" rx="2" fill="#141a1f" stroke="#c9954a" stroke-width="1.5"/>
     <text x="90" y="78" fill="#e8d5b0">DAW Host</text>
@@ -23,13 +23,13 @@
 
     <rect x="390" y="48" width="160" height="64" rx="2" fill="#141a1f" stroke="#c9954a" stroke-width="1.5"/>
     <text x="470" y="78" fill="#e8d5b0">PluginProcessor</text>
-    <text x="470" y="96" fill="#8a939c" font-size="11">APVTS · lifecycle</text>
+    <text x="470" y="96" fill="#8a939c" font-size="11">APVTS / lifecycle</text>
 
     <line x1="550" y1="80" x2="588" y2="80" stroke="#4a8ca8" stroke-width="1.5" marker-end="url(#arrow)"/>
 
     <rect x="590" y="48" width="140" height="64" rx="2" fill="#141a1f" stroke="#c9954a" stroke-width="1.5"/>
     <text x="660" y="78" fill="#e8d5b0">Core engines</text>
-    <text x="660" y="96" fill="#8a939c" font-size="11">Generate · schedule</text>
+    <text x="660" y="96" fill="#8a939c" font-size="11">Generate / schedule</text>
 
     <line x1="730" y1="80" x2="768" y2="80" stroke="#4a8ca8" stroke-width="1.5" marker-end="url(#arrow)"/>
 
