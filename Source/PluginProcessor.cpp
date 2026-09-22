@@ -121,7 +121,8 @@ juce::AudioProcessorValueTreeState::ParameterLayout GenerativeMIDIProcessor::cre
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
         PARAM_RATCHET_DECAY, "Ratchet Decay", 0.0f, 1.0f, 0.5f)); // 0-100%, default 50%
 
-    // Stochastic/Chaos parameters
+    // Legacy stochastic subtype (unused): top-level PARAM_GENERATOR_TYPE is source of truth.
+    // Kept so older sessions that stored stochasticType still load without breaking the layout.
     params.push_back(std::make_unique<juce::AudioParameterChoice>(
         PARAM_STOCHASTIC_TYPE, "Stochastic Type",
         juce::StringArray{"Brownian", "Perlin", "Drunk Walk", "Lorenz"},
@@ -253,22 +254,7 @@ void GenerativeMIDIProcessor::prepareToPlay(double sampleRate, int samplesPerBlo
     algorithmicEngine.setPitchRange(pitchMin, pitchMax);
     algorithmicEngine.setVelocityRange(velocityMin, velocityMax);
 
-    // Initialize polyrhythm engine with a default pattern
-    if (polyrhythmEngine.getNumLayers() == 0)
-    {
-        int layerIdx = polyrhythmEngine.addLayer();
-        auto* layer = polyrhythmEngine.getLayer(layerIdx);
-        if (layer)
-        {
-            // Create a simple pattern
-            for (int i = 0; i < layer->length; ++i)
-            {
-                layer->pattern[i] = (i % 4 == 0); // Every 4 steps
-                layer->velocities[i] = 0.8f;
-                layer->pitches[i] = 60 + (i % 12); // C major scale-ish
-            }
-        }
-    }
+    // PolyrhythmEngine retained for a future feature branch; not prepared on the live path.
 
     clockManager.start();
 }

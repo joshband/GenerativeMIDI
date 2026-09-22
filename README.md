@@ -21,34 +21,16 @@ Repository → **Settings** → **Pages** → Build and deployment → Source: *
 
 ### Installation (macOS)
 
-1. **Download the latest release:**
-   - Go to [Releases](https://github.com/joshband/GenerativeMIDI/releases/latest)
-   - Download `GenerativeMIDI-v1.0.0-macOS.dmg`
+1. **Prefer building from source** (product status is **v0.8.0**; packaged DMGs may lag — see [STATUS.md](STATUS.md)):
+   - Follow [docs/developer/BUILD.md](docs/developer/BUILD.md)
+   - Or grab whatever assets appear on [Releases](https://github.com/joshband/GenerativeMIDI/releases) and copy:
+     - `Generative MIDI.component` → `~/Library/Audio/Plug-Ins/Components/`
+     - `Generative MIDI.vst3` → `~/Library/Audio/Plug-Ins/VST3/`
 
-2. **Mount the DMG:**
-   - Double-click the downloaded DMG file
-   - The installer will open
+2. **Run standalone (after a local build):**
+   - Open the Standalone target under `build/GenerativeMIDI_artefacts/`
 
-3. **Install plugins:**
-
-   **Option A - Terminal (recommended):**
-   ```bash
-   cd "/Volumes/Generative MIDI v1.0.0"
-   cp -R "Generative MIDI.component" ~/Library/Audio/Plug-Ins/Components/
-   cp -R "Generative MIDI.vst3" ~/Library/Audio/Plug-Ins/VST3/
-   ```
-
-   **Option B - Manual:**
-   - Open Finder and press `Cmd+Shift+G`
-   - Navigate to `~/Library/Audio/Plug-Ins/`
-   - Drag `Generative MIDI.component` to the `Components` folder
-   - Drag `Generative MIDI.vst3` to the `VST3` folder
-
-4. **Run standalone app (optional):**
-   - Double-click `Generative MIDI.app` in the DMG
-   - Or copy it to your Applications folder
-
-5. **Verify installation (AU only):**
+3. **Verify installation (AU only):**
    ```bash
    auval -v aumi Gmid Osrc
    ```

@@ -1,8 +1,10 @@
 # Preset System Guide
 
-**GenerativeMIDI v0.6.1**
+**GenerativeMIDI v0.8.0**
 
 The preset system allows you to save, load, and share your favorite configurations.
+
+> Factory presets are temporarily disabled in code pending a final enable flip; helpers are remapped to the live **9-generator** indices. Polyrhythm is not a selectable category in the current editor.
 
 ---
 
@@ -16,7 +18,7 @@ The preset system allows you to save, load, and share your favorite configuratio
 4. **Fill in details**:
    - **Name**: Give your preset a descriptive name (e.g., "Ambient Drone")
    - **Author**: Your name (pre-filled with system username)
-   - **Category**: Choose or type a category (Euclidean, Polyrhythm, Algorithmic, Rhythmic, Ambient, Experimental)
+   - **Category**: Choose or type a category (Euclidean, Algorithmic, Stochastic, Rhythmic, Ambient, Experimental)
    - **Description**: Brief description of what the preset does
 5. **Confirm**: Click OK to save
 
@@ -49,7 +51,7 @@ Your preset is now saved to disk and will appear in the preset list!
 Filter presets by category using the dropdown at the top of the preset browser:
 - **All** - Show all presets
 - **Euclidean** - Euclidean rhythm patterns
-- **Polyrhythm** - Multi-layer polyrhythmic sequences
+- **Stochastic** - Brownian / Perlin / Drunk Walk / Lorenz walks
 - **Algorithmic** - Markov/L-System/Cellular automata
 - **Rhythmic** - Drum and percussion patterns
 - **Ambient** - Slow, sparse, atmospheric

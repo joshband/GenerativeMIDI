@@ -190,7 +190,7 @@ void PresetManager::initializeFactoryPresets()
 {
     presets.add(createEuclideanBasicPreset());
     presets.add(createEuclideanComplexPreset());
-    presets.add(createPolyrhythmPreset());
+    presets.add(createBrownianPreset());
     presets.add(createMarkovMelodyPreset());
     presets.add(createLSystemPreset());
     presets.add(createCellularPreset());
@@ -320,13 +320,13 @@ juce::File PresetManager::getDefaultPresetDirectory() const
 }
 
 // Factory Preset Implementations
+// Generator indices: 0 Euclidean, 1–4 algorithmic, 5–8 stochastic (see GeneratorTypeMapping.h).
+// Values written as APVTS normalised [0,1] into PARAM children (compatible with replaceState).
 
-PresetManager::Preset PresetManager::createEuclideanBasicPreset()
+juce::ValueTree PresetManager::makeFactoryParamTree() const
 {
-    // Create a simple value tree with parameter values
     juce::ValueTree state(valueTreeState.state.getType());
 
-    // Copy parameter structure from APVTS
     for (auto* param : valueTreeState.processor.getParameters())
     {
         if (auto* rangedParam = dynamic_cast<juce::RangedAudioParameter*>(param))
@@ -338,18 +338,30 @@ PresetManager::Preset PresetManager::createEuclideanBasicPreset()
         }
     }
 
-    // Now set specific values for this preset
-    state.getChildWithProperty("id", "generatorType").setProperty("value", 0.0f, nullptr);  // Euclidean
-    state.getChildWithProperty("id", "tempo").setProperty("value", 0.5f, nullptr);  // 120 BPM (normalized)
-    state.getChildWithProperty("id", "euclideanSteps").setProperty("value", 0.238f, nullptr);  // 16 steps (16/64 = 0.25)
-    state.getChildWithProperty("id", "euclideanPulses").setProperty("value", 0.0625f, nullptr);  // 4 pulses (4/64 ≈ 0.0625)
-    state.getChildWithProperty("id", "euclideanRotation").setProperty("value", 0.0f, nullptr);  // 0 rotation
-    state.getChildWithProperty("id", "velocityMin").setProperty("value", 0.63f, nullptr);  // ~80/127
-    state.getChildWithProperty("id", "velocityMax").setProperty("value", 0.79f, nullptr);  // ~100/127
-    state.getChildWithProperty("id", "pitchMin").setProperty("value", 0.472f, nullptr);  // 60/127
-    state.getChildWithProperty("id", "pitchMax").setProperty("value", 0.567f, nullptr);  // 72/127
-    state.getChildWithProperty("id", "gateLength").setProperty("value", 0.8f, nullptr);
-    state.getChildWithProperty("id", "legatoMode").setProperty("value", 0.0f, nullptr);
+    return state;
+}
+
+void PresetManager::setFactoryParam(juce::ValueTree& state, const juce::String& id, float normalisedValue) const
+{
+    auto child = state.getChildWithProperty("id", id);
+    if (child.isValid())
+        child.setProperty("value", juce::jlimit(0.0f, 1.0f, normalisedValue), nullptr);
+}
+
+PresetManager::Preset PresetManager::createEuclideanBasicPreset()
+{
+    auto state = makeFactoryParamTree();
+    setFactoryParam(state, "generatorType", 0.0f / 8.0f); // index 0 of 9
+    setFactoryParam(state, "tempo", (120.0f - 20.0f) / (400.0f - 20.0f));
+    setFactoryParam(state, "euclideanSteps", (16.0f - 1.0f) / (64.0f - 1.0f));
+    setFactoryParam(state, "euclideanPulses", 4.0f / 64.0f);
+    setFactoryParam(state, "euclideanRotation", 0.0f);
+    setFactoryParam(state, "velocityMin", 0.63f);
+    setFactoryParam(state, "velocityMax", 0.79f);
+    setFactoryParam(state, "pitchMin", 60.0f / 127.0f);
+    setFactoryParam(state, "pitchMax", 72.0f / 127.0f);
+    setFactoryParam(state, "gateLength", (0.8f - 0.01f) / (2.0f - 0.01f));
+    setFactoryParam(state, "legatoMode", 0.0f);
 
     return Preset(
         "Euclidean Basic",
@@ -363,18 +375,17 @@ PresetManager::Preset PresetManager::createEuclideanBasicPreset()
 
 PresetManager::Preset PresetManager::createEuclideanComplexPreset()
 {
-    juce::ValueTree state = captureCurrentState();
-
-    state.setProperty("generatorType", 0, nullptr);
-    state.setProperty("tempo", 140.0f, nullptr);
-    state.setProperty("steps", 23, nullptr);
-    state.setProperty("pulses", 7, nullptr);
-    state.setProperty("rotation", 3, nullptr);
-    state.setProperty("velocityMin", 60, nullptr);
-    state.setProperty("velocityMax", 110, nullptr);
-    state.setProperty("pitchMin", 48, nullptr);
-    state.setProperty("pitchMax", 84, nullptr);
-    state.setProperty("gateLength", 0.5f, nullptr);
+    auto state = makeFactoryParamTree();
+    setFactoryParam(state, "generatorType", 0.0f / 8.0f);
+    setFactoryParam(state, "tempo", (140.0f - 20.0f) / (400.0f - 20.0f));
+    setFactoryParam(state, "euclideanSteps", (23.0f - 1.0f) / (64.0f - 1.0f));
+    setFactoryParam(state, "euclideanPulses", 7.0f / 64.0f);
+    setFactoryParam(state, "euclideanRotation", 3.0f / 64.0f);
+    setFactoryParam(state, "velocityMin", 60.0f / 127.0f);
+    setFactoryParam(state, "velocityMax", 110.0f / 127.0f);
+    setFactoryParam(state, "pitchMin", 48.0f / 127.0f);
+    setFactoryParam(state, "pitchMax", 84.0f / 127.0f);
+    setFactoryParam(state, "gateLength", (0.5f - 0.01f) / (2.0f - 0.01f));
 
     return Preset(
         "Euclidean Complex",
@@ -386,22 +397,24 @@ PresetManager::Preset PresetManager::createEuclideanComplexPreset()
     );
 }
 
-PresetManager::Preset PresetManager::createPolyrhythmPreset()
+PresetManager::Preset PresetManager::createBrownianPreset()
 {
-    juce::ValueTree state = captureCurrentState();
-
-    state.setProperty("generatorType", 1, nullptr);  // Polyrhythm
-    state.setProperty("tempo", 130.0f, nullptr);
-    state.setProperty("velocityMin", 70, nullptr);
-    state.setProperty("velocityMax", 105, nullptr);
-    state.setProperty("pitchMin", 36, nullptr);
-    state.setProperty("pitchMax", 96, nullptr);
+    auto state = makeFactoryParamTree();
+    setFactoryParam(state, "generatorType", 5.0f / 8.0f); // Brownian
+    setFactoryParam(state, "tempo", (130.0f - 20.0f) / (400.0f - 20.0f));
+    setFactoryParam(state, "noteDensity", 0.55f);
+    setFactoryParam(state, "stepSize", (0.15f - 0.01f) / (1.0f - 0.01f));
+    setFactoryParam(state, "momentum", 0.85f);
+    setFactoryParam(state, "velocityMin", 70.0f / 127.0f);
+    setFactoryParam(state, "velocityMax", 105.0f / 127.0f);
+    setFactoryParam(state, "pitchMin", 36.0f / 127.0f);
+    setFactoryParam(state, "pitchMax", 96.0f / 127.0f);
 
     return Preset(
-        "Polyrhythm Layers",
+        "Brownian Drift",
         "GenerativeMIDI",
-        "Polyrhythm",
-        "Multi-layered polyrhythmic sequencing for complex rhythmic textures",
+        "Stochastic",
+        "Brownian motion pitch walks for restless stochastic textures",
         state,
         true
     );
@@ -409,16 +422,15 @@ PresetManager::Preset PresetManager::createPolyrhythmPreset()
 
 PresetManager::Preset PresetManager::createMarkovMelodyPreset()
 {
-    juce::ValueTree state = captureCurrentState();
-
-    state.setProperty("generatorType", 2, nullptr);  // Algorithmic
-    state.setProperty("tempo", 95.0f, nullptr);
-    state.setProperty("density", 0.65f, nullptr);
-    state.setProperty("velocityMin", 75, nullptr);
-    state.setProperty("velocityMax", 95, nullptr);
-    state.setProperty("pitchMin", 60, nullptr);
-    state.setProperty("pitchMax", 84, nullptr);
-    state.setProperty("gateLength", 0.7f, nullptr);
+    auto state = makeFactoryParamTree();
+    setFactoryParam(state, "generatorType", 1.0f / 8.0f); // Markov
+    setFactoryParam(state, "tempo", (95.0f - 20.0f) / (400.0f - 20.0f));
+    setFactoryParam(state, "noteDensity", 0.65f);
+    setFactoryParam(state, "velocityMin", 75.0f / 127.0f);
+    setFactoryParam(state, "velocityMax", 95.0f / 127.0f);
+    setFactoryParam(state, "pitchMin", 60.0f / 127.0f);
+    setFactoryParam(state, "pitchMax", 84.0f / 127.0f);
+    setFactoryParam(state, "gateLength", (0.7f - 0.01f) / (2.0f - 0.01f));
 
     return Preset(
         "Markov Melody",
@@ -432,15 +444,14 @@ PresetManager::Preset PresetManager::createMarkovMelodyPreset()
 
 PresetManager::Preset PresetManager::createLSystemPreset()
 {
-    juce::ValueTree state = captureCurrentState();
-
-    state.setProperty("generatorType", 2, nullptr);
-    state.setProperty("tempo", 110.0f, nullptr);
-    state.setProperty("density", 0.5f, nullptr);
-    state.setProperty("velocityMin", 65, nullptr);
-    state.setProperty("velocityMax", 90, nullptr);
-    state.setProperty("pitchMin", 48, nullptr);
-    state.setProperty("pitchMax", 96, nullptr);
+    auto state = makeFactoryParamTree();
+    setFactoryParam(state, "generatorType", 2.0f / 8.0f); // L-System
+    setFactoryParam(state, "tempo", (110.0f - 20.0f) / (400.0f - 20.0f));
+    setFactoryParam(state, "noteDensity", 0.5f);
+    setFactoryParam(state, "velocityMin", 65.0f / 127.0f);
+    setFactoryParam(state, "velocityMax", 90.0f / 127.0f);
+    setFactoryParam(state, "pitchMin", 48.0f / 127.0f);
+    setFactoryParam(state, "pitchMax", 96.0f / 127.0f);
 
     return Preset(
         "L-System Fractal",
@@ -454,15 +465,14 @@ PresetManager::Preset PresetManager::createLSystemPreset()
 
 PresetManager::Preset PresetManager::createCellularPreset()
 {
-    juce::ValueTree state = captureCurrentState();
-
-    state.setProperty("generatorType", 2, nullptr);
-    state.setProperty("tempo", 125.0f, nullptr);
-    state.setProperty("density", 0.45f, nullptr);
-    state.setProperty("velocityMin", 70, nullptr);
-    state.setProperty("velocityMax", 100, nullptr);
-    state.setProperty("pitchMin", 36, nullptr);
-    state.setProperty("pitchMax", 108, nullptr);
+    auto state = makeFactoryParamTree();
+    setFactoryParam(state, "generatorType", 3.0f / 8.0f); // Cellular
+    setFactoryParam(state, "tempo", (125.0f - 20.0f) / (400.0f - 20.0f));
+    setFactoryParam(state, "noteDensity", 0.45f);
+    setFactoryParam(state, "velocityMin", 70.0f / 127.0f);
+    setFactoryParam(state, "velocityMax", 100.0f / 127.0f);
+    setFactoryParam(state, "pitchMin", 36.0f / 127.0f);
+    setFactoryParam(state, "pitchMax", 108.0f / 127.0f);
 
     return Preset(
         "Cellular Automata",
@@ -476,16 +486,15 @@ PresetManager::Preset PresetManager::createCellularPreset()
 
 PresetManager::Preset PresetManager::createProbabilisticPreset()
 {
-    juce::ValueTree state = captureCurrentState();
-
-    state.setProperty("generatorType", 2, nullptr);
-    state.setProperty("tempo", 100.0f, nullptr);
-    state.setProperty("density", 0.35f, nullptr);
-    state.setProperty("velocityMin", 50, nullptr);
-    state.setProperty("velocityMax", 80, nullptr);
-    state.setProperty("pitchMin", 60, nullptr);
-    state.setProperty("pitchMax", 96, nullptr);
-    state.setProperty("gateLength", 0.9f, nullptr);
+    auto state = makeFactoryParamTree();
+    setFactoryParam(state, "generatorType", 4.0f / 8.0f); // Probabilistic
+    setFactoryParam(state, "tempo", (100.0f - 20.0f) / (400.0f - 20.0f));
+    setFactoryParam(state, "noteDensity", 0.35f);
+    setFactoryParam(state, "velocityMin", 50.0f / 127.0f);
+    setFactoryParam(state, "velocityMax", 80.0f / 127.0f);
+    setFactoryParam(state, "pitchMin", 60.0f / 127.0f);
+    setFactoryParam(state, "pitchMax", 96.0f / 127.0f);
+    setFactoryParam(state, "gateLength", (0.9f - 0.01f) / (2.0f - 0.01f));
 
     return Preset(
         "Probabilistic Sparse",
@@ -499,19 +508,18 @@ PresetManager::Preset PresetManager::createProbabilisticPreset()
 
 PresetManager::Preset PresetManager::createRatchetGroovePreset()
 {
-    juce::ValueTree state = captureCurrentState();
-
-    state.setProperty("generatorType", 0, nullptr);
-    state.setProperty("tempo", 128.0f, nullptr);
-    state.setProperty("steps", 16, nullptr);
-    state.setProperty("pulses", 6, nullptr);
-    state.setProperty("rotation", 2, nullptr);
-    state.setProperty("velocityMin", 85, nullptr);
-    state.setProperty("velocityMax", 115, nullptr);
-    state.setProperty("ratchetCount", 4, nullptr);
-    state.setProperty("ratchetProbability", 0.4f, nullptr);
-    state.setProperty("ratchetDecay", 0.6f, nullptr);
-    state.setProperty("gateLength", 0.3f, nullptr);
+    auto state = makeFactoryParamTree();
+    setFactoryParam(state, "generatorType", 0.0f / 8.0f);
+    setFactoryParam(state, "tempo", (128.0f - 20.0f) / (400.0f - 20.0f));
+    setFactoryParam(state, "euclideanSteps", (16.0f - 1.0f) / (64.0f - 1.0f));
+    setFactoryParam(state, "euclideanPulses", 6.0f / 64.0f);
+    setFactoryParam(state, "euclideanRotation", 2.0f / 64.0f);
+    setFactoryParam(state, "velocityMin", 85.0f / 127.0f);
+    setFactoryParam(state, "velocityMax", 115.0f / 127.0f);
+    setFactoryParam(state, "ratchetCount", (4.0f - 1.0f) / (16.0f - 1.0f));
+    setFactoryParam(state, "ratchetProbability", 0.4f);
+    setFactoryParam(state, "ratchetDecay", 0.6f);
+    setFactoryParam(state, "gateLength", (0.3f - 0.01f) / (2.0f - 0.01f));
 
     return Preset(
         "Ratchet Groove",
@@ -525,17 +533,16 @@ PresetManager::Preset PresetManager::createRatchetGroovePreset()
 
 PresetManager::Preset PresetManager::createAmbientPreset()
 {
-    juce::ValueTree state = captureCurrentState();
-
-    state.setProperty("generatorType", 2, nullptr);
-    state.setProperty("tempo", 60.0f, nullptr);
-    state.setProperty("density", 0.2f, nullptr);
-    state.setProperty("velocityMin", 40, nullptr);
-    state.setProperty("velocityMax", 65, nullptr);
-    state.setProperty("pitchMin", 48, nullptr);
-    state.setProperty("pitchMax", 84, nullptr);
-    state.setProperty("gateLength", 1.5f, nullptr);
-    state.setProperty("legatoMode", true, nullptr);
+    auto state = makeFactoryParamTree();
+    setFactoryParam(state, "generatorType", 4.0f / 8.0f); // Probabilistic sparse
+    setFactoryParam(state, "tempo", (60.0f - 20.0f) / (400.0f - 20.0f));
+    setFactoryParam(state, "noteDensity", 0.2f);
+    setFactoryParam(state, "velocityMin", 40.0f / 127.0f);
+    setFactoryParam(state, "velocityMax", 65.0f / 127.0f);
+    setFactoryParam(state, "pitchMin", 48.0f / 127.0f);
+    setFactoryParam(state, "pitchMax", 84.0f / 127.0f);
+    setFactoryParam(state, "gateLength", (1.5f - 0.01f) / (2.0f - 0.01f));
+    setFactoryParam(state, "legatoMode", 1.0f);
 
     return Preset(
         "Ambient Drift",
@@ -549,20 +556,19 @@ PresetManager::Preset PresetManager::createAmbientPreset()
 
 PresetManager::Preset PresetManager::createPercussivePreset()
 {
-    juce::ValueTree state = captureCurrentState();
-
-    state.setProperty("generatorType", 0, nullptr);
-    state.setProperty("tempo", 145.0f, nullptr);
-    state.setProperty("steps", 32, nullptr);
-    state.setProperty("pulses", 11, nullptr);
-    state.setProperty("rotation", 0, nullptr);
-    state.setProperty("velocityMin", 95, nullptr);
-    state.setProperty("velocityMax", 127, nullptr);
-    state.setProperty("pitchMin", 36, nullptr);
-    state.setProperty("pitchMax", 48, nullptr);
-    state.setProperty("gateLength", 0.1f, nullptr);
-    state.setProperty("ratchetCount", 2, nullptr);
-    state.setProperty("ratchetProbability", 0.25f, nullptr);
+    auto state = makeFactoryParamTree();
+    setFactoryParam(state, "generatorType", 0.0f / 8.0f);
+    setFactoryParam(state, "tempo", (145.0f - 20.0f) / (400.0f - 20.0f));
+    setFactoryParam(state, "euclideanSteps", (32.0f - 1.0f) / (64.0f - 1.0f));
+    setFactoryParam(state, "euclideanPulses", 11.0f / 64.0f);
+    setFactoryParam(state, "euclideanRotation", 0.0f);
+    setFactoryParam(state, "velocityMin", 95.0f / 127.0f);
+    setFactoryParam(state, "velocityMax", 1.0f);
+    setFactoryParam(state, "pitchMin", 36.0f / 127.0f);
+    setFactoryParam(state, "pitchMax", 48.0f / 127.0f);
+    setFactoryParam(state, "gateLength", (0.1f - 0.01f) / (2.0f - 0.01f));
+    setFactoryParam(state, "ratchetCount", (2.0f - 1.0f) / (16.0f - 1.0f));
+    setFactoryParam(state, "ratchetProbability", 0.25f);
 
     return Preset(
         "Percussive Hits",

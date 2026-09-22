@@ -93,10 +93,12 @@ private:
     void restoreState(const juce::ValueTree& state);
     juce::File getDefaultPresetDirectory() const;
 
-    // Factory preset creation helpers
+    // Factory preset creation helpers (indices match GeneratorTypeMapping / 9-item UI)
+    juce::ValueTree makeFactoryParamTree() const;
+    void setFactoryParam(juce::ValueTree& state, const juce::String& id, float normalisedValue) const;
     Preset createEuclideanBasicPreset();
     Preset createEuclideanComplexPreset();
-    Preset createPolyrhythmPreset();
+    Preset createBrownianPreset();
     Preset createMarkovMelodyPreset();
     Preset createLSystemPreset();
     Preset createCellularPreset();

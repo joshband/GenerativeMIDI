@@ -192,4 +192,4 @@ If it still doesn't work:
 
 **Updated**: October 16, 2025
 **Status**: MIDI output fixed and tested
-**Plugin Version**: 1.0.0
+**Plugin Version**: v0.8.0

@@ -203,6 +203,6 @@ You already have 536+ decorative elements! Many required assets may already exis
 1. **Audit existing SynaptikUIToolkit**: Find all usable assets
 2. **Create missing asset list**: Identify gaps
 3. **Generate critical assets**: Focus on LEDs and combo boxes first
-4. **Implement BitmapUIComponent**: Build the layering system
-5. **Replace procedural drawing**: Swap all gradients/shapes with bitmaps
+4. **BitmapUIComponent**: archived under `archive/BitmapUIComponent.h` — not live; LookAndFeel loads knobs from `art/` with procedural fallback
+5. **Replace procedural drawing**: only where bitmaps improve clarity; keep procedural fallbacks
 

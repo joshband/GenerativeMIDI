@@ -44,68 +44,11 @@ If you don't want to install Xcode locally, you can use GitHub Actions to build 
    gh repo create GenerativeMIDI --public --source=. --push
    ```
 
-2. **Add iOS build workflow** - Create `.github/workflows/ios-build.yml`:
-   ```yaml
-   name: iOS Build
+2. **Use the existing CI workflow** — iOS + macOS builds live in [`.github/workflows/ci.yml`](../../.github/workflows/ci.yml) (not a separate `ios-build.yml`). For local iOS builds, follow the CMake/Xcode steps above / `build_ios.sh`.
 
-   on:
-     push:
-       branches: [ main ]
-     workflow_dispatch:
+3. **Push / open a PR** so `ci.yml` runs; download the iOS artifact from the Actions run when green.
 
-   jobs:
-     build-ios:
-       runs-on: macos-latest
-
-       steps:
-       - uses: actions/checkout@v3
-         with:
-           submodules: recursive
-
-       - name: Setup Xcode
-         uses: maxim-lobanov/setup-xcode@v1
-         with:
-           xcode-version: latest-stable
-
-       - name: Install JUCE
-         run: |
-           git clone https://github.com/juce-framework/JUCE.git ~/JUCE
-           ln -s ~/JUCE JUCE
-
-       - name: Generate Xcode Project
-         run: |
-           mkdir build_ios
-           cd build_ios
-           cmake .. -G Xcode \
-             -DCMAKE_SYSTEM_NAME=iOS \
-             -DCMAKE_OSX_SYSROOT=iphoneos \
-             -DCMAKE_OSX_DEPLOYMENT_TARGET=13.0
-
-       - name: Build for iOS
-         run: |
-           cd build_ios
-           xcodebuild -scheme GenerativeMIDI_AUv3 \
-             -configuration Release \
-             -destination 'generic/platform=iOS' \
-             CODE_SIGN_IDENTITY="" \
-             CODE_SIGNING_REQUIRED=NO \
-             CODE_SIGNING_ALLOWED=NO
-
-       - name: Upload IPA
-         uses: actions/upload-artifact@v3
-         with:
-           name: GenerativeMIDI-iOS
-           path: build_ios/**/*.app
-   ```
-
-3. **Push to GitHub**:
-   ```bash
-   git add .github/workflows/ios-build.yml
-   git commit -m "Add iOS build workflow"
-   git push
-   ```
-
-4. **Download built app** from GitHub Actions artifacts tab
+4. **Download built app** from the GitHub Actions artifacts tab
 
 ### Note on Code Signing
 The GitHub Actions build won't be code-signed, so you'll need to:

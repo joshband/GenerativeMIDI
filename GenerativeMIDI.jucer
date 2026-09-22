@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<!-- DEPRECATED: CMake is the canonical build. Do not use Projucer for new work. See docs/developer/BUILD.md. Product status is v0.8.0; the version attribute below is packaging legacy. -->
+
 <JUCERPROJECT id="GenMID" name="GenerativeMIDI" projectType="audioplug" useAppConfig="0"
               addUsingNamespaceToJuceHeader="0" jucerFormatVersion="1" version="1.0.0"
               companyName="OpenSource" companyCopyright="MIT License" pluginFormats="buildVST3,buildAU,buildAUv3,buildStandalone"

@@ -19,7 +19,7 @@ GenerativeMIDIEditor::GenerativeMIDIEditor(GenerativeMIDIProcessor& p)
     // Window size (modulation panel commented out)
     setSize(1400, 750);
     setResizable(true, true);
-    setResizeLimits(1200, 650, 2000, 1200);
+    setResizeLimits(1200, 750, 2000, 1200);
 
     // Title - SYNAPTIK gilded brass logo
     addAndMakeVisible(titleLabel);
@@ -292,9 +292,7 @@ GenerativeMIDIEditor::GenerativeMIDIEditor(GenerativeMIDIProcessor& p)
     // Initialize UI for current generator type
     updateControlsForGeneratorType(generatorTypeCombo.getSelectedId() - 1);
 
-    // Modulation panel (COMMENTED OUT - not working correctly)
-    // modulationPanel = std::make_unique<ModulationPanel>(audioProcessor.getModulationMatrix());
-    // addAndMakeVisible(modulationPanel.get());
+    // Modulation matrix UI is archived under archive/modulation_v1/ (not live).
 
     // Start timer for pattern updates
     startTimerHz(30);
@@ -490,15 +488,15 @@ void GenerativeMIDIEditor::resized()
 
     // Pattern display section
     auto patternOuter = area.removeFromTop(140);
-    patternPanelBounds = patternOuter.reduced(25, 5).toFloat();
     auto patternSection = patternOuter.reduced(40, 20);
+    patternPanelBounds = patternSection.toFloat();
     patternSection.removeFromTop(20); // Section label
     patternDisplay.setBounds(patternSection);
 
     // Generator controls section
     auto generatorOuter = area.removeFromTop(200);
-    generatorPanelBounds = generatorOuter.reduced(25, 5).toFloat();
     auto controlsSection = generatorOuter.reduced(40, 20);
+    generatorPanelBounds = controlsSection.toFloat();
     controlsSection.removeFromTop(20); // Section label
 
     int knobSize = 85;
@@ -543,8 +541,8 @@ void GenerativeMIDIEditor::resized()
 
     // Expression & range section
     auto expressionOuter = area.removeFromTop(170);
-    expressionPanelBounds = expressionOuter.reduced(25, 5).toFloat();
     auto rangeSection = expressionOuter.reduced(40, 20);
+    expressionPanelBounds = rangeSection.toFloat();
     rangeSection.removeFromTop(20); // Section label
 
     auto velocityArea = rangeSection.removeFromLeft(120);
@@ -604,8 +602,8 @@ void GenerativeMIDIEditor::resized()
 
     // Advanced section (ratcheting + stochastic controls)
     auto advancedOuter = area.removeFromTop(130);
-    advancedPanelBounds = advancedOuter.reduced(25, 5).toFloat();
     auto advancedSection = advancedOuter.reduced(40, 20);
+    advancedPanelBounds = advancedSection.toFloat();
     advancedSection.removeFromTop(20); // Section label
 
     auto ratchetCountArea = advancedSection.removeFromLeft(knobSize);

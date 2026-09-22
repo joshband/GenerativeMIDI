@@ -63,5 +63,8 @@ DerivedData/
 *.bak
 *.bak2
 
+# Local JUCE checkout symlink (create with: ln -sf ~/JUCE JUCE)
+JUCE
+
 # Local brainstorm / agent session artifacts
 .superpowers/

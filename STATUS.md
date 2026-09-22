@@ -34,7 +34,7 @@ Showcase (architecture + evidence): https://joshband.github.io/GenerativeMIDI/
 
 ### v0.6.x — Presets
 - XML `.gmpreset` save/load, browser, import/export
-- Factory presets temporarily disabled pending index remap
+- Factory presets temporarily disabled; helpers remapped to 9-generator APVTS indices (ready to re-enable)
 
 ### v0.5.x — Ratcheting + layout
 - Probability-based retriggers, decay, gate length / legato

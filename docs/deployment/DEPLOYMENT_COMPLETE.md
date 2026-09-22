@@ -1,6 +1,8 @@
-# 🎉 Deployment Complete - Generative MIDI
+# Deployment Complete - Generative MIDI
 
-## ✅ What's Been Created
+> **Historical time-capsule (2025).** Treat claims below as a snapshot, not current product truth. Live status: [STATUS.md](../STATUS.md), CI: `.github/workflows/ci.yml`, showcase: https://joshband.github.io/GenerativeMIDI/. AUv3 is **not** App Store ready; Polyrhythm is deferred from the UI.
+
+## What's Been Created
 
 ### GitHub Repository
 **URL:** https://github.com/joshband/GenerativeMIDI
@@ -62,11 +64,11 @@ The repository is configured for automatic iOS builds:
 - ✅ Real-time parameter automation
 
 #### User Interface
-- ✅ Modern dark theme (#1a1a1a background, #00d4ff accents)
+- UI: steampunk LookAndFeel (brass / navy); cyan SaaS accents are obsolete
+- Touch / iOS: AUv3 build path exists; not App Store / touch-redesign ready (see STATUS)
 - ✅ Custom rotary knobs with arc visualization
 - ✅ Real-time pattern display
-- ✅ Resizable window (800x500 to 1600x1000)
-- ✅ Touch-optimized for iOS/iPadOS
+- Resizable editor (current limits ~1200×750–2000×1200; see PluginEditor)
 
 ### Documentation Created
 
@@ -74,7 +76,7 @@ The repository is configured for automatic iOS builds:
 2. **README-iOS.md** - iOS build and usage guide
 3. **BUILDING-iOS.md** - Detailed iOS setup options
 4. **LICENSE** - MIT License
-5. **.github/workflows/ios-build.yml** - CI/CD configuration
+5. **`.github/workflows/ci.yml`** - CI (macOS plugins + iOS AUv3 + ctest)
 
 ## 🚀 Next Steps
 
@@ -127,7 +129,7 @@ git push
 - Update CMakeLists.txt to include it
 
 **Configure Code Signing for iOS:**
-Edit `.github/workflows/ios-build.yml` to add your:
+Edit `.github/workflows/ci.yml` to add your:
 - Apple Developer certificates
 - Provisioning profiles
 - App Store Connect API key (for distribution)
