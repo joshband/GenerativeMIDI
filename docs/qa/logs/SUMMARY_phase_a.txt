@@ -1,0 +1,3 @@
+ctest: 20/20 PASS
+auval: AU VALIDATION SUCCEEDED
+pluginval-strict5: SUCCESS (exit 0)

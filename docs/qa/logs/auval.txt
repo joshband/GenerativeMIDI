@@ -1,0 +1,384 @@
+
+    AU Validation Tool
+    Version: 1.10.0 
+    Copyright 2003-2019, Apple Inc. All Rights Reserved.
+    Specify -h (-help) for command options
+
+--------------------------------------------------
+VALIDATING AUDIO UNIT: 'aumi' - 'Gmid' - 'Osrc'
+--------------------------------------------------
+Manufacturer String: OpenSource
+AudioUnit Name: Generative MIDI
+Component Version: 1.0.0 (0x10000)
+
+* * PASS
+--------------------------------------------------
+TESTING OPEN TIMES:
+COLD:
+Time to open AudioUnit:         7.332 ms
+WARM:
+Time to open AudioUnit:         0.217  ms
+This AudioUnit is a version 2 implementation.
+FIRST TIME:
+Time for initialization:        0.003 ms
+
+* * PASS
+--------------------------------------------------
+VERIFYING DEFAULT SCOPE FORMATS:
+Input Scope Bus Configuration:
+ Default Bus Count:0
+
+Output Scope Bus Configuration:
+ Default Bus Count:1
+    Default Format: AudioStreamBasicDescription:  2 ch,  44100 Hz, Float32, deinterleaved
+
+* * PASS
+--------------------------------------------------
+VERIFYING REQUIRED PROPERTIES:
+
+* * PASS
+--------------------------------------------------
+VERIFYING RECOMMENDED PROPERTIES:
+
+* * PASS
+--------------------------------------------------
+VERIFYING OPTIONAL PROPERTIES:
+  VERIFYING PROPERTY: Latency
+    PASS
+  VERIFYING PROPERTY: Tail Time
+    PASS
+  VERIFYING PROPERTY: Bypass Effect
+    PASS
+
+* * PASS
+--------------------------------------------------
+VERIFYING SPECIAL PROPERTIES:
+
+VERIFYING CUSTOM UI
+Cocoa Views Available: 1
+  JUCE_AUCocoaViewClass_bf182963fce48be1
+    PASS
+
+HAS FACTORY PRESETS
+    ID:   0    Name: Untitled
+
+VERIFYING CLASS INFO
+    PASS
+
+TESTING HOST CALLBACKS
+    PASS
+
+* * PASS
+--------------------------------------------------
+PUBLISHED PARAMETER INFO:
+
+# # # 38 Global Scope Parameters:
+Parameter ID:25067133
+Name: Time Scale
+Parameter Type: Generic
+Values: Minimum = 0.01, Default = 1.00, Maximum = 10.00
+Flags: Values Have Strings, High Resolution, Can Ramp, Readable, Writable 
+  -parameter PASS
+
+Parameter ID:110245659
+Name: Tempo
+Parameter Type: Generic
+Values: Minimum = 20.00, Default = 120.00, Maximum = 400.00
+Flags: Values Have Strings, High Resolution, Can Ramp, Readable, Writable 
+  -parameter PASS
+
+Parameter ID:269502796
+Name: Scale Root
+Parameter Type: Generic
+Values: Minimum = 0, Default = 0, Maximum = 11
+Flags: Values Have Strings, High Resolution, Can Ramp, Readable, Writable 
+  -parameter PASS
+
+Parameter ID:269572004
+Name: Scale Type
+Parameter Type: Indexed
+Values: Minimum = Chromatic, Default = Chromatic, Maximum = Harmonic Major
+Flags: Values Have Strings, High Resolution, Readable, Writable 
+Parameter has Value Strings
+Num Strings = 16
+Value: 0,  String: Chromatic
+Value: 1,  String: Major
+Value: 2,  String: Minor
+Value: 3,  String: Harmonic Minor
+Value: 4,  String: Melodic Minor
+Value: 5,  String: Dorian
+Value: 6,  String: Phrygian
+Value: 7,  String: Lydian
+Value: 8,  String: Mixolydian
+Value: 9,  String: Locrian
+Value: 10,  String: Major Pentatonic
+Value: 11,  String: Minor Pentatonic
+Value: 12,  String: Blues
+Value: 13,  String: Whole Tone
+Value: 14,  String: Diminished
+Value: 15,  String: Harmonic Major
+  -parameter PASS
+
+Parameter ID:373063896
+Name: CC Amount
+Parameter Type: Generic
+Values: Minimum = 0.00, Default = 0.50, Maximum = 1.00
+Flags: Values Have Strings, High Resolution, Can Ramp, Readable, Writable 
+  -parameter PASS
+
+Parameter ID:374584118
+Name: Mod LFO Enable
+Parameter Type: Boolean
+Values: Minimum = Off, Default = Off, Maximum = On
+Flags: Values Have Strings, High Resolution, Readable, Writable 
+  -parameter PASS
+
+Parameter ID:375816452
+Name: Velocity Humanize
+Parameter Type: Generic
+Values: Minimum = 0.00, Default = 0.00, Maximum = 1.00
+Flags: Values Have Strings, High Resolution, Can Ramp, Readable, Writable 
+  -parameter PASS
+
+Parameter ID:467170372
+Name: Pitch Bend Range
+Parameter Type: Generic
+Values: Minimum = 1.00, Default = 2.00, Maximum = 24.00
+Flags: Values Have Strings, High Resolution, Can Ramp, Readable, Writable 
+  -parameter PASS
+
+Parameter ID:488068611
+Name: CC Enable
+Parameter Type: Boolean
+Values: Minimum = Off, Default = Off, Maximum = On
+Flags: Values Have Strings, High Resolution, Readable, Writable 
+  -parameter PASS
+
+Parameter ID:551440942
+Name: Mod LFO Density Depth
+Parameter Type: Generic
+Values: Minimum = 0.00, Default = 0.00, Maximum = 1.00
+Flags: Values Have Strings, High Resolution, Can Ramp, Readable, Writable 
+  -parameter PASS
+
+Parameter ID:561235190
+Name: Swing Amount
+Parameter Type: Generic
+Values: Minimum = 0.00, Default = 0.00, Maximum = 1.00
+Flags: Values Have Strings, High Resolution, Can Ramp, Readable, Writable 
+  -parameter PASS
+
+Parameter ID:615647815
+Name: Time Signature Denominator
+Parameter Type: Generic
+Values: Minimum = 1, Default = 4, Maximum = 16
+Flags: Values Have Strings, High Resolution, Can Ramp, Readable, Writable 
+  -parameter PASS
+
+Parameter ID:752507554
+Name: MIDI Channel
+Parameter Type: Generic
+Values: Minimum = 1, Default = 1, Maximum = 16
+Flags: Values Have Strings, High Resolution, Can Ramp, Readable, Writable 
+  -parameter PASS
+
+Parameter ID:752552905
+Name: CC Number
+Parameter Type: Generic
+Values: Minimum = 1, Default = 1, Maximum = 127
+Flags: Values Have Strings, High Resolution, Can Ramp, Readable, Writable 
+  -parameter PASS
+
+Parameter ID:782772770
+Name: Time Signature Numerator
+Parameter Type: Generic
+Values: Minimum = 1, Default = 4, Maximum = 16
+Flags: Values Have Strings, High Resolution, Can Ramp, Readable, Writable 
+  -parameter PASS
+
+Parameter ID:822348945
+Name: Legato Mode
+Parameter Type: Boolean
+Values: Minimum = Off, Default = Off, Maximum = On
+Flags: Values Have Strings, High Resolution, Readable, Writable 
+  -parameter PASS
+
+Parameter ID:998134467
+Name: Stochastic Type (legacy)
+Parameter Type: Indexed
+Values: Minimum = Brownian, Default = Brownian, Maximum = Lorenz
+Flags: Values Have Strings, High Resolution, Not Real Time, Readable, Writable 
+Parameter has Value Strings
+Num Strings = 4
+Value: 0,  String: Brownian
+Value: 1,  String: Perlin
+Value: 2,  String: Drunk Walk
+Value: 3,  String: Lorenz
+  -parameter PASS
+
+Parameter ID:1000846102
+Name: Ratchet Count
+Parameter Type: Generic
+Values: Minimum = 1, Default = 1, Maximum = 16
+Flags: Values Have Strings, High Resolution, Can Ramp, Readable, Writable 
+  -parameter PASS
+
+Parameter ID:1001454017
+Name: Ratchet Decay
+Parameter Type: Generic
+Values: Minimum = 0.00, Default = 0.50, Maximum = 1.00
+Flags: Values Have Strings, High Resolution, Can Ramp, Readable, Writable 
+  -parameter PASS
+
+Parameter ID:1205696369
+Name: Timing Humanize
+Parameter Type: Generic
+Values: Minimum = 0.00, Default = 0.00, Maximum = 50.00
+Flags: Values Have Strings, High Resolution, Can Ramp, Readable, Writable 
+  -parameter PASS
+
+Parameter ID:1219880775
+Name: Velocity Max
+Parameter Type: Generic
+Values: Minimum = 0.00, Default = 1.00, Maximum = 1.00
+Flags: Values Have Strings, High Resolution, Can Ramp, Readable, Writable 
+  -parameter PASS
+
+Parameter ID:1219881013
+Name: Velocity Min
+Parameter Type: Generic
+Values: Minimum = 0.00, Default = 0.50, Maximum = 1.00
+Flags: Values Have Strings, High Resolution, Can Ramp, Readable, Writable 
+  -parameter PASS
+
+Parameter ID:1234283347
+Name: Mod LFO Rate
+Parameter Type: Generic
+Values: Minimum = 0.01, Default = 1.00, Maximum = 20.00
+Flags: Values Have Strings, High Resolution, Can Ramp, Readable, Writable 
+  -parameter PASS
+
+Parameter ID:1236814684
+Name: Pitch Bend Enable
+Parameter Type: Boolean
+Values: Minimum = Off, Default = Off, Maximum = On
+Flags: Values Have Strings, High Resolution, Readable, Writable 
+  -parameter PASS
+
+Parameter ID:1291567849
+Name: Euclidean Steps
+Parameter Type: Generic
+Values: Minimum = 1, Default = 16, Maximum = 64
+Flags: Values Have Strings, High Resolution, Can Ramp, Readable, Writable 
+  -parameter PASS
+
+Parameter ID:1299144824
+Name: Euclidean Pulses
+Parameter Type: Generic
+Values: Minimum = 0, Default = 4, Maximum = 64
+Flags: Values Have Strings, High Resolution, Can Ramp, Readable, Writable 
+  -parameter PASS
+
+Parameter ID:1311109244
+Name: Euclidean Rotation
+Parameter Type: Generic
+Values: Minimum = 0, Default = 0, Maximum = 64
+Flags: Values Have Strings, High Resolution, Can Ramp, Readable, Writable 
+  -parameter PASS
+
+Parameter ID:1354434710
+Name: Note Density
+Parameter Type: Generic
+Values: Minimum = 0.00, Default = 0.50, Maximum = 1.00
+Flags: Values Have Strings, High Resolution, Can Ramp, Readable, Writable 
+  -parameter PASS
+
+Parameter ID:1428493549
+Name: Step Size
+Parameter Type: Generic
+Values: Minimum = 0.01, Default = 0.10, Maximum = 1.00
+Flags: Values Have Strings, High Resolution, Can Ramp, Readable, Writable 
+  -parameter PASS
+
+Parameter ID:1742748336
+Name: Mod LFO Depth
+Parameter Type: Generic
+Values: Minimum = 0.00, Default = 0.25, Maximum = 1.00
+Flags: Values Have Strings, High Resolution, Can Ramp, Readable, Writable 
+  -parameter PASS
+
+Parameter ID:1786187928
+Name: Momentum
+Parameter Type: Generic
+Values: Minimum = 0.00, Default = 0.90, Maximum = 1.00
+Flags: Values Have Strings, High Resolution, Can Ramp, Readable, Writable 
+  -parameter PASS
+
+Parameter ID:1786341659
+Name: Aftertouch Amount
+Parameter Type: Generic
+Values: Minimum = 0.00, Default = 0.50, Maximum = 1.00
+Flags: Values Have Strings, High Resolution, Can Ramp, Readable, Writable 
+  -parameter PASS
+
+Parameter ID:1875603345
+Name: Gate Length
+Parameter Type: Generic
+Values: Minimum = 0.01, Default = 0.80, Maximum = 2.00
+Flags: Values Have Strings, High Resolution, Can Ramp, Readable, Writable 
+  -parameter PASS
+
+Parameter ID:1887937028
+Name: Pitch Max
+Parameter Type: Generic
+Values: Minimum = 0, Default = 84, Maximum = 127
+Flags: Values Have Strings, High Resolution, Can Ramp, Readable, Writable 
+  -parameter PASS
+
+Parameter ID:1887937266
+Name: Pitch Min
+Parameter Type: Generic
+Values: Minimum = 0, Default = 48, Maximum = 127
+Flags: Values Have Strings, High Resolution, Can Ramp, Readable, Writable 
+  -parameter PASS
+
+Parameter ID:1901346374
+Name: Aftertouch Enable
+Parameter Type: Boolean
+Values: Minimum = Off, Default = Off, Maximum = On
+Flags: Values Have Strings, High Resolution, Readable, Writable 
+  -parameter PASS
+
+Parameter ID:2047016109
+Name: Generator Type
+Parameter Type: Indexed
+Values: Minimum = Euclidean, Default = Euclidean, Maximum = Lorenz
+Flags: Values Have Strings, High Resolution, Readable, Writable 
+Parameter has Value Strings
+Num Strings = 10
+Value: 0,  String: Euclidean
+Value: 1,  String: Polyrhythm
+Value: 2,  String: Markov
+Value: 3,  String: L-System
+Value: 4,  String: Cellular
+Value: 5,  String: Probabilistic
+Value: 6,  String: Brownian
+Value: 7,  String: Perlin Noise
+Value: 8,  String: Drunk Walk
+Value: 9,  String: Lorenz
+  -parameter PASS
+
+Parameter ID:2114853116
+Name: Ratchet Probability
+Parameter Type: Generic
+Values: Minimum = 0.00, Default = 0.00, Maximum = 1.00
+Flags: Values Have Strings, High Resolution, Can Ramp, Readable, Writable 
+  -parameter PASS
+
+Testing that parameters retain value across reset and initialization
+  PASS
+
+* * PASS
+--------------------------------------------------
+AU VALIDATION SUCCEEDED.
+--------------------------------------------------

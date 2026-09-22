@@ -1,0 +1,8 @@
+This workflow needs macOS Screen Recording permission to capture screenshots.
+macOS will show a single system prompt for Screen Recording. Approve it, then
+return here. If macOS opens System Settings instead of prompting, enable Screen
+Recording for your terminal and rerun the command.
+Screen Recording is still not granted.
+Open System Settings > Privacy & Security > Screen Recording and enable it for
+your terminal (and Codex if needed), then rerun your screenshot command.
+Screen Recording permission is required; enable it in System Settings and retry

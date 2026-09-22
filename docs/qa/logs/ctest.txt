@@ -1,0 +1,45 @@
+Test project /Users/artbox/Documents/Repos/GenerativeMIDI/build
+      Start  1: EuclideanEngine pulse count matches requested pulses
+ 1/20 Test  #1: EuclideanEngine pulse count matches requested pulses .........   Passed    0.02 sec
+      Start  2: EuclideanEngine setRotation is idempotent for same value
+ 2/20 Test  #2: EuclideanEngine setRotation is idempotent for same value .....   Passed    0.01 sec
+      Start  3: EuclideanEngine zero pulses yields empty pattern
+ 3/20 Test  #3: EuclideanEngine zero pulses yields empty pattern .............   Passed    0.01 sec
+      Start  4: ScaleQuantizer chromatic is identity
+ 4/20 Test  #4: ScaleQuantizer chromatic is identity .........................   Passed    0.01 sec
+      Start  5: ScaleQuantizer major keeps C in C major
+ 5/20 Test  #5: ScaleQuantizer major keeps C in C major ......................   Passed    0.01 sec
+      Start  6: GeneratorTypeMapping indices cover ten UI generators
+ 6/20 Test  #6: GeneratorTypeMapping indices cover ten UI generators .........   Passed    0.01 sec
+      Start  7: GeneratorTypeMapping algorithmic enums
+ 7/20 Test  #7: GeneratorTypeMapping algorithmic enums .......................   Passed    0.00 sec
+      Start  8: GeneratorTypeMapping stochastic enums
+ 8/20 Test  #8: GeneratorTypeMapping stochastic enums ........................   Passed    0.00 sec
+      Start  9: PolyrhythmEngine seeds audible default layer
+ 9/20 Test  #9: PolyrhythmEngine seeds audible default layer .................   Passed    0.01 sec
+      Start 10: PolyrhythmEngine addLayer seeds distinct pattern
+10/20 Test #10: PolyrhythmEngine addLayer seeds distinct pattern .............   Passed    0.00 sec
+      Start 11: ClockManager samples per beat at 120 BPM 48kHz
+11/20 Test #11: ClockManager samples per beat at 120 BPM 48kHz ...............   Passed    0.01 sec
+      Start 12: ClockManager subdivision advances with callback
+12/20 Test #12: ClockManager subdivision advances with callback ..............   Passed    0.01 sec
+      Start 13: StochasticEngine respects density extremes
+13/20 Test #13: StochasticEngine respects density extremes ...................   Passed    0.01 sec
+      Start 14: PresetManager initializes non-zero factory presets
+14/20 Test #14: PresetManager initializes non-zero factory presets ...........   Passed    0.01 sec
+      Start 15: PresetManager factory loadPreset round-trips key params
+15/20 Test #15: PresetManager factory loadPreset round-trips key params ......   Passed    0.01 sec
+      Start 16: PresetManager importPreset rejects unsafe or invalid files
+16/20 Test #16: PresetManager importPreset rejects unsafe or invalid files ...   Passed    0.02 sec
+      Start 17: ModLfo bipolar sine stays in range and advances
+17/20 Test #17: ModLfo bipolar sine stays in range and advances ..............   Passed    0.01 sec
+      Start 18: migrateGeneratorTypeIndex shifts 9-gen layout
+18/20 Test #18: migrateGeneratorTypeIndex shifts 9-gen layout ................   Passed    0.01 sec
+      Start 19: migrateApvtsStateIfNeeded rewrites generatorType PARAM
+19/20 Test #19: migrateApvtsStateIfNeeded rewrites generatorType PARAM .......   Passed    0.01 sec
+      Start 20: PolyrhythmEngine division rate diverges over ticks
+20/20 Test #20: PolyrhythmEngine division rate diverges over ticks ...........   Passed    0.01 sec
+
+100% tests passed, 0 tests failed out of 20
+
+Total Test time (real) =   0.17 sec

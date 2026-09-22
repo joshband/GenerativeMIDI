@@ -68,3 +68,8 @@ JUCE
 
 # Local brainstorm / agent session artifacts
 .superpowers/
+
+# QA tooling downloads (keep text logs only)
+docs/qa/logs/pluginval.app/
+docs/qa/logs/pluginval.zip
+docs/qa/logs/*.vst3/

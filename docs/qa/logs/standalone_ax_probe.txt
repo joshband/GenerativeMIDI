@@ -1,0 +1,2 @@
+Generative MIDI
+AX_ERROR -25211: osascript is not allowed assistive access.
