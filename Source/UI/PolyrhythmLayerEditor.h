@@ -124,6 +124,8 @@ public:
             enableButton.setToggleState(layer->enabled, juce::dontSendNotification);
             divisionSlider.setValue(layer->division, juce::dontSendNotification);
             lengthSlider.setValue(layer->length, juce::dontSendNotification);
+            pitchSlider.setValue(layer->pitchOffset, juce::dontSendNotification);
+            velocitySlider.setValue(layer->velocityMultiplier, juce::dontSendNotification);
 
             // Update pattern display
             patternDisplay.setPattern(layer->pattern);
@@ -150,14 +152,12 @@ private:
 
     void onPitchChanged()
     {
-        // For now, just log the change - actual pitch will be set when pattern is created
-        DBG("Pitch offset changed to: " << pitchSlider.getValue());
+        polyEngine.setLayerPitchOffset(layerIndex, static_cast<int>(pitchSlider.getValue()));
     }
 
     void onVelocityChanged()
     {
-        // For now, just log the change - actual velocity will be set when pattern is created
-        DBG("Velocity multiplier changed to: " << velocitySlider.getValue());
+        polyEngine.setLayerVelocityMultiplier(layerIndex, static_cast<float>(velocitySlider.getValue()));
     }
 
     int layerIndex;

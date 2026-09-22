@@ -157,6 +157,7 @@ private:
     static constexpr const char* PARAM_MOD_LFO_ENABLE = "modLfoEnable";
     static constexpr const char* PARAM_MOD_LFO_RATE = "modLfoRate";
     static constexpr const char* PARAM_MOD_LFO_DEPTH = "modLfoDepth";
+    static constexpr const char* PARAM_MOD_LFO_DENSITY_DEPTH = "modLfoDensityDepth";
 
     // Processing state
     int64_t currentSamplePosition = 0;

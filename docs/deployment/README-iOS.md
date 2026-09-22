@@ -51,7 +51,7 @@ Once installed on your device, the Generative MIDI AUv3 plugin will be available
 The iOS/iPadOS build shares the desktop engine set:
 
 - **9 UI generators** (Euclidean, 4 algorithmic, 4 stochastic)
-- **Polyrhythm deferred** from the editor (engine retained in tree)
+- **Polyrhythm experimental** in the editor (engine + minimal layer UI)
 - Pattern visualization (Euclidean step grid; other modes show an honest empty state)
 - Gate / ratchet / scale / humanization parameters
 - **Not** store packaging, touch-optimized layout, or claimed full MIDI expression UI

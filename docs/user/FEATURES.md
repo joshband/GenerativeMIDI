@@ -2,7 +2,7 @@
 
 Complete feature documentation for the GenerativeMIDI plugin - a cross-platform generative MIDI processor with advanced algorithmic composition capabilities.
 
-> **Honesty note:** Development status is **v0.8.0**. The live UI exposes **9 generators** (Polyrhythm deferred). Touch/iOS/App Store claims below that conflict with [STATUS.md](../../STATUS.md) should be treated as aspirational or outdated — use the [showcase](https://joshband.github.io/GenerativeMIDI/) for employer-facing boundaries.
+> **Honesty note:** Development status is **v0.8.0**. The live UI exposes **10 generators** (Polyrhythm experimental). Touch/iOS/App Store claims below that conflict with [STATUS.md](../../STATUS.md) should be treated as aspirational or outdated — use the [showcase](https://joshband.github.io/GenerativeMIDI/) for employer-facing boundaries.
 
 ---
 
@@ -518,7 +518,7 @@ Result: Loose, sloppy, experimental jazz
 - Brass chamber outlines
 
 #### 2. GENERATOR ✨ ENHANCED (v0.8.0)
-- **Generator Type**: Dropdown selector (**9** types; Polyrhythm deferred)
+- **Generator Type**: Dropdown selector (**10** types; Polyrhythm experimental)
 - **Color-coded label**: Changes color by engine type
   - Gold: Euclidean
   - Green Verdigris: Algorithmic
@@ -901,7 +901,7 @@ Product status is tracked as **v0.8.0** in [STATUS.md](../../STATUS.md) (not a s
 
 ### Current (v0.8.0)
 - ✅ 9 UI generators (Euclidean, algorithmic ×4, stochastic ×4)
-- ✅ Polyrhythm deferred from UI (engine retained)
+- ✅ Polyrhythm experimental in UI (minimal layer editor)
 - ✅ Scale quantization, swing, humanization, gate, ratchet
 - ✅ MIDI channel routing, preset browser, steampunk LookAndFeel
 - ✅ Catch2 / `ctest` harness; CI via GitHub Actions

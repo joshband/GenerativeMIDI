@@ -115,14 +115,13 @@
           <div class="boundary--shipped">
             <h3>Shipped / verified</h3>
             <ul>
-              <li><strong>v0.8.0</strong> feature set per STATUS (31 parameters; MIDI channel routing; stochastic UI controls).</li>
-              <li>macOS <strong>AU / VST3 / Standalone</strong> verified locally historically; CI builds macOS plugins via <code>.github/workflows/ci.yml</code>.</li>
-              <li><strong>9 generators</strong> exposed in the current editor UI (Euclidean, Markov, L-System, Cellular, Probabilistic, Brownian, Perlin Noise, Drunk Walk, Lorenz).</li>
-              <li>Polyrhythm engine retained in core sources only; <strong>not</strong> in APVTS or the editor dropdown (deferred).</li>
-              <li><strong>10 factory presets</strong> live (9-generator APVTS indices; Polyrhythm not included).</li>
-              <li><strong>MIDI expression</strong> — EXPRESSION section controls; note-on emit for AT / PB / CC (static PB offset — not MPE or continuous LFO modulation).</li>
-              <li><strong>Realtime hot-path hardening</strong> — steady-state audio path allocation-free for Euclidean regen, ratchet offsets, algorithmic single-note, and EventScheduler (queue pre-reserved; over-capacity schedules dropped). Honest residual: trained Markov map-key vector on lookup.</li>
-              <li>Evidence: Catch2 / <code>ctest</code> in CI (<strong>14</strong> tests) plus historical format builds — no coverage percentage claimed. Manual UI/host smoke: <a href="https://github.com/joshband/GenerativeMIDI/blob/master/docs/user/SMOKE_CHECKLIST.md" rel="noopener noreferrer">SMOKE_CHECKLIST.md</a>.</li>
+              <li><strong>v0.8.0</strong> per STATUS (~37 parameters incl. expression + LFO; MIDI channel; stochastic UI).</li>
+              <li>macOS <strong>AU / VST3 / Standalone</strong> (historical local); CI: macOS + iOS + Windows + Linux via <code>.github/workflows/ci.yml</code> + pluginval (VST3).</li>
+              <li><strong>10 generators</strong> in the editor (Euclidean, <em>experimental Polyrhythm</em>, Markov, L-System, Cellular, Probabilistic, Brownian, Perlin, Drunk Walk, Lorenz).</li>
+              <li><strong>Factory presets</strong> live (11 including Polyrhythm Layers).</li>
+              <li><strong>MIDI expression</strong> — note-on AT / PB / CC (static PB — not MPE). <strong>ADVANCED LFO</strong> → velocity (and density) — not a full modulation matrix.</li>
+              <li><strong>Realtime hot-path hardening</strong> — Euclidean / ratchet / algorithmic / EventScheduler steady-state alloc-free. Residual: trained Markov map-key vector.</li>
+              <li>Evidence: Catch2 / <code>ctest</code> in CI (<strong>20+</strong>) + format builds. Manual smoke: <a href="https://github.com/joshband/GenerativeMIDI/blob/master/docs/user/SMOKE_CHECKLIST.md" rel="noopener noreferrer">SMOKE_CHECKLIST.md</a>.</li>
             </ul>
           </div>
           <div class="boundary--deferred">
@@ -130,8 +129,7 @@
             <ul>
               <li>App Store / finished product polish; listening clips for this site.</li>
               <li>AUv3 as store-ready — configured target + iOS docs only.</li>
-              <li>Windows / Linux distribution builds.</li>
-              <li>MIDI expression depth (continuous CC/PB modulation, MPE) and polyrhythm layer controls.</li>
+              <li>Full modulation matrix UI; continuous CC/PB / MPE; Polyrhythm step-grid polish.</li>
               <li>Dedicated touch / accessibility redesign; test coverage percentages.</li>
             </ul>
           </div>

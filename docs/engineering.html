@@ -117,12 +117,12 @@
               </tr>
               <tr>
                 <td>Tests/EngineTests.cpp</td>
-                <td>Catch2 suite (14 cases): engines, mapping, clock, factory round-trip + import hardening</td>
+                <td>Catch2 suite (20+ cases): engines, mapping, migration, clock, factory round-trip, import hardening, ModLfo, polyrhythm rate</td>
                 <td><a href="https://github.com/joshband/GenerativeMIDI/blob/master/Tests/EngineTests.cpp" rel="noopener noreferrer">blob</a></td>
               </tr>
               <tr>
                 <td>docs/user/SMOKE_CHECKLIST.md</td>
-                <td>Manual Standalone/DAW smoke: 9 generators, 10 factories, expression, channel routing (not automated UI tests)</td>
+                <td>Manual Standalone/DAW smoke: 10 generators, factories, expression, LFO, channel routing (not automated UI tests)</td>
                 <td><a href="https://github.com/joshband/GenerativeMIDI/blob/master/docs/user/SMOKE_CHECKLIST.md" rel="noopener noreferrer">blob</a></td>
               </tr>
               <tr>
@@ -189,8 +189,8 @@
             <span>Incomplete modulation v1 moved under <code>archive/</code> rather than left half-wired in the editor — honesty over feature theater.</span>
           </li>
           <li>
-            <strong>Polyrhythm deferred from UI</strong>
-            <span>Engine sources retained for a future branch; removed from APVTS and the editor dropdown. Live surface is nine generators — no fake “still in params” mismatch claim.</span>
+            <strong>Polyrhythm experimental in UI</strong>
+            <span>Selectable at APVTS index 1 with a minimal layer editor. Remaining polish: step grid, layer session persistence — not a fake “deferred from UI” claim.</span>
           </li>
         </ul>
       </div>
@@ -203,7 +203,7 @@
         <p>From STATUS — deferred depth, not missing basics:</p>
         <ul>
           <li><strong>MIDI expression depth</strong> — EXPRESSION UI + note-on AT/PB/CC emit shipped (static PB offset); continuous CC/PB modulation and MPE remain deferred.</li>
-          <li><strong>Polyrhythm layer controls</strong> — per-layer enable and visualization when Polyrhythm returns to the editor.</li>
+          <li><strong>Polyrhythm layer polish</strong> — step editing, polymeter visualization, layer XML persistence.</li>
         </ul>
         <p>No App Store timeline is implied. See STATUS.md and ENHANCEMENTS.md for the longer backlog.</p>
       </div>

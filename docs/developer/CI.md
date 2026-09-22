@@ -15,7 +15,7 @@ Pinned toolchain:
 
 - **JUCE** `8.0.15` (clone in CI; keep in sync with local/docs)
 - **pluginval** `v1.0.4` (release ZIP per OS)
-- GitHub Actions pinned by SHA (same style as before)
+- GitHub Actions pinned by SHA: `actions/checkout@v7.0.1`, `actions/upload-artifact@v7.0.1`
 
 ## pluginval scope
 

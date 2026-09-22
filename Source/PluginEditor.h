@@ -72,6 +72,7 @@ private:
     juce::TextButton modLfoEnableButton;
     juce::Slider modLfoRateSlider;
     juce::Slider modLfoDepthSlider;
+    juce::Slider modLfoDensityDepthSlider;
 
     // Ratchet controls
     juce::Slider ratchetCountSlider;
@@ -112,6 +113,7 @@ private:
     juce::Label ccAmountLabel;
     juce::Label modLfoRateLabel;
     juce::Label modLfoDepthLabel;
+    juce::Label modLfoDensityDepthLabel;
     juce::Label ratchetCountLabel;
     juce::Label ratchetProbabilityLabel;
     juce::Label ratchetDecayLabel;
@@ -145,6 +147,7 @@ private:
     std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment> modLfoEnableAttachment;
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> modLfoRateAttachment;
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> modLfoDepthAttachment;
+    std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> modLfoDensityDepthAttachment;
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> ratchetCountAttachment;
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> ratchetProbabilityAttachment;
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> ratchetDecayAttachment;

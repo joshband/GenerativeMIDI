@@ -98,6 +98,7 @@ private:
     void setFactoryParam(juce::ValueTree& state, const juce::String& id, float denormalisedValue) const;
     Preset createEuclideanBasicPreset();
     Preset createEuclideanComplexPreset();
+    Preset createPolyrhythmPreset();
     Preset createBrownianPreset();
     Preset createMarkovMelodyPreset();
     Preset createLSystemPreset();

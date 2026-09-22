@@ -1,4 +1,5 @@
 #include "PresetManager.h"
+#include "GeneratorTypeMapping.h"
 
 namespace
 {
@@ -68,7 +69,7 @@ void PresetManager::savePreset(const juce::String& name,
     xml.setAttribute("author", author);
     xml.setAttribute("category", category);
     xml.setAttribute("description", description);
-    xml.setAttribute("version", "1.0");
+    xml.setAttribute("version", GeneratorTypeMapping::kPresetSchemaVersion);
 
     // Add parameter state
     auto stateXml = state.createXml();
@@ -189,6 +190,7 @@ void PresetManager::initializeFactoryPresets()
 {
     presets.add(createEuclideanBasicPreset());
     presets.add(createEuclideanComplexPreset());
+    presets.add(createPolyrhythmPreset());
     presets.add(createBrownianPreset());
     presets.add(createMarkovMelodyPreset());
     presets.add(createLSystemPreset());
@@ -232,6 +234,7 @@ void PresetManager::scanUserPresets()
             continue;
 
         juce::ValueTree state = juce::ValueTree::fromXml(*stateXml);
+        GeneratorTypeMapping::migrateApvtsStateIfNeeded(state, xml->getStringAttribute("version"));
 
         Preset preset(name, author, category, description, state, false);
         presets.add(preset);
@@ -250,7 +253,7 @@ bool PresetManager::exportPreset(int presetIndex, const juce::File& destinationF
     xml.setAttribute("author", preset.author);
     xml.setAttribute("category", preset.category);
     xml.setAttribute("description", preset.description);
-    xml.setAttribute("version", "1.0");
+    xml.setAttribute("version", GeneratorTypeMapping::kPresetSchemaVersion);
 
     auto stateXml = preset.state.createXml();
     if (stateXml)
@@ -286,6 +289,9 @@ bool PresetManager::importPreset(const juce::File& presetFile)
     juce::ValueTree state = juce::ValueTree::fromXml(*stateXml);
     if (!state.isValid())
         return false;
+
+    const auto schema = xml->getStringAttribute("version");
+    GeneratorTypeMapping::migrateApvtsStateIfNeeded(state, schema);
 
     Preset preset(name, author, category, description, state, false);
     presets.add(preset);
@@ -380,6 +386,28 @@ PresetManager::Preset PresetManager::createEuclideanComplexPreset()
         "GenerativeMIDI",
         "Euclidean",
         "Complex 7-on-23 pattern with rotation, creates shifting polyrhythmic feel",
+        state,
+        true
+    );
+}
+
+PresetManager::Preset PresetManager::createPolyrhythmPreset()
+{
+    auto state = makeFactoryParamTree();
+    setFactoryParam(state, "generatorType", 1.0f); // Polyrhythm
+    setFactoryParam(state, "tempo", 120.0f);
+    setFactoryParam(state, "noteDensity", 0.85f);
+    setFactoryParam(state, "velocityMin", 70.0f / 127.0f);
+    setFactoryParam(state, "velocityMax", 110.0f / 127.0f);
+    setFactoryParam(state, "pitchMin", 48.0f);
+    setFactoryParam(state, "pitchMax", 72.0f);
+    setFactoryParam(state, "gateLength", 0.6f);
+
+    return Preset(
+        "Polyrhythm Layers",
+        "GenerativeMIDI",
+        "Polyrhythm",
+        "Experimental multi-layer polyrhythm with default seeded patterns",
         state,
         true
     );

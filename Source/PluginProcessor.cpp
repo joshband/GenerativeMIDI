@@ -177,6 +177,9 @@ juce::AudioProcessorValueTreeState::ParameterLayout GenerativeMIDIProcessor::cre
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
         PARAM_MOD_LFO_DEPTH, "Mod LFO Depth", 0.0f, 1.0f, 0.25f));
 
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(
+        PARAM_MOD_LFO_DENSITY_DEPTH, "Mod LFO Density Depth", 0.0f, 1.0f, 0.0f));
+
     return {params.begin(), params.end()};
 }
 
@@ -272,6 +275,10 @@ void GenerativeMIDIProcessor::prepareToPlay(double sampleRate, int samplesPerBlo
     // Reserve event queue so schedule/process stay within capacity on the audio thread
     const int queueCap = juce::jmax(256, samplesPerBlock * 8);
     eventScheduler.prepare(queueCap);
+
+    // Ensure polyrhythm engine follows clock tempo / meter
+    polyrhythmEngine.setTempo(tempo);
+    polyrhythmEngine.setTimeSignature(static_cast<int>(timeSigNum), static_cast<int>(timeSigDenom));
 
     // Ensure polyrhythm layer 0 has an audible default pattern (constructor starts empty).
     if (auto* layer = polyrhythmEngine.getLayer(0))
@@ -452,7 +459,12 @@ void GenerativeMIDIProcessor::onSubdivisionHit(int subdivision)
 
     const bool modLfoEnable = parameters.getRawParameterValue(PARAM_MOD_LFO_ENABLE)->load() > 0.5f;
     const float modLfoDepth = parameters.getRawParameterValue(PARAM_MOD_LFO_DEPTH)->load();
+    const float modLfoDensityDepth = parameters.getRawParameterValue(PARAM_MOD_LFO_DENSITY_DEPTH)->load();
     const float modLfoValue = modLfo.getBipolar();
+
+    float effectiveDensity = density;
+    if (modLfoEnable && modLfoDensityDepth > 0.0f)
+        effectiveDensity = ModLfo::applyToUnipolar(density, modLfoValue, modLfoDensityDepth);
 
     auto scheduleNote = [&](int pitch, float velocity, int stepForSwing)
     {
@@ -491,7 +503,7 @@ void GenerativeMIDIProcessor::onSubdivisionHit(int subdivision)
         {
             const int step = lastSubdivisionStep % euclideanEngine.getSteps();
             if (euclideanEngine.getStep(step)
-                && rtRandom.nextFloat() < density)
+                && rtRandom.nextFloat() < effectiveDensity)
             {
                 const float rawVelocity = euclideanEngine.getVelocity(step);
                 const float velocity = velocityMin + (rawVelocity * (velocityMax - velocityMin));
@@ -506,12 +518,15 @@ void GenerativeMIDIProcessor::onSubdivisionHit(int subdivision)
 
         case GeneratorTypeMapping::kPolyrhythm:
         {
-            // MVP: all enabled layers advance one step per subdivision hit.
-            // Layer `division` is stored/editable but not yet used for rate scaling.
+            // Sixteenth-note clock grid; layer.division scales step rate (4 = quarters).
+            constexpr int kClockGrid = 16;
             for (int i = 0; i < polyrhythmEngine.getNumLayers(); ++i)
             {
                 auto* layer = polyrhythmEngine.getLayer(i);
                 if (!layer || !layer->enabled || layer->length <= 0)
+                    continue;
+
+                if (!polyrhythmEngine.shouldEmitOnThisTick(i, kClockGrid))
                     continue;
 
                 const int step = layer->currentStep % layer->length;
@@ -519,18 +534,20 @@ void GenerativeMIDIProcessor::onSubdivisionHit(int subdivision)
                     && step < static_cast<int>(layer->pitches.size())
                     && step < static_cast<int>(layer->velocities.size())
                     && layer->pattern[static_cast<size_t>(step)]
-                    && rtRandom.nextFloat() < density)
+                    && rtRandom.nextFloat() < effectiveDensity)
                 {
                     const int rawPitch = juce::jlimit(
                         pitchMin, pitchMax,
-                        layer->pitches[static_cast<size_t>(step)]);
+                        layer->pitches[static_cast<size_t>(step)] + layer->pitchOffset);
                     const int pitch = scaleQuantizer.quantize(rawPitch);
-                    const float rawVelocity = layer->velocities[static_cast<size_t>(step)];
+                    const float rawVelocity = juce::jlimit(
+                        0.0f, 1.0f,
+                        layer->velocities[static_cast<size_t>(step)] * layer->velocityMultiplier);
                     const float velocity = velocityMin + (rawVelocity * (velocityMax - velocityMin));
                     scheduleNote(pitch, velocity, step);
                 }
 
-                layer->currentStep = (layer->currentStep + 1) % layer->length;
+                polyrhythmEngine.advanceStep(i);
             }
             lastSubdivisionStep++;
             break;
@@ -544,7 +561,7 @@ void GenerativeMIDIProcessor::onSubdivisionHit(int subdivision)
             const auto algoType = GeneratorTypeMapping::toAlgorithmic(generatorType);
             algorithmicEngine.setGeneratorType(algoType);
 
-            if (rtRandom.nextFloat() < density)
+            if (rtRandom.nextFloat() < effectiveDensity)
             {
                 algorithmicEngine.setPitchRange(pitchMin, pitchMax);
                 algorithmicEngine.setVelocityRange(velocityMin, velocityMax);
@@ -577,7 +594,7 @@ void GenerativeMIDIProcessor::onSubdivisionHit(int subdivision)
             const float timeScale = parameters.getRawParameterValue(PARAM_TIME_SCALE)->load();
 
             stochasticEngine.setGeneratorType(type);
-            stochasticEngine.setDensity(density);
+            stochasticEngine.setDensity(effectiveDensity);
             stochasticEngine.setStepSize(stepSize);
             stochasticEngine.setMomentum(momentum);
             stochasticEngine.setTimeScale(timeScale);
@@ -614,20 +631,26 @@ juce::AudioProcessorEditor* GenerativeMIDIProcessor::createEditor()
 }
 
 //==============================================================================
-void GenerativeMIDIProcessor::getStateInformation(juce::MemoryBlock& destData)
-{
-    auto state = parameters.copyState();
-    std::unique_ptr<juce::XmlElement> xml(state.createXml());
-    copyXmlToBinary(*xml, destData);
-}
-
 void GenerativeMIDIProcessor::setStateInformation(const void* data, int sizeInBytes)
 {
     std::unique_ptr<juce::XmlElement> xmlState(getXmlFromBinary(data, sizeInBytes));
 
-    if (xmlState.get() != nullptr)
-        if (xmlState->hasTagName(parameters.state.getType()))
-            parameters.replaceState(juce::ValueTree::fromXml(*xmlState));
+    if (xmlState.get() != nullptr && xmlState->hasTagName(parameters.state.getType()))
+    {
+        auto tree = juce::ValueTree::fromXml(*xmlState);
+        const auto schema = xmlState->getStringAttribute("generativeMidiSchema");
+        GeneratorTypeMapping::migrateApvtsStateIfNeeded(tree, schema);
+        parameters.replaceState(tree);
+    }
+}
+
+void GenerativeMIDIProcessor::getStateInformation(juce::MemoryBlock& destData)
+{
+    auto state = parameters.copyState();
+    std::unique_ptr<juce::XmlElement> xml(state.createXml());
+    if (xml != nullptr)
+        xml->setAttribute("generativeMidiSchema", GeneratorTypeMapping::kPresetSchemaVersion);
+    copyXmlToBinary(*xml, destData);
 }
 
 //==============================================================================

@@ -1,7 +1,6 @@
 # Modulation v2
 
-**Status:** MVP incomplete — single LFO → velocity path compiles and runs; full matrix / multi-destination UI is deferred.  
-**Branch:** `feature/modulation-v2`  
+**Status:** MVP on **master** — LFO → velocity shipped; LFO → density depth follows. Full matrix / multi-destination panel deferred.  
 **Archive reference:** `archive/modulation_v1/` (do not half-wire those includes into the live tree).
 
 ## Why not restore v1?
@@ -34,7 +33,7 @@ v2 keeps the *ideas* (sources → depth → destinations) and rebuilds a compili
 | Destination | MVP | Later |
 |-------------|-----|-------|
 | Note velocity | **Yes** (LFO bipolar × depth) | Multi-source sum, unipolar option |
-| Note density / probability | Stub destination ID only | Wire in `onSubdivisionHit` density load |
+| Note density / probability | **Yes** (`modLfoDensityDepth`) | Multi-source sum |
 | Gate length | — | After velocity path proves out |
 | Pitch / ratchet / expression amounts | — | Explicit allow-list; never free-form APVTS strings |
 

@@ -177,7 +177,7 @@ All parameter values are stored as normalized 0.0-1.0 values.
 - **No Preset Preview**: Can't audition presets before loading
 - **No Preset Tags**: Only one category per preset (no multiple tags)
 - **No Preset Search**: Must browse or filter by category
-- **Factory set is focused**: 10 built-ins covering the live 9 generators (not a huge library)
+- **Factory set**: built-ins covering the live generators (incl. experimental Polyrhythm when present)
 
 These will be addressed in future updates!
 

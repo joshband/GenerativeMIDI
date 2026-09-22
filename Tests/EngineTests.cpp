@@ -258,8 +258,8 @@ TEST_CASE("PresetManager initializes non-zero factory presets", "[preset]")
             ++factoryCount;
     }
 
-    REQUIRE(factoryCount == 10);
-    REQUIRE(manager.getNumPresets() >= 10);
+    REQUIRE(factoryCount == 11);
+    REQUIRE(manager.getNumPresets() >= 11);
 
     // Load Euclidean Basic and confirm generatorType lands on index 0
     REQUIRE(manager.loadPresetByName("Euclidean Basic"));
@@ -270,6 +270,9 @@ TEST_CASE("PresetManager initializes non-zero factory presets", "[preset]")
     // Load Brownian Drift and confirm generatorType index 6
     REQUIRE(manager.loadPresetByName("Brownian Drift"));
     REQUIRE(static_cast<int>(gen->load()) == 6);
+
+    REQUIRE(manager.loadPresetByName("Polyrhythm Layers"));
+    REQUIRE(static_cast<int>(gen->load()) == 1);
 
     // Factory ValueTrees must carry PARAM children with remapped IDs
     const PresetManager::Preset* brownianPtr = nullptr;
@@ -332,10 +335,11 @@ TEST_CASE("PresetManager factory loadPreset round-trips key params", "[preset]")
         int generatorType;
     };
 
-    // Order matches initializeFactoryPresets() — indices 0..9 are always factories.
+    // Order matches initializeFactoryPresets() — indices 0..10 are always factories.
     const FactoryExpectation expected[] = {
         { "Euclidean Basic", 0 },
         { "Euclidean Complex", 0 },
+        { "Polyrhythm Layers", 1 },
         { "Brownian Drift", 6 },
         { "Markov Melody", 2 },
         { "L-System Fractal", 3 },
@@ -346,9 +350,9 @@ TEST_CASE("PresetManager factory loadPreset round-trips key params", "[preset]")
         { "Percussive Hits", 0 },
     };
 
-    REQUIRE(manager.getNumPresets() >= 10);
+    REQUIRE(manager.getNumPresets() >= 11);
 
-    for (int i = 0; i < 10; ++i)
+    for (int i = 0; i < 11; ++i)
     {
         const auto& preset = manager.getPreset(i);
         REQUIRE(preset.isFactory);
@@ -460,4 +464,70 @@ TEST_CASE("ModLfo bipolar sine stays in range and advances", "[modulation]")
     REQUIRE(ModLfo::applyToUnipolar(0.1f, -1.0f, 0.5f) == Catch::Approx(0.0f));
     REQUIRE(kModulationDestinationCount >= 2);
     REQUIRE(static_cast<int>(ModulationDestination::Velocity) == 0);
+}
+
+TEST_CASE("migrateGeneratorTypeIndex shifts 9-gen layout", "[mapping][migration]")
+{
+    REQUIRE(GeneratorTypeMapping::migrateGeneratorTypeIndex(0) == 0);
+    REQUIRE(GeneratorTypeMapping::migrateGeneratorTypeIndex(1) == 2); // was Markov
+    REQUIRE(GeneratorTypeMapping::migrateGeneratorTypeIndex(4) == 5);
+    REQUIRE(GeneratorTypeMapping::migrateGeneratorTypeIndex(8) == 9);
+    REQUIRE(GeneratorTypeMapping::migrateGeneratorTypeIndex(9) == 9);
+}
+
+TEST_CASE("migrateApvtsStateIfNeeded rewrites generatorType PARAM", "[mapping][migration]")
+{
+    juce::ValueTree state("GenerativeMIDI");
+    juce::ValueTree param("PARAM");
+    param.setProperty("id", "generatorType", nullptr);
+    param.setProperty("value", 1.0f, nullptr); // old Markov
+    state.appendChild(param, nullptr);
+
+    GeneratorTypeMapping::migrateApvtsStateIfNeeded(state, "1.0");
+    REQUIRE((float) state.getChildWithProperty("id", "generatorType").getProperty("value")
+            == Catch::Approx(2.0f));
+
+    // Already 1.1 — no shift (Polyrhythm stays 1)
+    juce::ValueTree state2("GenerativeMIDI");
+    juce::ValueTree param2("PARAM");
+    param2.setProperty("id", "generatorType", nullptr);
+    param2.setProperty("value", 1.0f, nullptr);
+    state2.appendChild(param2, nullptr);
+    GeneratorTypeMapping::migrateApvtsStateIfNeeded(state2, "1.1");
+    REQUIRE((float) state2.getChildWithProperty("id", "generatorType").getProperty("value")
+            == Catch::Approx(1.0f));
+}
+
+TEST_CASE("PolyrhythmEngine division rate diverges over ticks", "[polyrhythm]")
+{
+    PolyrhythmEngine engine;
+    REQUIRE(engine.getNumLayers() >= 1);
+
+    const int a = 0;
+    const int b = engine.addLayer();
+    engine.setLayerDivision(a, 4);  // advance every 4 sixteenth ticks
+    engine.setLayerDivision(b, 16); // advance every tick
+    engine.setLayerLength(a, 16);
+    engine.setLayerLength(b, 16);
+    engine.resetLayer(a);
+    engine.resetLayer(b);
+
+    int advancesA = 0;
+    int advancesB = 0;
+    for (int tick = 0; tick < 16; ++tick)
+    {
+        if (engine.shouldEmitOnThisTick(a, 16))
+        {
+            ++advancesA;
+            engine.advanceStep(a);
+        }
+        if (engine.shouldEmitOnThisTick(b, 16))
+        {
+            ++advancesB;
+            engine.advanceStep(b);
+        }
+    }
+
+    REQUIRE(advancesA == 4);
+    REQUIRE(advancesB == 16);
 }

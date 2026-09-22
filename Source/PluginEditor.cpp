@@ -264,7 +264,7 @@ GenerativeMIDIEditor::GenerativeMIDIEditor(GenerativeMIDIProcessor& p)
 
     // Modulation v2 MVP: LFO → velocity
     addAndMakeVisible(modLfoEnableButton);
-    modLfoEnableButton.setButtonText("LFO Vel");
+    modLfoEnableButton.setButtonText("LFO");
     modLfoEnableButton.setClickingTogglesState(true);
     modLfoEnableAttachment.reset(new juce::AudioProcessorValueTreeState::ButtonAttachment(
         audioProcessor.getValueTreeState(), "modLfoEnable", modLfoEnableButton));
@@ -284,8 +284,17 @@ GenerativeMIDIEditor::GenerativeMIDIEditor(GenerativeMIDIProcessor& p)
     modLfoDepthAttachment.reset(new juce::AudioProcessorValueTreeState::SliderAttachment(
         audioProcessor.getValueTreeState(), "modLfoDepth", modLfoDepthSlider));
     addAndMakeVisible(modLfoDepthLabel);
-    modLfoDepthLabel.setText("LFO Depth", juce::dontSendNotification);
+    modLfoDepthLabel.setText("LFO Vel", juce::dontSendNotification);
     modLfoDepthLabel.setJustificationType(juce::Justification::centred);
+
+    addAndMakeVisible(modLfoDensityDepthSlider);
+    modLfoDensityDepthSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
+    modLfoDensityDepthSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 50, 18);
+    modLfoDensityDepthAttachment.reset(new juce::AudioProcessorValueTreeState::SliderAttachment(
+        audioProcessor.getValueTreeState(), "modLfoDensityDepth", modLfoDensityDepthSlider));
+    addAndMakeVisible(modLfoDensityDepthLabel);
+    modLfoDensityDepthLabel.setText("LFO Dens", juce::dontSendNotification);
+    modLfoDensityDepthLabel.setJustificationType(juce::Justification::centred);
 
     // Ratchet controls
     addAndMakeVisible(ratchetCountSlider);
@@ -789,6 +798,12 @@ void GenerativeMIDIEditor::resized()
     auto modDepthArea = advancedSection.removeFromLeft(knobSize);
     modLfoDepthLabel.setBounds(modDepthArea.removeFromBottom(20));
     modLfoDepthSlider.setBounds(modDepthArea);
+
+    advancedSection.removeFromLeft(spacing);
+
+    auto modDensArea = advancedSection.removeFromLeft(knobSize);
+    modLfoDensityDepthLabel.setBounds(modDensArea.removeFromBottom(20));
+    modLfoDensityDepthSlider.setBounds(modDensArea);
 }
 
 void GenerativeMIDIEditor::timerCallback()

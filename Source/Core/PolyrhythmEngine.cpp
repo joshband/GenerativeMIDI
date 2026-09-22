@@ -77,6 +77,20 @@ void PolyrhythmEngine::setLayerEnabled(int layerIndex, bool enabled)
         layer->enabled = enabled;
 }
 
+void PolyrhythmEngine::setLayerPitchOffset(int layerIndex, int semitones)
+{
+    auto* layer = getLayer(layerIndex);
+    if (layer)
+        layer->pitchOffset = juce::jlimit(-24, 24, semitones);
+}
+
+void PolyrhythmEngine::setLayerVelocityMultiplier(int layerIndex, float multiplier)
+{
+    auto* layer = getLayer(layerIndex);
+    if (layer)
+        layer->velocityMultiplier = juce::jlimit(0.0f, 2.0f, multiplier);
+}
+
 void PolyrhythmEngine::setStep(int layerIndex, int stepIndex, bool active, float velocity, int pitch)
 {
     auto* layer = getLayer(layerIndex);
@@ -121,14 +135,35 @@ void PolyrhythmEngine::randomizeLayer(int layerIndex, float density)
 
 void PolyrhythmEngine::advance(int layerIndex, int subdivisions)
 {
+    if (shouldEmitOnThisTick(layerIndex, juce::jmax(1, subdivisions)))
+        advanceStep(layerIndex);
+}
+
+bool PolyrhythmEngine::shouldEmitOnThisTick(int layerIndex, int clockSubdivision)
+{
     auto* layer = getLayer(layerIndex);
-    if (!layer || !layer->enabled)
+    if (!layer || !layer->enabled || layer->length <= 0)
+        return false;
+
+    const int grid = juce::jmax(1, clockSubdivision);
+    const int div = juce::jmax(1, layer->division);
+    const int ticksPerStep = juce::jmax(1, grid / div);
+
+    layer->tickCounter += 1;
+    if (layer->tickCounter < ticksPerStep)
+        return false;
+
+    layer->tickCounter = 0;
+    return true;
+}
+
+void PolyrhythmEngine::advanceStep(int layerIndex)
+{
+    auto* layer = getLayer(layerIndex);
+    if (!layer || layer->length <= 0)
         return;
 
-    // Calculate effective subdivisions based on division
-    int effectiveSubdivisions = (subdivisions * layer->division) / (timeSignatureDenom / 4);
-
-    layer->currentStep = (layer->currentStep + effectiveSubdivisions) % layer->length;
+    layer->currentStep = (layer->currentStep + 1) % layer->length;
 }
 
 void PolyrhythmEngine::reset()

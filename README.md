@@ -1,6 +1,6 @@
 # Generative MIDI
 
-Open-source generative MIDI processor for macOS (AU / VST3 / Standalone). Development status tracked in [STATUS.md](STATUS.md) (currently **v0.8.0**). Nine generators are exposed in the current editor UI; see the showcase for an honest ownership and evidence summary.
+Open-source generative MIDI processor for macOS (AU / VST3 / Standalone). Development status tracked in [STATUS.md](STATUS.md) (currently **v0.8.0**). **Ten** generators are exposed in the editor (including experimental Polyrhythm); ADVANCED includes a velocity/density LFO MVP. See the showcase for an honest ownership and evidence summary.
 
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20iOS%20%7C%20iPadOS-lightgrey.svg)](https://github.com/joshband/GenerativeMIDI/releases)

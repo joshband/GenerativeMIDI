@@ -2,28 +2,26 @@
 
 **Product:** GenerativeMIDI **v0.8.0**  
 **Kind:** Manual smoke only — not automated UI tests  
-**Baseline commit:** ~`f6ef718` (master)
+**Baseline:** current `master` (10 generators + LFO MVP)
 
-Use this after a local CMake build (or a known-good binary) to confirm the live editor path still behaves. Check boxes as you go; leave notes if something fails.
+Use this after a local CMake build (or a known-good binary). Check boxes as you go; leave notes if something fails.
 
 **Prerequisites**
 
 - Build Standalone (+ AU or VST3 for the DAW section): see [BUILD.md](../developer/BUILD.md)
 - Route MIDI out to a soft synth / sampler so notes are audible
-- Optional: a MIDI monitor (host MIDI log, MIDI Monitor, etc.) for expression checks
+- Optional: a MIDI monitor for expression / channel checks
 
 ---
 
-## 1. All 10 generators produce MIDI (Standalone — `feature/polyrhythm-ui`)
+## 1. All 10 generators produce MIDI (Standalone)
 
 Open **Generative MIDI.app**. Standalone has no host playhead — generation should run without pressing DAW play.
-
-For each generator in the dropdown, confirm notes emit (audible and/or MIDI monitor) within a few bars:
 
 | # | Generator | Pass? | Notes |
 |---|-----------|-------|-------|
 | 0 | Euclidean | ☐ | |
-| 1 | Polyrhythm | ☐ | Experimental MVP — default layers should emit; pitch/vel row sliders are not wired |
+| 1 | Polyrhythm | ☐ | Experimental — default layers should emit; try pitch/vel transforms + division |
 | 2 | Markov | ☐ | |
 | 3 | L-System | ☐ | |
 | 4 | Cellular | ☐ | |
@@ -33,59 +31,61 @@ For each generator in the dropdown, confirm notes emit (audible and/or MIDI moni
 | 8 | Drunk Walk | ☐ | |
 | 9 | Lorenz | ☐ | |
 
-**Honesty:** On master (pre-merge) the UI still lists **9** generators and omits Polyrhythm. This checklist matches the polyrhythm feature branch.
-
 **Hints if silent:** density / pulses > 0; tempo sane; MIDI channel matches the instrument; velocity range not zeroed.
 
 ---
 
-## 2. Ten factory presets load and change behavior
+## 2. Factory presets load and change behavior
 
-Open **Presets**. Load each factory preset (double-click or prev/next). Confirm the UI updates (generator / key knobs) and audible or visible pattern changes vs the previous preset:
+Open **Presets**. Load each factory. Confirm UI updates and audible/visible change:
 
-| # | Factory preset | Pass? | Notes |
-|---|----------------|-------|-------|
-| 0 | Euclidean Basic | ☐ | |
-| 1 | Euclidean Complex | ☐ | |
-| 2 | Brownian Drift | ☐ | |
-| 3 | Markov Melody | ☐ | |
-| 4 | L-System Fractal | ☐ | |
-| 5 | Cellular Automata | ☐ | |
-| 6 | Probabilistic Sparse | ☐ | |
-| 7 | Ratchet Groove | ☐ | |
-| 8 | Ambient Drift | ☐ | |
-| 9 | Percussive Hits | ☐ | |
+| Check | Pass? | Notes |
+|-------|-------|-------|
+| Each listed factory loads without crash | ☐ | |
+| Generator / knobs update | ☐ | |
+| Polyrhythm factory (if present) selects index 1 | ☐ | |
 
-Factory presets use the live **9-generator** APVTS indices. See [PRESET_GUIDE.md](PRESET_GUIDE.md).
+See [PRESET_GUIDE.md](PRESET_GUIDE.md). Indices match the **10-generator** APVTS layout.
 
 ---
 
-## 3. Host transport stop gates notes (DAW); Standalone still free-runs
-
-Clock advance rule: when a playhead exists, generation follows **isPlaying**; when no playhead (Standalone), the clock always advances.
+## 3. Host transport stop gates notes (DAW); Standalone free-runs
 
 | Context | Expectation | Pass? | Notes |
 |---------|-------------|-------|-------|
 | **Standalone** | Notes keep generating with no DAW transport | ☐ | |
 | **DAW — Play** | Notes generate while host is playing | ☐ | |
-| **DAW — Stop** | New notes stop while host is stopped (playhead present) | ☐ | |
-
-Any AU/VST3 host with a real playhead is fine (REAPER, Logic, Ableton, etc.). Hang notes already scheduled may still release; the check is that **new** generative note-ons stop while transport is stopped.
+| **DAW — Stop** | New notes stop while host is stopped | ☐ | |
 
 ---
 
 ## 4. MIDI expression: AT / PB / CC on note-on (static PB — not MPE)
 
-In the **EXPRESSION** section, with MIDI monitoring (or a synth that reacts to AT/CC/PB):
+In **EXPRESSION**, with MIDI monitoring:
 
-| Toggle | Amount / control | Expectation on each note-on | Pass? | Notes |
-|--------|------------------|-----------------------------|-------|-------|
-| **AT** enable | Aftertouch amount | Polyphonic aftertouch for that note | ☐ | |
-| **CC** enable | CC number + amount | CC message at note-on | ☐ | |
-| **PB** enable | PB Semi (1–24) | Static pitch-bend wheel offset (not continuous / not MPE) | ☐ | |
-| All expression **off** | — | Note-ons still emit; no AT / CC / PB from those toggles | ☐ | |
+| Control | Expectation | Pass? | Notes |
+|---------|-------------|-------|-------|
+| AT enable + amount | Poly aftertouch on note-on | ☐ | |
+| PB enable + semis | Pitch bend on note-on (static offset) | ☐ | |
+| CC enable + # + amount | CC on note-on | ☐ | |
 
-**Honest limits (v0.8.0):** per-note emit on note-on only. Continuous CC/PB modulation and MPE are deferred ([STATUS.md](../../STATUS.md)).
+---
+
+## 5. MIDI channel routing
+
+| Check | Pass? | Notes |
+|-------|-------|-------|
+| Channel combo 1–16 changes output channel for generated notes | ☐ | |
+
+---
+
+## 6. ADVANCED LFO (velocity + density)
+
+| Check | Pass? | Notes |
+|-------|-------|-------|
+| **LFO Vel** on + Depth > 0 → velocity breathes over time | ☐ | |
+| **LFO Dens** depth > 0 → note density / miss rate wobbles | ☐ | |
+| LFO off → steady density/velocity behavior | ☐ | |
 
 ---
 
@@ -93,9 +93,7 @@ In the **EXPRESSION** section, with MIDI monitoring (or a synth that reacts to A
 
 | Field | Value |
 |-------|-------|
-| Build / binary | |
-| Tester | |
 | Date | |
-| Result (pass / fail + blockers) | |
-
-Automated coverage elsewhere: Catch2 / `ctest` engine and preset round-trips — not a substitute for this UI/host smoke.
+| Build / commit | |
+| Tester | |
+| Result | ☐ Pass · ☐ Fail (attach notes) |
