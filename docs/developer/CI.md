@@ -41,8 +41,9 @@ Logs upload as `pluginval-logs-{macOS,Windows,Linux}` (warn if empty so a failed
 2. **Linux WebKit / ALSA:** Browser module is disabled (`JUCE_WEB_BROWSER=0`); audio deps are apt-installed for JUCE. JACK is optional runtime. pkg-config may still warn about missing `libcurl` / WebKit / GTK — harmless with those flags off.
 3. **Windows runner + VS discovery:** Job pins `windows-2022` because `windows-latest` may ship Visual Studio 2026 only (CMake `-G "Visual Studio 17 2022"` then fails). Configure/build use PowerShell — Git Bash often cannot find VS either. JUCE is cloned into `./JUCE` (no symlink).
 4. **Windows artifact paths:** Multi-config VS layout under `build/GenerativeMIDI_artefacts/Release/…`.
-5. **iOS signing:** Unsigned CI build (`CODE_SIGNING_REQUIRED=NO`) — device/TestFlight needs local signing.
-6. **COPY_PLUGIN_AFTER_BUILD:** May attempt user plugin folders on the runner; CI still consumes in-tree artefacts for upload/pluginval.
+5. **iOS artifacts:** AUv3 builds produce `.appex` (and sometimes a host `.app`). CI uploads both globs; requiring only `*.app` fails after a successful `xcodebuild`.
+6. **iOS signing:** Unsigned CI build (`CODE_SIGNING_REQUIRED=NO`) — device/TestFlight needs local signing.
+7. **COPY_PLUGIN_AFTER_BUILD:** May attempt user plugin folders on the runner; CI still consumes in-tree artefacts for upload/pluginval.
 
 ## Local pluginval (macOS)
 

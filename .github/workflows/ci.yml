@@ -57,7 +57,10 @@ jobs:
       uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
       with:
         name: GenerativeMIDI-iOS
-        path: build_ios/**/*.app
+        # AUv3 product is an .appex (may also emit a host .app depending on JUCE/Xcode).
+        path: |
+          build_ios/**/*.appex
+          build_ios/**/*.app
         if-no-files-found: error
 
   build-macos:
