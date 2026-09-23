@@ -646,3 +646,55 @@ TEST_CASE("PolyrhythmEngine division rate diverges over ticks", "[polyrhythm]")
     REQUIRE(advancesA == 4);
     REQUIRE(advancesB == 16);
 }
+
+#include "DSP/MidiActivityLog.h"
+
+TEST_CASE("MidiActivityLog pushes and pops note events FIFO-order", "[midi-log]")
+{
+    MidiActivityLog log;
+
+    REQUIRE(log.tryPushFromMessage(juce::MidiMessage::noteOn(1, 60, (juce::uint8) 100)));
+    REQUIRE(log.tryPushFromMessage(juce::MidiMessage::noteOff(1, 60)));
+    REQUIRE_FALSE(log.tryPushFromMessage(juce::MidiMessage::controllerEvent(1, 1, 64)));
+
+    MidiActivityEvent out[8];
+    const int n = log.pop(out, 8);
+    REQUIRE(n == 2);
+    REQUIRE(out[0].type == MidiActivityEvent::Type::NoteOn);
+    REQUIRE(out[0].note == 60);
+    REQUIRE(out[0].velocity == 100);
+    REQUIRE(out[0].channel == 1);
+    REQUIRE(out[1].type == MidiActivityEvent::Type::NoteOff);
+    REQUIRE(out[1].note == 60);
+    REQUIRE(out[1].channel == 1);
+    REQUIRE(log.getNumReady() == 0);
+}
+
+TEST_CASE("MidiActivityLog drops newest when full", "[midi-log]")
+{
+    MidiActivityLog log;
+
+    for (int i = 0; i < MidiActivityLog::kMaxEvents; ++i)
+        REQUIRE(log.tryPushFromMessage(juce::MidiMessage::noteOn(2, 40 + (i % 20), (juce::uint8) 80)));
+
+    REQUIRE_FALSE(log.tryPushFromMessage(juce::MidiMessage::noteOn(2, 72, (juce::uint8) 90)));
+    REQUIRE(log.getNumReady() == MidiActivityLog::kMaxEvents);
+
+    MidiActivityEvent out[MidiActivityLog::kMaxEvents];
+    REQUIRE(log.pop(out, MidiActivityLog::kMaxEvents) == MidiActivityLog::kMaxEvents);
+    REQUIRE(out[0].note == 40);
+}
+
+TEST_CASE("MidiActivityLog formatEvent includes type note vel channel", "[midi-log]")
+{
+    MidiActivityEvent e;
+    e.type = MidiActivityEvent::Type::NoteOn;
+    e.note = 60;
+    e.velocity = 100;
+    e.channel = 3;
+    const auto s = MidiActivityLog::formatEvent(e);
+    REQUIRE(s.contains("ON"));
+    REQUIRE(s.contains("vel"));
+    REQUIRE(s.contains("ch 3"));
+}
+

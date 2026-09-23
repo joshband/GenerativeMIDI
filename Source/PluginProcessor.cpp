@@ -369,12 +369,16 @@ void GenerativeMIDIProcessor::processBlock(juce::AudioBuffer<float>& buffer, juc
         clockManager.processExternalMidiClock(message);
     }
 
-    // Advance clock when host is playing, or always when no playhead (Standalone)
+    // Advance when host is playing. Standalone free-runs (ignore transport gate);
+    // host smoke tests attach a FakePlayHead on a non-Standalone processor.
     bool shouldAdvance = true;
-    if (auto* playHead = getPlayHead())
+    if (wrapperType != wrapperType_Standalone)
     {
-        if (auto position = playHead->getPosition())
-            shouldAdvance = position->getIsPlaying();
+        if (auto* playHead = getPlayHead())
+        {
+            if (auto position = playHead->getPosition())
+                shouldAdvance = position->getIsPlaying();
+        }
     }
     clockAdvancing.store(shouldAdvance, std::memory_order_relaxed);
 
@@ -395,8 +399,9 @@ void GenerativeMIDIProcessor::processBlock(juce::AudioBuffer<float>& buffer, juc
     // Generate MIDI events
     processGenerativeOutput(midiMessages, buffer.getNumSamples());
 
-    // Process scheduled events
-    eventScheduler.processEvents(currentSamplePosition, midiMessages, buffer.getNumSamples());
+    // Process scheduled events (feeds MIDI activity log for the editor pane)
+    eventScheduler.processEvents(currentSamplePosition, midiMessages, buffer.getNumSamples(),
+                                 &midiActivityLog);
 
     currentSamplePosition += buffer.getNumSamples();
 }

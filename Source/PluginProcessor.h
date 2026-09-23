@@ -23,6 +23,7 @@
 #include "Core/PresetManager.h"
 #include "DSP/ClockManager.h"
 #include "DSP/EventScheduler.h"
+#include "DSP/MidiActivityLog.h"
 #include "Modulation/ModLfo.h"
 #include "Modulation/ModulationDestination.h"
 
@@ -89,6 +90,7 @@ public:
     int getCurrentStep() const { return lastSubdivisionStep; }
     uint32_t getNoteActivityCount() const { return noteActivityCounter.load(std::memory_order_relaxed); }
     bool isClockAdvancing() const { return clockAdvancing.load(std::memory_order_relaxed); }
+    MidiActivityLog& getMidiActivityLog() { return midiActivityLog; }
 
 private:
     //==============================================================================
@@ -169,6 +171,7 @@ private:
     std::atomic<bool> clockAdvancing { false };
     juce::Random rtRandom;
     ModLfo modLfo;
+    MidiActivityLog midiActivityLog;
 
     // Helper methods
     void processGenerativeOutput(juce::MidiBuffer& midiMessages, int numSamples);

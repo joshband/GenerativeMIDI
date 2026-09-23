@@ -70,8 +70,9 @@ The editor is the desktop brass + cyan-on-navy layout with cross-format usabilit
 | Format | Where it builds | Notes |
 |--------|-----------------|-------|
 | AU / VST3 / Standalone | macOS CMake (`build/`) | Primary desktop hosts; editor scrolls in short frames |
-| AUv3 | **iOS** CMake (`build_ios.sh` / `CMAKE_SYSTEM_NAME=iOS`) | JUCE sets `JucePlugin_Build_AUv3=0` on desktop macOS MIDI-FX configs; use the iOS target |
-| AUv3 device QA | Physical iPad/iPhone | Not claimed here — sideload / TestFlight only |
+| AUv3 | **iOS** CMake (`build_ios.sh` / `CMAKE_SYSTEM_NAME=iOS`) | JUCE sets `JucePlugin_Build_AUv3=0` on desktop macOS MIDI-FX configs; use the iOS target. iOS also builds **Standalone** for Simulator editor QA (embeds `.appex`). |
+| AUv3 Simulator QA | iPad Simulator (see `docs/qa/logs/auv3_sim_qa.txt`) | Build + launch + layout + MIDI Log live events verified 2026-09-22 |
+| AUv3 device QA | Physical iPad/iPhone | Remaining human step when a signed device is available — not claimed store-ready |
 
 ## Troubleshooting
 

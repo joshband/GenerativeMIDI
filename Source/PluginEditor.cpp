@@ -66,6 +66,12 @@ GenerativeMIDIEditor::GenerativeMIDIEditor(GenerativeMIDIProcessor& p)
     polyLayerEditor = std::make_unique<PolyrhythmLayerEditor>(audioProcessor.getPolyrhythmEngine());
     contentPanel.addChildComponent(polyLayerEditor.get());
 
+    contentPanel.addAndMakeVisible(midiActivityPane);
+    midiActivityPane.onExpandedChanged = [this]
+    {
+        resized();
+    };
+
     // Generator type selector
     contentPanel.addAndMakeVisible(generatorLabel);
     generatorLabel.setText("Generator", juce::dontSendNotification);
@@ -694,9 +700,10 @@ int GenerativeMIDIEditor::preferredContentHeight(bool isPolyrhythm) const
     const int pattern = isPolyrhythm ? 220 : 140;
     const int generator = 200;
     const int expression = 250;
-    const int advanced = 160;
-    const int bottomPad = 12;
-    return header + pattern + generator + expression + advanced + bottomPad;
+    const int advanced = 150; // matches layoutContent removeFromTop
+    const int midiLog = midiActivityPane.getPreferredHeight() + 8;
+    const int bottomPad = 8;
+    return header + pattern + generator + expression + advanced + midiLog + bottomPad;
 }
 
 void GenerativeMIDIEditor::layoutContent(juce::Rectangle<int> area)
@@ -968,6 +975,12 @@ void GenerativeMIDIEditor::layoutContent(juce::Rectangle<int> area)
     auto modDensArea = advancedSection.removeFromLeft(knobSize);
     modLfoDensityDepthLabel.setBounds(modDensArea.removeFromBottom(20));
     modLfoDensityDepthSlider.setBounds(modDensArea);
+
+    // Collapsible MIDI activity / last-events strip
+    area.removeFromTop(4);
+    const int midiLogH = midiActivityPane.getPreferredHeight();
+    auto midiLogArea = area.removeFromTop(midiLogH).reduced(40, 0);
+    midiActivityPane.setBounds(midiLogArea);
 }
 
 void GenerativeMIDIEditor::timerCallback()
@@ -1037,6 +1050,12 @@ void GenerativeMIDIEditor::timerCallback()
     }
 
     updateStatusChip();
+
+    // Drain RT-safe MIDI activity FIFO into the UI pane (message thread)
+    MidiActivityEvent drained[MidiActivityLog::kMaxEvents];
+    const int n = audioProcessor.getMidiActivityLog().pop(drained, MidiActivityLog::kMaxEvents);
+    if (n > 0)
+        midiActivityPane.ingest(drained, n);
 }
 
 void GenerativeMIDIEditor::currentPresetChanged(const juce::String& presetName)

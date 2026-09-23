@@ -76,7 +76,8 @@ void EventScheduler::scheduleCC(int ccNumber, float value, int channel, int64_t 
     scheduleEvent(message, sampleTime, 7); // Medium priority
 }
 
-void EventScheduler::processEvents(int64_t currentSample, juce::MidiBuffer& outputBuffer, int bufferSize)
+void EventScheduler::processEvents(int64_t currentSample, juce::MidiBuffer& outputBuffer, int bufferSize,
+                                   MidiActivityLog* activityLog)
 {
     int64_t endSample = currentSample + bufferSize;
 
@@ -91,6 +92,9 @@ void EventScheduler::processEvents(int64_t currentSample, juce::MidiBuffer& outp
             sampleOffset = juce::jlimit(0, bufferSize - 1, sampleOffset);
 
             outputBuffer.addEvent(event.message, sampleOffset);
+
+            if (activityLog != nullptr)
+                activityLog->tryPushFromMessage(event.message);
 
             std::pop_heap(eventStorage.begin(), eventStorage.end());
             eventStorage.pop_back();

@@ -15,8 +15,8 @@
 | `stochasticType` APVTS param | **Legacy** — kept for session load; non-automatable; **unused by DSP** |
 | Modulation matrix | Archived under `archive/modulation_v1/` — not live |
 | AUv3 / iOS | CMake iOS target (`GenerativeMIDI_AUv3`) + docs; **not App Store–ready**; macOS desktop build has `JucePlugin_Build_AUv3=0` |
-| Touch / a11y | iOS larger hit targets + scrollable editor; key controls have AX `setTitle` names |
-| Tests | Catch2 + `ctest` (**26**, incl. host playhead smoke + polyrhythm layer persistence + Markov trained lookup) in CMake / CI |
+| Touch / a11y | iOS larger hit targets + scrollable editor; key controls have AX `setTitle` names; MIDI Log toggle/Clear titled |
+| Tests | Catch2 + `ctest` (**29**, incl. host playhead smoke + polyrhythm layer persistence + Markov trained lookup + MIDI activity FIFO) in CMake / CI |
 | CI matrix | macOS plugins + iOS AUv3 + Windows/Linux VST3 + pluginval (VST3) |
 | Canonical build | **CMake** (`GenerativeMIDI.jucer` deprecated) |
 
@@ -44,7 +44,10 @@ Showcase: https://joshband.github.io/GenerativeMIDI/
 None for the post-merge polish wave — see Planned for remaining MVP gaps.
 
 ### UI overhaul (2026-09-22)
-Deferred polish items shipped on `master`: branded combo popups, full Preset Manager restyle, round-cyan slider thumbs, scrollable cross-format editor sizes. Screenshots: [`docs/qa/logs/ui_overhaul_overview.png`](docs/qa/logs/ui_overhaul_overview.png), [`docs/qa/logs/ui_overhaul_combo_popup.png`](docs/qa/logs/ui_overhaul_combo_popup.png), [`docs/qa/logs/ui_overhaul_presets.png`](docs/qa/logs/ui_overhaul_presets.png), [`docs/qa/logs/ui_overhaul_compact.png`](docs/qa/logs/ui_overhaul_compact.png). **Format note:** macOS Debug builds AU + VST3 + Standalone; AUv3 is the **iOS** CMake target (deployment **15.0+**). Device AUv3 QA still deferred.
+Deferred polish items shipped on `master`: branded combo popups, full Preset Manager restyle, round-cyan slider thumbs, scrollable cross-format editor sizes, **MIDI activity log pane**. Screenshots: [`docs/qa/logs/ui_overhaul_overview.png`](docs/qa/logs/ui_overhaul_overview.png), [`docs/qa/logs/ui_overhaul_combo_popup.png`](docs/qa/logs/ui_overhaul_combo_popup.png), [`docs/qa/logs/ui_overhaul_presets.png`](docs/qa/logs/ui_overhaul_presets.png), [`docs/qa/logs/ui_overhaul_compact.png`](docs/qa/logs/ui_overhaul_compact.png), MIDI log: [`docs/qa/logs/auv3_sim_midi_log.jpg`](docs/qa/logs/auv3_sim_midi_log.jpg). **Format note:** macOS Debug builds AU + VST3 + Standalone; AUv3 is the **iOS** CMake target (deployment **15.0+**); iOS also builds Standalone for Simulator editor QA.
+
+### AUv3 Simulator QA (2026-09-22)
+**Verified on iPad Pro 13" Simulator (iOS 27):** build (AUv3 + Standalone host), install/launch, editor layout, status chip free-run/note, Euclidean pattern, MIDI Log live ON/OFF events. Evidence: [`docs/qa/logs/auv3_sim_qa.txt`](docs/qa/logs/auv3_sim_qa.txt), [`auv3_sim_overview.jpg`](docs/qa/logs/auv3_sim_overview.jpg), [`auv3_sim_running.jpg`](docs/qa/logs/auv3_sim_running.jpg), [`auv3_sim_midi_log.jpg`](docs/qa/logs/auv3_sim_midi_log.jpg). **Not verified:** physical device (Offline); interactive drag/tap gestures (no Simulator.app GUI on this host). **Not App Store–ready.**
 
 ## Planned (explicitly deferred)
 
@@ -58,8 +61,8 @@ Continuous CC/PB modulation and MPE (note-on emit shipped).
 ### Modulation matrix
 Full router / multi-source panel — not part of current LFO MVP.
 
-### Remaining UI
-MIDI log pane; AUv3 on-device touch QA; App Store packaging.
+### Remaining UI / shipping
+Physical-device AUv3 touch QA; App Store packaging.
 
 ## Project metrics
 
@@ -68,7 +71,7 @@ MIDI log pane; AUv3 on-device touch QA; App Store packaging.
 | Product version | v0.8.0 |
 | UI generators | 10 (Polyrhythm experimental) |
 | Build | `.github/workflows/ci.yml` (4 jobs) |
-| Tests | `ctest` (Catch2; host playhead smoke + polyrhythm layer persistence) |
+| Tests | `ctest` (Catch2; **29** cases — host playhead smoke + polyrhythm layer persistence + MIDI activity FIFO) |
 | Docs | README, FEATURES, GETTING_STARTED, BUILD, Pages, [SMOKE_CHECKLIST](docs/user/SMOKE_CHECKLIST.md) |
 
 ## Notes

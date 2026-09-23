@@ -17,8 +17,9 @@ else()
 endif()
 
 # Plugin formats: AU/AUv3 are Apple-only; Windows/Linux get VST3 + Standalone.
+# iOS: AUv3 for hosts + Standalone for Simulator / sideload editor QA.
 if(CMAKE_SYSTEM_NAME STREQUAL "iOS")
-    set(GENERATIVE_MIDI_FORMATS AUv3)
+    set(GENERATIVE_MIDI_FORMATS AUv3 Standalone)
 elseif(APPLE)
     set(GENERATIVE_MIDI_FORMATS AU AUv3 VST3 Standalone)
 else()

@@ -11,6 +11,7 @@
 #pragma once
 
 #include <juce_audio_processors/juce_audio_processors.h>
+#include "MidiActivityLog.h"
 #include <algorithm>
 #include <vector>
 
@@ -50,8 +51,9 @@ public:
     void schedulePitchBend(float bendAmount, int channel, int64_t sampleTime);
     void scheduleCC(int ccNumber, float value, int channel, int64_t sampleTime);
 
-    // Event retrieval
-    void processEvents(int64_t currentSample, juce::MidiBuffer& outputBuffer, int bufferSize);
+    // Event retrieval (optional activityLog receives note-on/off as they fire)
+    void processEvents(int64_t currentSample, juce::MidiBuffer& outputBuffer, int bufferSize,
+                       MidiActivityLog* activityLog = nullptr);
 
     // Queue management
     void clearAll();

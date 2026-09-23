@@ -1,0 +1,44 @@
+# AUv3 / iOS Simulator QA — 2026-09-22
+
+## Scope
+Post-UI-overhaul touch / layout verification for Generative MIDI on **iOS Simulator**.
+Physical device was **not** available (Josh’s iPhone listed Offline in `xcrun xctrace`).
+
+## Build
+- CMake iOS Simulator project: `build_ios_sim/` (`CMAKE_SYSTEM_NAME=iOS`, `iphonesimulator`, deployment **15.0**)
+- Formats: **AUv3** + **Standalone** (Standalone hosts the embedded `.appex` for editor QA)
+- Logs:
+  - [`auv3_sim_cmake.txt`](auv3_sim_cmake.txt)
+  - [`auv3_sim_build.txt`](auv3_sim_build.txt) (AUv3 scheme → **BUILD SUCCEEDED**)
+  - [`auv3_sim_standalone_rebuild.txt`](auv3_sim_standalone_rebuild.txt)
+- Artefacts:
+  - `Generative MIDI.appex` (AUv3)
+  - `Generative MIDI.app` with `PlugIns/Generative MIDI.appex` (Standalone host)
+
+## Simulator
+- Device: **iPad Pro 13-inch (M5)** — iOS **27.0** — UDID `E3148972-6488-4C44-BCBB-4563787C5A48`
+- Install / launch: `xcrun simctl install` + `launch` → `com.opensource.generativemidi`
+- Note: `Simulator.app` GUI binary was not present on this machine; verification used **headless simctl** + `simctl io screenshot` (no interactive click injection into the Simulator window).
+
+## Verified (Simulator)
+| Check | Result | Evidence |
+|-------|--------|----------|
+| AUv3 + Standalone Simulator build | PASS | build logs above |
+| App install + launch | PASS | `auv3_sim_qa.txt` |
+| Editor renders (brass + cyan-on-navy) | PASS | `auv3_sim_overview.jpg`, `auv3_sim_running.jpg` |
+| Status chip free-run / note | PASS | `Standalone · free-run` / `· note` in screenshots |
+| Euclidean pattern display | PASS | pulses visible in `auv3_sim_running.jpg` |
+| MIDI Log strip (expand + Clear + events) | PASS | `auv3_sim_midi_log.jpg` shows ON/OFF · note · vel · ch |
+| Presets button visible | PASS | header in screenshots |
+| Generator combo / primary knobs visible | PASS | Generator + Expression + Advanced in screenshots |
+| Scrollable Viewport (content taller than frame) | PASS | MIDI Log at bottom of scrollable content |
+
+## Not verified / remaining human steps
+| Item | Why |
+|------|-----|
+| Physical device AUv3 in GarageBand / AUM | Device Offline; needs USB + signing |
+| Interactive touch gestures (drag knobs, combo popup tap, Preset Manager sheet) | No Simulator.app GUI / idb on this host — visual layout only via screenshots |
+| App Store packaging / TestFlight | Explicitly out of scope — **not store-ready** |
+
+## Honesty
+Simulator QA is thorough for **build + launch + layout + MIDI log live events**. Device touch QA and store prep remain human follow-ups.

@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Built-in collapsible **MIDI activity log** pane (bottom of scrollable editor): recent note-on/off with note, velocity, channel; Clear control; AX titles; RT-safe `MidiActivityLog` AbstractFifo fed from `EventScheduler` (no audio-thread allocations).
+- Catch2 coverage for `MidiActivityLog` push/pop/full/format (`[midi-log]`).
+- iOS CMake formats now include **Standalone** alongside AUv3 so Simulator / sideload editor QA has a runnable host that embeds the `.appex`.
 - Branded ComboBox popup chrome via LookAndFeel (`drawPopupMenu*`) — brass + cyan-on-navy, not raw OS menus.
 - Editor content `Viewport` so Advanced / Expression remain reachable in short AU/VST3 host frames.
 - Cross-format editor defaults: desktop **1280×760** (min **960×560**); iOS **1024×700** (min **640×480**) with larger touch hit targets.
@@ -22,12 +25,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Accessibility titles (`Component::setTitle`) on key editor, Polyrhythm layer, and Preset Browser controls for System Events / VoiceOver automation.
 
 ### Changed
+- Standalone free-runs again (ignore host transport gate); plugin formats still gate on playhead `isPlaying` — matches status chip `free-run` and HostSmokeTests intent.
 - Velocity / Pitch (and other linear) slider thumbs unified to **round cyan** (knob-needle language); diamond thumbs removed.
 - Full Preset Manager restyle: brass title plate, CATEGORY / LIBRARY / ACTIONS headers, cyan selection rail, category chips; Save/Delete/Import/Export + load-on-select preserved.
 - Demoted SYNAPTIK wordmark; product title “Generative MIDI” is the primary header signal (brass + cyan-on-navy unchanged).
 - Knob/label fit: slightly wider knobs, `minimumHorizontalScale` on tight labels (Pulses, R. Prob, etc.).
 - iOS AUv3 deployment target raised **13 → 15** for current Xcode; format notes in `docs/deployment/README-iOS.md` / STATUS.
-- GitHub Pages `docs/index.html` / `docs/engineering.html` proof table aligned with 10 UI generators, 26 `ctest` cases, and REAPER MCP Host QA evidence.
+- GitHub Pages `docs/index.html` / `docs/engineering.html` proof table aligned with 10 UI generators, 29 `ctest` cases, and REAPER MCP Host QA evidence.
 - `ctest` suite expanded with host playhead smoke, polyrhythm layer persistence, and Markov trained-path lookup coverage.
 - Preset / session schema bumped **1.1 → 1.2** (generator-index migration still only for schemas older than 1.1).
 - Host/UI QA findings: AX titles verified; Polyrhythm layer editor confirmed in Debug Standalone screenshots; P2 BUILD.md caveat + Markov RT scratch lookup closed; REAPER ear-check logged as PASS with residual human glance.
