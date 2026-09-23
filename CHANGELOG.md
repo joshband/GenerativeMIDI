@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Editor lays out to the actual window width (minimum 720) so Expression no longer clips below 960px.
+- Non-Euclidean pattern band draws a readable activity meter; disabled Euclidean and stochastic knobs leave the layout instead of sitting at full size.
+
 ### Added
 - Built-in collapsible **MIDI activity log** pane (bottom of scrollable editor): recent note-on/off with note, velocity, channel; Clear control; AX titles; RT-safe `MidiActivityLog` AbstractFifo fed from `EventScheduler` (no audio-thread allocations).
 - Catch2 coverage for `MidiActivityLog` push/pop/full/format (`[midi-log]`).

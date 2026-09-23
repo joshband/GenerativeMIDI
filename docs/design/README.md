@@ -7,6 +7,7 @@ Complete design specifications and visual references for the GenerativeMIDI Vict
 ## 📐 Design Specifications
 
 ### UI Design
+- **[UI_UX_REVIEW_2026-09.md](UI_UX_REVIEW_2026-09.md)** - Post-overhaul visual review and remaining layout fixes
 - **[SYNAPTIK_UI_SPEC.md](SYNAPTIK_UI_SPEC.md)** - Complete UI specification and design system
 - **[COMPONENT_SPECS.md](COMPONENT_SPECS.md)** - Individual component specifications
 - **[GILDED_COMPONENTS.md](GILDED_COMPONENTS.md)** - Gilded steampunk component details

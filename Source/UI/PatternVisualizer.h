@@ -196,31 +196,34 @@ private:
 
     void paintActivityFallback(juce::Graphics& g, juce::Rectangle<float> bounds)
     {
-        auto tickArea = bounds.reduced(14.0f, 18.0f);
-        tickArea.removeFromBottom(22.0f);
+        auto tickArea = bounds.reduced(12.0f, 8.0f);
+        tickArea.removeFromBottom(18.0f);
 
         const float slotW = tickArea.getWidth() / static_cast<float>(kActivitySlots);
-        const float baseH = tickArea.getHeight();
+        const float baseH = juce::jmax(18.0f, tickArea.getHeight());
 
         for (int i = 0; i < kActivitySlots; ++i)
         {
             const bool lit = activityTicks[static_cast<size_t>(i)];
             const float age = static_cast<float>(i) / static_cast<float>(kActivitySlots - 1);
-            const float h = lit ? (0.35f + 0.55f * age + 0.1f * activityLevel) * baseH
-                                : 0.12f * baseH;
-            const float x = tickArea.getX() + static_cast<float>(i) * slotW + 1.0f;
+            const float h = lit ? (0.45f + 0.45f * age + 0.1f * activityLevel) * baseH
+                                : 0.28f * baseH;
+            const float x = tickArea.getX() + static_cast<float>(i) * slotW + 1.5f;
+            const float w = juce::jmax(3.0f, slotW - 3.0f);
             const float y = tickArea.getBottom() - h;
-            const float w = juce::jmax(2.0f, slotW - 2.0f);
+
+            g.setColour(juce::Colour(CustomLookAndFeel::ABYSS_NAVY).brighter(0.15f));
+            g.fillRoundedRectangle(x, tickArea.getBottom() - baseH, w, baseH, 1.5f);
 
             if (lit)
             {
-                g.setColour(accentColor.withAlpha(0.35f + 0.55f * age));
+                g.setColour(accentColor.withAlpha(0.55f + 0.4f * age));
                 g.fillRoundedRectangle(x, y, w, h, 1.5f);
             }
             else
             {
-                g.setColour(juce::Colour(CustomLookAndFeel::BRASS_AGED).withAlpha(0.28f));
-                g.fillRoundedRectangle(x, y, w, juce::jmax(h, 0.22f * baseH), 1.5f);
+                g.setColour(juce::Colour(CustomLookAndFeel::BRASS_AGED).withAlpha(0.35f));
+                g.drawRoundedRectangle(x, tickArea.getBottom() - 0.28f * baseH, w, 0.28f * baseH, 1.5f, 1.0f);
             }
         }
 

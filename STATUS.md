@@ -43,6 +43,9 @@ Showcase: https://joshband.github.io/GenerativeMIDI/
 
 None for the post-merge polish wave — see Planned for remaining MVP gaps.
 
+### UI review (2026-09-23)
+Post-overhaul critique and width/pattern/disabled-knob fixes: [`docs/design/UI_UX_REVIEW_2026-09.md`](docs/design/UI_UX_REVIEW_2026-09.md). Desktop minimum editor size is **720×520**; content width tracks the window.
+
 ### UI overhaul (2026-09-22)
 Deferred polish items shipped on `master`: branded combo popups, full Preset Manager restyle, round-cyan slider thumbs, scrollable cross-format editor sizes, **MIDI activity log pane**. Screenshots: [`docs/qa/logs/ui_overhaul_overview.png`](docs/qa/logs/ui_overhaul_overview.png), [`docs/qa/logs/ui_overhaul_combo_popup.png`](docs/qa/logs/ui_overhaul_combo_popup.png), [`docs/qa/logs/ui_overhaul_presets.png`](docs/qa/logs/ui_overhaul_presets.png), [`docs/qa/logs/ui_overhaul_compact.png`](docs/qa/logs/ui_overhaul_compact.png), MIDI log: [`docs/qa/logs/auv3_sim_midi_log.jpg`](docs/qa/logs/auv3_sim_midi_log.jpg). **Format note:** macOS Debug builds AU + VST3 + Standalone; AUv3 is the **iOS** CMake target (deployment **15.0+**); iOS also builds Standalone for Simulator editor QA.
 

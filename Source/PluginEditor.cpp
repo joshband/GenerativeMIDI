@@ -23,7 +23,7 @@ GenerativeMIDIEditor::GenerativeMIDIEditor(GenerativeMIDIProcessor& p)
     setResizeLimits(640, 480, 2000, 1400);
 #else
     setSize(1280, 760);
-    setResizeLimits(960, 560, 2000, 1400);
+    setResizeLimits(720, 520, 2000, 1400);
 #endif
     setResizable(true, true);
 
@@ -688,19 +688,20 @@ void GenerativeMIDIEditor::resized()
     editorViewport.setBounds(getLocalBounds());
 
     const bool isPolyrhythm = GeneratorTypeMapping::isPolyrhythm(generatorTypeCombo.getSelectedId() - 1);
-    const int contentW = juce::jmax(getWidth(), 960);
+    const int contentW = juce::jmax(getWidth(), 1);
     const int contentH = preferredContentHeight(isPolyrhythm);
     contentPanel.setSize(contentW, contentH);
-    // layoutContent is invoked from ContentPanel::resized
+    // setSize no-ops when dimensions are unchanged (generator switch), so lay out explicitly.
+    contentPanel.resized();
 }
 
 int GenerativeMIDIEditor::preferredContentHeight(bool isPolyrhythm) const
 {
-    const int header = 52;
-    const int pattern = isPolyrhythm ? 220 : 140;
-    const int generator = 200;
-    const int expression = 250;
-    const int advanced = 150; // matches layoutContent removeFromTop
+    const int header = 48;
+    const int pattern = isPolyrhythm ? 200 : 96;
+    const int generator = 168;
+    const int expression = 228;
+    const int advanced = 132;
     const int midiLog = midiActivityPane.getPreferredHeight() + 8;
     const int bottomPad = 8;
     return header + pattern + generator + expression + advanced + midiLog + bottomPad;
@@ -708,9 +709,15 @@ int GenerativeMIDIEditor::preferredContentHeight(bool isPolyrhythm) const
 
 void GenerativeMIDIEditor::layoutContent(juce::Rectangle<int> area)
 {
+    const int contentW = area.getWidth();
+    const int inset = contentW < 900 ? 12 : 24;
+    const int genIndex = generatorTypeCombo.getSelectedId() - 1;
+    const bool showEuclideanKnobs = (genIndex == GeneratorTypeMapping::kEuclidean);
+    const bool showStochasticKnobs = GeneratorTypeMapping::isStochastic(genIndex);
+
     // Compact header: brand left, product + status, presets right
-    auto titleArea = area.removeFromTop(52).reduced(20, 6);
-    auto presetArea = titleArea.removeFromRight(170);
+    auto titleArea = area.removeFromTop(48).reduced(inset, 4);
+    auto presetArea = titleArea.removeFromRight(juce::jmin(170, contentW / 5));
     presetBrowserButton.setBounds(presetArea.removeFromTop(26).reduced(4, 0));
     currentPresetLabel.setBounds(presetArea.reduced(4, 0));
 
@@ -722,10 +729,10 @@ void GenerativeMIDIEditor::layoutContent(juce::Rectangle<int> area)
     statusChipLabel.setBounds(productCol);
 
     // Pattern display / polyrhythm layers section
-    const bool isPolyrhythm = GeneratorTypeMapping::isPolyrhythm(generatorTypeCombo.getSelectedId() - 1);
-    const int patternHeight = isPolyrhythm ? 220 : 140;
+    const bool isPolyrhythm = GeneratorTypeMapping::isPolyrhythm(genIndex);
+    const int patternHeight = isPolyrhythm ? 200 : 96;
     auto patternOuter = area.removeFromTop(patternHeight);
-    auto patternSection = patternOuter.reduced(40, 20);
+    auto patternSection = patternOuter.reduced(inset, isPolyrhythm ? 12 : 6);
     patternPanelBounds = patternSection.toFloat();
     patternSection.removeFromTop(20); // Section label
     patternDisplay.setBounds(patternSection);
@@ -733,20 +740,23 @@ void GenerativeMIDIEditor::layoutContent(juce::Rectangle<int> area)
         polyLayerEditor->setBounds(patternSection);
 
     // Generator controls section
-    auto generatorOuter = area.removeFromTop(200);
-    auto controlsSection = generatorOuter.reduced(40, 20);
+    auto generatorOuter = area.removeFromTop(168);
+    auto controlsSection = generatorOuter.reduced(inset, 8);
     generatorPanelBounds = controlsSection.toFloat();
-    controlsSection.removeFromTop(20); // Section label
+    controlsSection.removeFromTop(18); // Section label
 
+    const int genSlots = showEuclideanKnobs ? 5 : 2;
 #if JUCE_IOS
-    int knobSize = juce::jlimit(72, 96, (controlsSection.getWidth() - 180) / 6);
-    int spacing = 14;
+    int spacing = 10;
+    const int comboCol = juce::jmin(150, controlsSection.getWidth() / 5);
+    int knobSize = juce::jlimit(56, 96, (controlsSection.getWidth() - comboCol - spacing * (genSlots + 1)) / genSlots);
 #else
-    int knobSize = juce::jlimit(64, 90, (controlsSection.getWidth() - 170) / 6);
-    int spacing = 12;
+    int spacing = contentW < 900 ? 6 : 10;
+    const int comboCol = juce::jmin(140, juce::jmax(110, controlsSection.getWidth() / 6));
+    int knobSize = juce::jlimit(48, 88, (controlsSection.getWidth() - comboCol - spacing * (genSlots + 1)) / juce::jmax(1, genSlots));
 #endif
 
-    auto generatorArea = controlsSection.removeFromLeft(150);
+    auto generatorArea = controlsSection.removeFromLeft(comboCol);
     generatorLabel.setBounds(generatorArea.removeFromTop(20));
     generatorTypeCombo.setBounds(generatorArea.removeFromTop(30).reduced(10, 0));
     generatorArea.removeFromTop(5);
@@ -756,62 +766,73 @@ void GenerativeMIDIEditor::layoutContent(juce::Rectangle<int> area)
     controlsSection.removeFromLeft(spacing);
 
     auto tempoArea = controlsSection.removeFromLeft(knobSize);
-    tempoLabel.setBounds(tempoArea.removeFromBottom(20));
+    tempoLabel.setBounds(tempoArea.removeFromBottom(18));
     tempoSlider.setBounds(tempoArea);
 
-    controlsSection.removeFromLeft(spacing);
+    stepsSlider.setVisible(showEuclideanKnobs);
+    pulsesSlider.setVisible(showEuclideanKnobs);
+    rotationSlider.setVisible(showEuclideanKnobs);
+    stepsLabel.setVisible(showEuclideanKnobs);
+    pulsesLabel.setVisible(showEuclideanKnobs);
+    rotationLabel.setVisible(showEuclideanKnobs);
 
-    auto stepsArea = controlsSection.removeFromLeft(knobSize);
-    stepsLabel.setBounds(stepsArea.removeFromBottom(20));
-    stepsSlider.setBounds(stepsArea);
+    if (showEuclideanKnobs)
+    {
+        controlsSection.removeFromLeft(spacing);
 
-    controlsSection.removeFromLeft(spacing);
+        auto stepsArea = controlsSection.removeFromLeft(knobSize);
+        stepsLabel.setBounds(stepsArea.removeFromBottom(18));
+        stepsSlider.setBounds(stepsArea);
 
-    auto pulsesArea = controlsSection.removeFromLeft(knobSize);
-    pulsesLabel.setBounds(pulsesArea.removeFromBottom(20));
-    pulsesSlider.setBounds(pulsesArea);
+        controlsSection.removeFromLeft(spacing);
 
-    controlsSection.removeFromLeft(spacing);
+        auto pulsesArea = controlsSection.removeFromLeft(knobSize);
+        pulsesLabel.setBounds(pulsesArea.removeFromBottom(18));
+        pulsesSlider.setBounds(pulsesArea);
 
-    auto rotationArea = controlsSection.removeFromLeft(knobSize);
-    rotationLabel.setBounds(rotationArea.removeFromBottom(20));
-    rotationSlider.setBounds(rotationArea);
+        controlsSection.removeFromLeft(spacing);
+
+        auto rotationArea = controlsSection.removeFromLeft(knobSize);
+        rotationLabel.setBounds(rotationArea.removeFromBottom(18));
+        rotationSlider.setBounds(rotationArea);
+    }
 
     controlsSection.removeFromLeft(spacing);
 
     auto densityArea = controlsSection.removeFromLeft(knobSize);
-    densityLabel.setBounds(densityArea.removeFromBottom(20));
+    densityLabel.setBounds(densityArea.removeFromBottom(18));
     densitySlider.setBounds(densityArea);
 
     // Expression & range section (row 1: ranges/humanize; row 2: MIDI expression)
-    auto expressionOuter = area.removeFromTop(250);
-    auto rangeSection = expressionOuter.reduced(40, 20);
+    auto expressionOuter = area.removeFromTop(228);
+    auto rangeSection = expressionOuter.reduced(inset, 8);
     expressionPanelBounds = rangeSection.toFloat();
     rangeSection.removeFromTop(20); // Section label
 
-    auto expressionTop = rangeSection.removeFromTop(120);
+    auto expressionTop = rangeSection.removeFromTop(contentW < 900 ? 100 : 108);
     auto expressionMidi = rangeSection; // remaining height for AT/PB/CC row
 
-    auto velocityArea = expressionTop.removeFromLeft(120);
+    const int rangeCol = contentW < 900 ? 92 : 112;
+    auto velocityArea = expressionTop.removeFromLeft(rangeCol);
     velocityLabel.setBounds(velocityArea.removeFromTop(20));
     auto vSliders = velocityArea.reduced(10, 0);
     velocityMinSlider.setBounds(vSliders.removeFromLeft(50));
     vSliders.removeFromLeft(10);
     velocityMaxSlider.setBounds(vSliders);
 
-    expressionTop.removeFromLeft(40);
+    expressionTop.removeFromLeft(contentW < 900 ? 8 : 16);
 
-    auto pitchArea = expressionTop.removeFromLeft(120);
+    auto pitchArea = expressionTop.removeFromLeft(rangeCol);
     pitchLabel.setBounds(pitchArea.removeFromTop(20));
     auto pSliders = pitchArea.reduced(10, 0);
     pitchMinSlider.setBounds(pSliders.removeFromLeft(50));
     pSliders.removeFromLeft(10);
     pitchMaxSlider.setBounds(pSliders);
 
-    expressionTop.removeFromLeft(40);
+    expressionTop.removeFromLeft(contentW < 900 ? 8 : 16);
 
     // Scale controls
-    auto scaleArea = expressionTop.removeFromLeft(150);
+    auto scaleArea = expressionTop.removeFromLeft(contentW < 900 ? 108 : 140);
     scaleLabel.setBounds(scaleArea.removeFromTop(20));
     scaleRootCombo.setBounds(scaleArea.removeFromTop(25).reduced(5, 0));
     scaleArea.removeFromTop(5);
@@ -821,25 +842,25 @@ void GenerativeMIDIEditor::layoutContent(juce::Rectangle<int> area)
 
     // Humanization knobs
     auto swingArea = expressionTop.removeFromLeft(knobSize);
-    swingLabel.setBounds(swingArea.removeFromBottom(20));
+    swingLabel.setBounds(swingArea.removeFromBottom(16));
     swingSlider.setBounds(swingArea);
 
     expressionTop.removeFromLeft(spacing);
 
     auto timingArea = expressionTop.removeFromLeft(knobSize);
-    timingHumanizeLabel.setBounds(timingArea.removeFromBottom(20));
+    timingHumanizeLabel.setBounds(timingArea.removeFromBottom(16));
     timingHumanizeSlider.setBounds(timingArea);
 
     expressionTop.removeFromLeft(spacing);
 
     auto velVarArea = expressionTop.removeFromLeft(knobSize);
-    velocityHumanizeLabel.setBounds(velVarArea.removeFromBottom(20));
+    velocityHumanizeLabel.setBounds(velVarArea.removeFromBottom(16));
     velocityHumanizeSlider.setBounds(velVarArea);
 
     expressionTop.removeFromLeft(spacing);
 
     auto gateArea = expressionTop.removeFromLeft(knobSize);
-    gateLengthLabel.setBounds(gateArea.removeFromBottom(20));
+    gateLengthLabel.setBounds(gateArea.removeFromBottom(16));
     gateLengthSlider.setBounds(gateArea);
 
     expressionTop.removeFromLeft(spacing);
@@ -894,20 +915,24 @@ void GenerativeMIDIEditor::layoutContent(juce::Rectangle<int> area)
     ccAmountSlider.setBounds(ccAmtArea);
 
     // Advanced section: Ratchet | Stochastic | LFO
-    auto advancedOuter = area.removeFromTop(150);
-    auto advancedSection = advancedOuter.reduced(40, 16);
+    auto advancedOuter = area.removeFromTop(132);
+    auto advancedSection = advancedOuter.reduced(inset, 6);
     advancedPanelBounds = advancedSection.toFloat();
     advancedSection.removeFromTop(22); // Section label
 
     auto groupRow = advancedSection.removeFromTop(14);
     const int groupGap = spacing * 2;
     const int ratchetGroupW = knobSize * 3 + spacing * 2;
-    const int stochGroupW = knobSize * 3 + spacing * 2;
+    const int stochGroupW = showStochasticKnobs ? (knobSize * 3 + spacing * 2) : 0;
     advancedRatchetGroupLabel.setBounds(groupRow.removeFromLeft(ratchetGroupW));
-    groupRow.removeFromLeft(groupGap);
-    advancedStochasticGroupLabel.setBounds(groupRow.removeFromLeft(stochGroupW));
+    if (showStochasticKnobs)
+    {
+        groupRow.removeFromLeft(groupGap);
+        advancedStochasticGroupLabel.setBounds(groupRow.removeFromLeft(stochGroupW));
+    }
     groupRow.removeFromLeft(groupGap);
     advancedLfoGroupLabel.setBounds(groupRow.removeFromLeft(knobSize * 3 + 48 + spacing * 2));
+    advancedStochasticGroupLabel.setVisible(showStochasticKnobs);
 
     auto ratchetCountArea = advancedSection.removeFromLeft(knobSize);
     ratchetCountLabel.setBounds(ratchetCountArea.removeFromBottom(20));
@@ -925,27 +950,41 @@ void GenerativeMIDIEditor::layoutContent(juce::Rectangle<int> area)
     ratchetDecayLabel.setBounds(ratchetDecayArea.removeFromBottom(20));
     ratchetDecaySlider.setBounds(ratchetDecayArea);
 
+    stepSizeSlider.setVisible(showStochasticKnobs);
+    momentumSlider.setVisible(showStochasticKnobs);
+    timeScaleSlider.setVisible(showStochasticKnobs);
+    stepSizeLabel.setVisible(showStochasticKnobs);
+    momentumLabel.setVisible(showStochasticKnobs);
+    timeScaleLabel.setVisible(showStochasticKnobs);
+
     advancedDividerX1 = static_cast<float>(advancedSection.getX() + groupGap / 2);
     advancedSection.removeFromLeft(groupGap);
 
-    auto stepSizeArea = advancedSection.removeFromLeft(knobSize);
-    stepSizeLabel.setBounds(stepSizeArea.removeFromBottom(20));
-    stepSizeSlider.setBounds(stepSizeArea);
+    if (showStochasticKnobs)
+    {
+        auto stepSizeArea = advancedSection.removeFromLeft(knobSize);
+        stepSizeLabel.setBounds(stepSizeArea.removeFromBottom(18));
+        stepSizeSlider.setBounds(stepSizeArea);
 
-    advancedSection.removeFromLeft(spacing);
+        advancedSection.removeFromLeft(spacing);
 
-    auto momentumArea = advancedSection.removeFromLeft(knobSize);
-    momentumLabel.setBounds(momentumArea.removeFromBottom(20));
-    momentumSlider.setBounds(momentumArea);
+        auto momentumArea = advancedSection.removeFromLeft(knobSize);
+        momentumLabel.setBounds(momentumArea.removeFromBottom(18));
+        momentumSlider.setBounds(momentumArea);
 
-    advancedSection.removeFromLeft(spacing);
+        advancedSection.removeFromLeft(spacing);
 
-    auto timeScaleArea = advancedSection.removeFromLeft(knobSize);
-    timeScaleLabel.setBounds(timeScaleArea.removeFromBottom(20));
-    timeScaleSlider.setBounds(timeScaleArea);
+        auto timeScaleArea = advancedSection.removeFromLeft(knobSize);
+        timeScaleLabel.setBounds(timeScaleArea.removeFromBottom(18));
+        timeScaleSlider.setBounds(timeScaleArea);
 
-    advancedDividerX2 = static_cast<float>(advancedSection.getX() + groupGap / 2);
-    advancedSection.removeFromLeft(groupGap);
+        advancedDividerX2 = static_cast<float>(advancedSection.getX() + groupGap / 2);
+        advancedSection.removeFromLeft(groupGap);
+    }
+    else
+    {
+        advancedDividerX2 = advancedDividerX1;
+    }
 
     // Modulation v2 MVP controls (LFO → velocity)
 #if JUCE_IOS
@@ -979,7 +1018,7 @@ void GenerativeMIDIEditor::layoutContent(juce::Rectangle<int> area)
     // Collapsible MIDI activity / last-events strip
     area.removeFromTop(4);
     const int midiLogH = midiActivityPane.getPreferredHeight();
-    auto midiLogArea = area.removeFromTop(midiLogH).reduced(40, 0);
+    auto midiLogArea = area.removeFromTop(midiLogH).reduced(inset, 0);
     midiActivityPane.setBounds(midiLogArea);
 }
 
