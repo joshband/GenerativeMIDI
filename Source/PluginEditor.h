@@ -28,14 +28,32 @@ public:
     void resized() override;
 
 private:
+    // Scrollable content host (DAW frames / AUv3 may be shorter than preferred height)
+    class ContentPanel : public juce::Component
+    {
+    public:
+        explicit ContentPanel(GenerativeMIDIEditor& ownerIn) : owner(ownerIn) {}
+        void paint(juce::Graphics& g) override { owner.paintContent(g); }
+        void resized() override { owner.layoutContent(getLocalBounds()); }
+
+    private:
+        GenerativeMIDIEditor& owner;
+    };
+
     void timerCallback() override;
     void updateControlsForGeneratorType(int generatorType);
     void currentPresetChanged(const juce::String& presetName) override;
     void syncPresetLabel(const juce::String& presetName);
     void updateStatusChip();
+    void paintContent(juce::Graphics& g);
+    void layoutContent(juce::Rectangle<int> area);
+    int preferredContentHeight(bool isPolyrhythm) const;
 
     GenerativeMIDIProcessor& audioProcessor;
     CustomLookAndFeel customLookAndFeel;
+
+    juce::Viewport editorViewport;
+    ContentPanel contentPanel { *this };
 
     // Pattern area components
     PatternVisualizer patternDisplay;

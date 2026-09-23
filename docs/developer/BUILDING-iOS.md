@@ -77,7 +77,7 @@ JUCE includes the Projucer tool which can create iOS projects without CMake.
 3. **Configure project settings**:
    - Plugin Formats: Enable AUv3
    - Plugin Characteristics: Enable "Plugin is a MIDI Effect"
-   - iOS Deployment Target: 13.0
+   - iOS Deployment Target: 15.0
    - Bundle Identifier: `com.opensource.generativemidi`
 
 4. **Add source files** from this project's `Source/` directory

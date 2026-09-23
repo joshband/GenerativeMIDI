@@ -1,0 +1,8 @@
+-- Configuring juceaide
+-- Building juceaide
+-- Exporting juceaide
+-- Testing juceaide
+-- Finished setting up juceaide
+-- Configuring done (1.2s)
+-- Generating done (0.1s)
+-- Build files have been written to: /Users/artbox/Documents/Repos/GenerativeMIDI/build

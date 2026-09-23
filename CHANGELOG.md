@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Branded ComboBox popup chrome via LookAndFeel (`drawPopupMenu*`) — brass + cyan-on-navy, not raw OS menus.
+- Editor content `Viewport` so Advanced / Expression remain reachable in short AU/VST3 host frames.
+- Cross-format editor defaults: desktop **1280×760** (min **960×560**); iOS **1024×700** (min **640×480**) with larger touch hit targets.
 - Minimal transport status chip in editor header (`Standalone|Host · free-run|generating|stopped|note`).
 - Pattern Display live activity fallback for non-Euclidean generators (rolling ticks + status line; last-Euclidean ghost).
 - PresetManager `Listener` + editor header sync when factory/user presets load (single-click load in Preset Browser).
@@ -19,9 +22,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Accessibility titles (`Component::setTitle`) on key editor, Polyrhythm layer, and Preset Browser controls for System Events / VoiceOver automation.
 
 ### Changed
+- Velocity / Pitch (and other linear) slider thumbs unified to **round cyan** (knob-needle language); diamond thumbs removed.
+- Full Preset Manager restyle: brass title plate, CATEGORY / LIBRARY / ACTIONS headers, cyan selection rail, category chips; Save/Delete/Import/Export + load-on-select preserved.
 - Demoted SYNAPTIK wordmark; product title “Generative MIDI” is the primary header signal (brass + cyan-on-navy unchanged).
 - Knob/label fit: slightly wider knobs, `minimumHorizontalScale` on tight labels (Pulses, R. Prob, etc.).
-- Light Preset Browser token alignment (brass border + button colours).
+- iOS AUv3 deployment target raised **13 → 15** for current Xcode; format notes in `docs/deployment/README-iOS.md` / STATUS.
 - GitHub Pages `docs/index.html` / `docs/engineering.html` proof table aligned with 10 UI generators, 26 `ctest` cases, and REAPER MCP Host QA evidence.
 - `ctest` suite expanded with host playhead smoke, polyrhythm layer persistence, and Markov trained-path lookup coverage.
 - Preset / session schema bumped **1.1 → 1.2** (generator-index migration still only for schemas older than 1.1).

@@ -1,6 +1,35 @@
 #include "PresetBrowser.h"
 #include "CustomLookAndFeel.h"
 
+namespace
+{
+    void styleActionButton(juce::TextButton& b)
+    {
+        b.setColour(juce::TextButton::buttonColourId, juce::Colour(CustomLookAndFeel::STEEL_OBSIDIAN));
+        b.setColour(juce::TextButton::buttonOnColourId, juce::Colour(CustomLookAndFeel::BRASS_AGED).darker(0.2f));
+        b.setColour(juce::TextButton::textColourOffId, juce::Colour(CustomLookAndFeel::GOLD_TEMPLE));
+        b.setColour(juce::TextButton::textColourOnId, juce::Colour(CustomLookAndFeel::AETHER_CYAN));
+    }
+
+    void styleEditorField(juce::TextEditor& e)
+    {
+        e.setColour(juce::TextEditor::backgroundColourId, juce::Colour(CustomLookAndFeel::STEEL_OBSIDIAN));
+        e.setColour(juce::TextEditor::outlineColourId, juce::Colour(CustomLookAndFeel::BRASS_AGED));
+        e.setColour(juce::TextEditor::focusedOutlineColourId, juce::Colour(CustomLookAndFeel::AETHER_CYAN));
+        e.setColour(juce::TextEditor::textColourId, juce::Colour(CustomLookAndFeel::GOLD_TEMPLE));
+        e.setColour(juce::TextEditor::highlightedTextColourId, juce::Colour(CustomLookAndFeel::ABYSS_NAVY));
+        e.setColour(juce::TextEditor::highlightColourId, juce::Colour(CustomLookAndFeel::AETHER_CYAN).withAlpha(0.45f));
+    }
+
+    void styleSectionLabel(juce::Label& label, const juce::String& text)
+    {
+        label.setText(text, juce::dontSendNotification);
+        label.setFont(juce::FontOptions(11.0f).withStyle("Bold"));
+        label.setJustificationType(juce::Justification::centredLeft);
+        label.setColour(juce::Label::textColourId, juce::Colour(CustomLookAndFeel::GOLD_TEMPLE).withAlpha(0.8f));
+    }
+}
+
 PresetBrowser::PresetBrowser(PresetManager& manager)
     : presetManager(manager),
       currentCategory("All")
@@ -8,18 +37,35 @@ PresetBrowser::PresetBrowser(PresetManager& manager)
     // Preset list
     addAndMakeVisible(presetListBox);
     presetListBox.setModel(this);
-    presetListBox.setRowHeight(30);
-    presetListBox.setColour(juce::ListBox::backgroundColourId, juce::Colour(CustomLookAndFeel::ABYSS_NAVY));
+#if JUCE_IOS
+    presetListBox.setRowHeight(40);
+#else
+    presetListBox.setRowHeight(34);
+#endif
+    presetListBox.setColour(juce::ListBox::backgroundColourId, juce::Colour(CustomLookAndFeel::STEEL_OBSIDIAN).darker(0.2f));
     presetListBox.setColour(juce::ListBox::outlineColourId, juce::Colour(CustomLookAndFeel::BRASS_AGED));
 
     // Category selector
+    addAndMakeVisible(categoryHeaderLabel);
+    styleSectionLabel(categoryHeaderLabel, "CATEGORY");
+
     addAndMakeVisible(categorySelector);
     categorySelector.addItem("All", 1);
     categorySelector.setSelectedId(1);
+    categorySelector.setColour(juce::ComboBox::backgroundColourId, juce::Colour(CustomLookAndFeel::STEEL_OBSIDIAN));
+    categorySelector.setColour(juce::ComboBox::outlineColourId, juce::Colour(CustomLookAndFeel::BRASS_AGED));
+    categorySelector.setColour(juce::ComboBox::textColourId, juce::Colour(CustomLookAndFeel::COPPER_STEAM));
+    categorySelector.setColour(juce::ComboBox::arrowColourId, juce::Colour(CustomLookAndFeel::AETHER_CYAN));
     categorySelector.onChange = [this]()
     {
         setCategory(categorySelector.getText());
     };
+
+    addAndMakeVisible(libraryHeaderLabel);
+    styleSectionLabel(libraryHeaderLabel, "LIBRARY");
+
+    addAndMakeVisible(actionsHeaderLabel);
+    styleSectionLabel(actionsHeaderLabel, "ACTIONS");
 
     // Buttons
     addAndMakeVisible(saveButton);
@@ -62,7 +108,6 @@ PresetBrowser::PresetBrowser(PresetManager& manager)
             return;
 
         int presetIndex = filteredPresetIndices[selectedRow];
-        const auto& preset = presetManager.getPreset(presetIndex);
 
         auto chooser = std::make_shared<juce::FileChooser>("Export Preset",
             juce::File::getSpecialLocation(juce::File::userDesktopDirectory),
@@ -103,14 +148,6 @@ PresetBrowser::PresetBrowser(PresetManager& manager)
         refreshPresetList();
     };
 
-    // Light brass/cyan token alignment (borders + button chrome)
-    auto styleActionButton = [](juce::TextButton& b)
-    {
-        b.setColour(juce::TextButton::buttonColourId, juce::Colour(CustomLookAndFeel::STEEL_OBSIDIAN));
-        b.setColour(juce::TextButton::buttonOnColourId, juce::Colour(CustomLookAndFeel::BRASS_AGED).darker(0.2f));
-        b.setColour(juce::TextButton::textColourOffId, juce::Colour(CustomLookAndFeel::GOLD_TEMPLE));
-        b.setColour(juce::TextButton::textColourOnId, juce::Colour(CustomLookAndFeel::AETHER_CYAN));
-    };
     styleActionButton(saveButton);
     styleActionButton(deleteButton);
     styleActionButton(importButton);
@@ -150,64 +187,111 @@ PresetBrowser::PresetBrowser(PresetManager& manager)
 PresetBrowser::~PresetBrowser()
 {
     stopTimer();
+    setLookAndFeel(nullptr);
 }
 
 void PresetBrowser::paint(juce::Graphics& g)
 {
-    g.fillAll(juce::Colour(CustomLookAndFeel::ABYSS_NAVY));
+    auto bounds = getLocalBounds().toFloat();
 
-    // Title
+    juce::ColourGradient bg(
+        juce::Colour(CustomLookAndFeel::STEEL_OBSIDIAN).brighter(0.04f),
+        bounds.getCentreX(), bounds.getY(),
+        juce::Colour(CustomLookAndFeel::ABYSS_NAVY),
+        bounds.getCentreX(), bounds.getBottom(), false);
+    g.setGradientFill(bg);
+    g.fillAll();
+
+    // Outer brass frame
+    g.setColour(juce::Colour(CustomLookAndFeel::BRASS_AGED).withAlpha(0.85f));
+    g.drawRoundedRectangle(bounds.reduced(3.0f), 8.0f, 2.0f);
+    g.setColour(juce::Colour(CustomLookAndFeel::GOLD_TEMPLE).withAlpha(0.35f));
+    g.drawRoundedRectangle(bounds.reduced(5.5f), 7.0f, 1.0f);
+    g.setColour(juce::Colour(CustomLookAndFeel::AETHER_CYAN).withAlpha(0.12f));
+    g.drawRoundedRectangle(bounds.reduced(8.0f), 6.0f, 1.0f);
+
+    // Title plate
+    auto titlePlate = juce::Rectangle<float>(bounds.getX() + 18.0f, 10.0f,
+                                             bounds.getWidth() - 36.0f, 28.0f);
+    juce::ColourGradient plateGrad(
+        juce::Colour(CustomLookAndFeel::BRASS_AGED).brighter(0.12f),
+        titlePlate.getCentreX(), titlePlate.getY(),
+        juce::Colour(CustomLookAndFeel::BRASS_AGED).darker(0.15f),
+        titlePlate.getCentreX(), titlePlate.getBottom(), false);
+    g.setGradientFill(plateGrad);
+    g.fillRoundedRectangle(titlePlate, 4.0f);
     g.setColour(juce::Colour(CustomLookAndFeel::GOLD_TEMPLE));
-    g.setFont(juce::FontOptions(18.0f).withStyle("Bold"));
-    g.drawText("Preset Browser", 10, 5, getWidth() - 20, 30, juce::Justification::centred);
+    g.setFont(juce::FontOptions(16.0f).withStyle("Bold"));
+    g.drawText("PRESET MANAGER", titlePlate, juce::Justification::centred);
 
-    // Section dividers
-    g.setColour(juce::Colour(CustomLookAndFeel::BRASS_AGED).withAlpha(0.55f));
-    g.drawLine(10.0f, 40.0f, static_cast<float>(getWidth() - 10), 40.0f, 1.0f);
+    // Library list frame
+    if (!libraryBounds.isEmpty())
+    {
+        g.setColour(juce::Colour(CustomLookAndFeel::BRASS_AGED).withAlpha(0.55f));
+        g.drawRoundedRectangle(libraryBounds.toFloat(), 5.0f, 1.2f);
+    }
 
-    g.setColour(juce::Colour(CustomLookAndFeel::BRASS_AGED).withAlpha(0.4f));
-    g.drawRoundedRectangle(getLocalBounds().toFloat().reduced(4.0f), 6.0f, 1.2f);
+    // Category chip chrome
+    if (!categoryBounds.isEmpty())
+    {
+        g.setColour(juce::Colour(CustomLookAndFeel::BRASS_AGED).withAlpha(0.4f));
+        g.drawRoundedRectangle(categoryBounds.toFloat().expanded(2.0f), 4.0f, 1.0f);
+    }
 }
 
 void PresetBrowser::resized()
 {
-    auto bounds = getLocalBounds().reduced(10);
-    bounds.removeFromTop(45); // Title area
+    auto bounds = getLocalBounds().reduced(14);
+    bounds.removeFromTop(42); // Title plate
 
-    // Category selector
-    auto categoryArea = bounds.removeFromTop(30);
-    categorySelector.setBounds(categoryArea.reduced(5));
-    bounds.removeFromTop(5);
+    // Category
+    categoryHeaderLabel.setBounds(bounds.removeFromTop(16));
+    auto categoryArea = bounds.removeFromTop(32);
+    categoryBounds = categoryArea;
+    categorySelector.setBounds(categoryArea.reduced(2, 2));
+    bounds.removeFromTop(8);
 
-    // Navigation buttons
-    auto navArea = bounds.removeFromTop(30);
-    int buttonWidth = 40;
+    // Navigation + current name
+    auto navArea = bounds.removeFromTop(34);
+#if JUCE_IOS
+    const int buttonWidth = 44;
+#else
+    const int buttonWidth = 40;
+#endif
     prevButton.setBounds(navArea.removeFromLeft(buttonWidth));
-    navArea.removeFromLeft(5);
+    navArea.removeFromLeft(6);
     nextButton.setBounds(navArea.removeFromLeft(buttonWidth));
     navArea.removeFromLeft(10);
     presetNameLabel.setBounds(navArea);
-    bounds.removeFromTop(5);
+    bounds.removeFromTop(6);
 
-    // Preset info
-    auto infoArea = bounds.removeFromTop(40);
-    presetInfoLabel.setBounds(infoArea);
-    bounds.removeFromTop(5);
+    // Info
+    auto infoArea = bounds.removeFromTop(44);
+    presetInfoLabel.setBounds(infoArea.reduced(2, 0));
+    bounds.removeFromTop(6);
 
-    // Preset list (takes remaining space)
-    auto listHeight = bounds.getHeight() - 45; // Leave room for buttons
-    presetListBox.setBounds(bounds.removeFromTop(listHeight));
-    bounds.removeFromTop(5);
+    // Library
+    libraryHeaderLabel.setBounds(bounds.removeFromTop(16));
+#if JUCE_IOS
+    const int actionH = 44;
+#else
+    const int actionH = 38;
+#endif
+    actionsHeaderLabel.setBounds(bounds.removeFromBottom(16));
+    auto buttonArea = bounds.removeFromBottom(actionH);
+    bounds.removeFromBottom(6);
 
-    // Bottom buttons
-    auto buttonArea = bounds.removeFromTop(35);
-    int btnWidth = (buttonArea.getWidth() - 15) / 4;
+    libraryBounds = bounds;
+    presetListBox.setBounds(bounds.reduced(3));
+
+    // Bottom actions
+    int btnWidth = (buttonArea.getWidth() - 18) / 4;
     saveButton.setBounds(buttonArea.removeFromLeft(btnWidth));
-    buttonArea.removeFromLeft(5);
+    buttonArea.removeFromLeft(6);
     deleteButton.setBounds(buttonArea.removeFromLeft(btnWidth));
-    buttonArea.removeFromLeft(5);
+    buttonArea.removeFromLeft(6);
     importButton.setBounds(buttonArea.removeFromLeft(btnWidth));
-    buttonArea.removeFromLeft(5);
+    buttonArea.removeFromLeft(6);
     exportButton.setBounds(buttonArea);
 }
 
@@ -225,28 +309,55 @@ void PresetBrowser::paintListBoxItem(int rowNumber, juce::Graphics& g,
     int presetIndex = filteredPresetIndices[rowNumber];
     const auto& preset = presetManager.getPreset(presetIndex);
 
-    // Background
-    if (rowIsSelected)
-        g.fillAll(juce::Colour(CustomLookAndFeel::STEEL_OBSIDIAN).brighter(0.15f));
-    else if (rowNumber % 2 == 0)
-        g.fillAll(juce::Colour(CustomLookAndFeel::ABYSS_NAVY));
-    else
-        g.fillAll(juce::Colour(CustomLookAndFeel::STEEL_OBSIDIAN).darker(0.1f));
+    auto row = juce::Rectangle<float>(0.0f, 0.0f,
+                                      static_cast<float>(width),
+                                      static_cast<float>(height));
 
-    // Factory/User indicator
+    if (rowIsSelected)
+    {
+        juce::ColourGradient sel(
+            juce::Colour(CustomLookAndFeel::BRASS_AGED).withAlpha(0.45f),
+            row.getX(), row.getCentreY(),
+            juce::Colour(CustomLookAndFeel::AETHER_CYAN).withAlpha(0.18f),
+            row.getRight(), row.getCentreY(), false);
+        g.setGradientFill(sel);
+        g.fillRect(row);
+
+        g.setColour(juce::Colour(CustomLookAndFeel::AETHER_CYAN).withAlpha(0.7f));
+        g.fillRect(0.0f, 0.0f, 3.0f, static_cast<float>(height));
+    }
+    else if (rowNumber % 2 == 0)
+    {
+        g.setColour(juce::Colour(CustomLookAndFeel::ABYSS_NAVY).withAlpha(0.55f));
+        g.fillRect(row);
+    }
+    else
+    {
+        g.setColour(juce::Colour(CustomLookAndFeel::STEEL_OBSIDIAN).withAlpha(0.65f));
+        g.fillRect(row);
+    }
+
+    // Factory / user rail
     g.setColour(preset.isFactory ? juce::Colour(CustomLookAndFeel::AMBER_TESLA)
                                  : juce::Colour(CustomLookAndFeel::BRASS_AGED));
-    g.fillRect(0, 0, 4, height);
+    g.fillRect(rowIsSelected ? 3.0f : 0.0f, 0.0f, 4.0f, static_cast<float>(height));
+
+    // Category chip
+    auto chip = juce::Rectangle<float>(static_cast<float>(width - 108), 6.0f, 98.0f,
+                                       static_cast<float>(height - 12));
+    g.setColour(juce::Colour(CustomLookAndFeel::STEEL_OBSIDIAN).brighter(0.12f));
+    g.fillRoundedRectangle(chip, 3.0f);
+    g.setColour(juce::Colour(CustomLookAndFeel::BRASS_AGED).withAlpha(0.65f));
+    g.drawRoundedRectangle(chip, 3.0f, 1.0f);
+    g.setColour(juce::Colour(CustomLookAndFeel::COPPER_STEAM));
+    g.setFont(juce::FontOptions(10.5f));
+    g.drawText(preset.category, chip.reduced(4.0f, 0.0f), juce::Justification::centred);
 
     // Preset name
-    g.setColour(juce::Colour(CustomLookAndFeel::GOLD_TEMPLE));
+    g.setColour(rowIsSelected ? juce::Colour(CustomLookAndFeel::AETHER_CYAN)
+                              : juce::Colour(CustomLookAndFeel::GOLD_TEMPLE));
     g.setFont(juce::Font(14.0f, preset.isFactory ? juce::Font::bold : juce::Font::plain));
-    g.drawText(preset.name, 10, 0, width - 120, height, juce::Justification::centredLeft);
-
-    // Category tag
-    g.setColour(juce::Colour(CustomLookAndFeel::COPPER_STEAM));
-    g.setFont(juce::Font(11.0f));
-    g.drawText(preset.category, width - 110, 0, 100, height, juce::Justification::centredRight);
+    g.drawText(preset.name, 14, 0, width - 130, height, juce::Justification::centredLeft);
 }
 
 void PresetBrowser::listBoxItemClicked(int row, const juce::MouseEvent&)
@@ -298,7 +409,7 @@ void PresetBrowser::refreshPresetList()
 void PresetBrowser::showSavePresetDialog()
 {
     auto* dialog = new PresetSaveDialog();
-    dialog->setSize(400, 300);
+    dialog->setSize(420, 320);
 
     juce::DialogWindow::LaunchOptions options;
     options.content.setOwned(dialog);
@@ -309,12 +420,7 @@ void PresetBrowser::showSavePresetDialog()
     options.useNativeTitleBar = true;
     options.resizable = false;
 
-    auto* window = options.launchAsync();
-
-    if (window != nullptr)
-    {
-        window->setUsingNativeTitleBar(true);
-    }
+    options.launchAsync();
 }
 
 void PresetBrowser::showDeleteConfirmation()
@@ -360,7 +466,6 @@ void PresetBrowser::timerCallback()
 {
     // Auto-refresh to catch external preset file changes
     int numPresets = presetManager.getNumPresets();
-    int currentFilteredCount = filteredPresetIndices.size();
 
     // Only refresh if preset count changed
     static int lastPresetCount = 0;
@@ -420,30 +525,36 @@ void PresetBrowser::filterPresetsByCategory()
 
 PresetSaveDialog::PresetSaveDialog()
 {
-    setSize(400, 300);
+    setSize(420, 320);
+
+    auto styleFieldLabel = [](juce::Label& label, const juce::String& text)
+    {
+        label.setText(text, juce::dontSendNotification);
+        label.setFont(juce::FontOptions(13.0f).withStyle("Bold"));
+        label.setColour(juce::Label::textColourId, juce::Colour(CustomLookAndFeel::GOLD_TEMPLE));
+    };
 
     // Name
     addAndMakeVisible(nameLabel);
-    nameLabel.setText("Preset Name:", juce::dontSendNotification);
-    nameLabel.setFont(juce::Font(14.0f, juce::Font::bold));
+    styleFieldLabel(nameLabel, "Preset Name");
 
     addAndMakeVisible(nameEditor);
     nameEditor.setMultiLine(false);
     nameEditor.setReturnKeyStartsNewLine(false);
+    styleEditorField(nameEditor);
 
     // Author
     addAndMakeVisible(authorLabel);
-    authorLabel.setText("Author:", juce::dontSendNotification);
-    authorLabel.setFont(juce::Font(14.0f, juce::Font::bold));
+    styleFieldLabel(authorLabel, "Author");
 
     addAndMakeVisible(authorEditor);
     authorEditor.setMultiLine(false);
     authorEditor.setText(juce::SystemStats::getFullUserName());
+    styleEditorField(authorEditor);
 
     // Category
     addAndMakeVisible(categoryLabel);
-    categoryLabel.setText("Category:", juce::dontSendNotification);
-    categoryLabel.setFont(juce::Font(14.0f, juce::Font::bold));
+    styleFieldLabel(categoryLabel, "Category");
 
     addAndMakeVisible(categoryBox);
     categoryBox.setEditableText(true);
@@ -454,20 +565,29 @@ PresetSaveDialog::PresetSaveDialog()
     categoryBox.addItem("Ambient", 5);
     categoryBox.addItem("Experimental", 6);
     categoryBox.setSelectedId(1);
+    categoryBox.setColour(juce::ComboBox::backgroundColourId, juce::Colour(CustomLookAndFeel::STEEL_OBSIDIAN));
+    categoryBox.setColour(juce::ComboBox::outlineColourId, juce::Colour(CustomLookAndFeel::BRASS_AGED));
+    categoryBox.setColour(juce::ComboBox::textColourId, juce::Colour(CustomLookAndFeel::COPPER_STEAM));
+    categoryBox.setColour(juce::ComboBox::arrowColourId, juce::Colour(CustomLookAndFeel::AETHER_CYAN));
 
     // Description
     addAndMakeVisible(descriptionLabel);
-    descriptionLabel.setText("Description:", juce::dontSendNotification);
-    descriptionLabel.setFont(juce::Font(14.0f, juce::Font::bold));
+    styleFieldLabel(descriptionLabel, "Description");
 
     addAndMakeVisible(descriptionEditor);
     descriptionEditor.setMultiLine(true);
     descriptionEditor.setReturnKeyStartsNewLine(true);
+    styleEditorField(descriptionEditor);
 }
 
 void PresetSaveDialog::paint(juce::Graphics& g)
 {
+    auto bounds = getLocalBounds().toFloat();
     g.fillAll(juce::Colour(CustomLookAndFeel::ABYSS_NAVY));
+    g.setColour(juce::Colour(CustomLookAndFeel::BRASS_AGED).withAlpha(0.7f));
+    g.drawRoundedRectangle(bounds.reduced(4.0f), 6.0f, 1.5f);
+    g.setColour(juce::Colour(CustomLookAndFeel::AETHER_CYAN).withAlpha(0.12f));
+    g.drawRoundedRectangle(bounds.reduced(7.0f), 5.0f, 1.0f);
 }
 
 void PresetSaveDialog::resized()
@@ -475,25 +595,25 @@ void PresetSaveDialog::resized()
     auto bounds = getLocalBounds().reduced(20);
 
     // Name
-    nameLabel.setBounds(bounds.removeFromTop(25));
-    bounds.removeFromTop(5);
+    nameLabel.setBounds(bounds.removeFromTop(22));
+    bounds.removeFromTop(4);
     nameEditor.setBounds(bounds.removeFromTop(30));
-    bounds.removeFromTop(15);
+    bounds.removeFromTop(12);
 
     // Author
-    authorLabel.setBounds(bounds.removeFromTop(25));
-    bounds.removeFromTop(5);
+    authorLabel.setBounds(bounds.removeFromTop(22));
+    bounds.removeFromTop(4);
     authorEditor.setBounds(bounds.removeFromTop(30));
-    bounds.removeFromTop(15);
+    bounds.removeFromTop(12);
 
     // Category
-    categoryLabel.setBounds(bounds.removeFromTop(25));
-    bounds.removeFromTop(5);
+    categoryLabel.setBounds(bounds.removeFromTop(22));
+    bounds.removeFromTop(4);
     categoryBox.setBounds(bounds.removeFromTop(30));
-    bounds.removeFromTop(15);
+    bounds.removeFromTop(12);
 
     // Description
-    descriptionLabel.setBounds(bounds.removeFromTop(25));
-    bounds.removeFromTop(5);
+    descriptionLabel.setBounds(bounds.removeFromTop(22));
+    bounds.removeFromTop(4);
     descriptionEditor.setBounds(bounds);
 }

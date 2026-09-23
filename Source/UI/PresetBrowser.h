@@ -55,10 +55,15 @@ private:
     juce::TextButton nextButton;
     juce::Label presetNameLabel;
     juce::Label presetInfoLabel;
+    juce::Label categoryHeaderLabel;
+    juce::Label libraryHeaderLabel;
+    juce::Label actionsHeaderLabel;
 
     // Current state
     juce::String currentCategory;
     juce::Array<int> filteredPresetIndices;
+    juce::Rectangle<int> libraryBounds;
+    juce::Rectangle<int> categoryBounds;
 
     // Timer for auto-refresh
     void timerCallback() override;

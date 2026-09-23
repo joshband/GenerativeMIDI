@@ -61,6 +61,15 @@ public:
         setColour(juce::ComboBox::backgroundColourId, juce::Colour(STEEL_OBSIDIAN));
         setColour(juce::ComboBox::textColourId, juce::Colour(COPPER_STEAM));
         setColour(juce::ComboBox::outlineColourId, juce::Colour(BRASS_AGED));
+        setColour(juce::ComboBox::arrowColourId, juce::Colour(AETHER_CYAN));
+        setColour(juce::ComboBox::focusedOutlineColourId, juce::Colour(AETHER_CYAN));
+
+        // Popup menus - branded chrome (not raw OS menus)
+        setColour(juce::PopupMenu::backgroundColourId, juce::Colour(STEEL_OBSIDIAN));
+        setColour(juce::PopupMenu::textColourId, juce::Colour(GOLD_TEMPLE));
+        setColour(juce::PopupMenu::headerTextColourId, juce::Colour(COPPER_STEAM));
+        setColour(juce::PopupMenu::highlightedBackgroundColourId, juce::Colour(BRASS_AGED).darker(0.25f));
+        setColour(juce::PopupMenu::highlightedTextColourId, juce::Colour(AETHER_CYAN));
     }
 
     juce::Image loadAsset(const juce::String& relativePath)
@@ -356,30 +365,9 @@ public:
             g.setGradientFill(energyGrad);
             g.fillRoundedRectangle(energyFill, 2.0f);
 
-            // Draw aether staff pointer if available
-            if (sliderPointer.isValid())
-            {
-                float thumbHeight = 40.0f;
-                float thumbWidth = width * 1.2f;
-                auto thumbBounds = juce::Rectangle<float>(x + width * 0.5f - thumbWidth * 0.5f,
-                                                           sliderPos - thumbHeight * 0.5f,
-                                                           thumbWidth, thumbHeight);
-
-                // Pointer glow
-                juce::ColourGradient pointerGlow(
-                    juce::Colour(AETHER_CYAN).withAlpha(0.5f),
-                    thumbBounds.getCentreX(), thumbBounds.getCentreY(),
-                    juce::Colour(AETHER_CYAN).withAlpha(0.0f),
-                    thumbBounds.getCentreX(), thumbBounds.getCentreY() - thumbHeight,
-                    true);
-                g.setGradientFill(pointerGlow);
-                g.fillEllipse(thumbBounds.expanded(10.0f));
-
-                // Draw pointer image
-                g.setOpacity(1.0f);
-                g.drawImage(sliderPointer, thumbBounds, juce::RectanglePlacement::centred);
-            }
-
+            // Round cyan thumb (matches knob needle language)
+            drawRoundCyanThumb(g, { x + width * 0.5f, sliderPos }, 14.0f,
+                               slider.findColour(juce::Slider::thumbColourId));
             return;
         }
 
@@ -425,53 +413,51 @@ public:
         g.setGradientFill(energyGrad);
         g.fillRoundedRectangle(valueFill, trackWidth * 0.5f);
 
-        // Copper thumb (diamond/gem shape)
-        float thumbSize = 16.0f;
+        // Round cyan thumb — unified with knob needle accent
         juce::Point<float> thumbPos;
         if (slider.isHorizontal())
             thumbPos = { sliderPos, y + height * 0.5f };
         else
             thumbPos = { x + width * 0.5f, sliderPos };
 
-        // Thumb aether glow
+        drawRoundCyanThumb(g, thumbPos, 14.0f, slider.findColour(juce::Slider::thumbColourId));
+    }
+
+    static void drawRoundCyanThumb(juce::Graphics& g, juce::Point<float> centre,
+                                   float thumbRadius, juce::Colour accent)
+    {
         juce::ColourGradient thumbGlow(
-            slider.findColour(juce::Slider::thumbColourId).withAlpha(0.6f),
-            thumbPos.x, thumbPos.y,
-            slider.findColour(juce::Slider::thumbColourId).withAlpha(0.0f),
-            thumbPos.x, thumbPos.y - thumbSize * 1.5f,
+            accent.withAlpha(0.55f),
+            centre.x, centre.y,
+            accent.withAlpha(0.0f),
+            centre.x, centre.y - thumbRadius * 1.8f,
             true);
         g.setGradientFill(thumbGlow);
-        g.fillEllipse(thumbPos.x - thumbSize * 1.3f, thumbPos.y - thumbSize * 1.3f,
-                     thumbSize * 2.6f, thumbSize * 2.6f);
+        g.fillEllipse(centre.x - thumbRadius * 1.6f, centre.y - thumbRadius * 1.6f,
+                      thumbRadius * 3.2f, thumbRadius * 3.2f);
 
-        // Brass diamond bezel
-        juce::Path diamond;
-        diamond.addTriangle(thumbPos.x, thumbPos.y - thumbSize * 0.75f,  // top
-                           thumbPos.x - thumbSize * 0.75f, thumbPos.y,    // left
-                           thumbPos.x, thumbPos.y + thumbSize * 0.75f);   // bottom
-        diamond.addTriangle(thumbPos.x, thumbPos.y - thumbSize * 0.75f,  // top
-                           thumbPos.x + thumbSize * 0.75f, thumbPos.y,    // right
-                           thumbPos.x, thumbPos.y + thumbSize * 0.75f);   // bottom
+        // Brass bezel ring
+        g.setColour(juce::Colour(GOLD_TEMPLE).withAlpha(0.9f));
+        g.fillEllipse(centre.x - thumbRadius, centre.y - thumbRadius,
+                      thumbRadius * 2.0f, thumbRadius * 2.0f);
 
-        g.setColour(juce::Colour(GOLD_TEMPLE));
-        g.fillPath(diamond);
+        g.setColour(juce::Colour(BRONZE_GOTHIC));
+        g.drawEllipse(centre.x - thumbRadius, centre.y - thumbRadius,
+                      thumbRadius * 2.0f, thumbRadius * 2.0f, 1.2f);
 
-        // Copper inner gem
-        juce::Path innerGem;
-        innerGem.addTriangle(thumbPos.x, thumbPos.y - thumbSize * 0.55f,  // top
-                            thumbPos.x - thumbSize * 0.55f, thumbPos.y,    // left
-                            thumbPos.x, thumbPos.y + thumbSize * 0.55f);   // bottom
-        innerGem.addTriangle(thumbPos.x, thumbPos.y - thumbSize * 0.55f,  // top
-                            thumbPos.x + thumbSize * 0.55f, thumbPos.y,    // right
-                            thumbPos.x, thumbPos.y + thumbSize * 0.55f);   // bottom
+        // Cyan core
+        const float core = thumbRadius * 0.72f;
+        juce::ColourGradient coreGrad(
+            accent.brighter(0.25f), centre.x, centre.y - core,
+            accent.darker(0.15f), centre.x, centre.y + core,
+            false);
+        g.setGradientFill(coreGrad);
+        g.fillEllipse(centre.x - core, centre.y - core, core * 2.0f, core * 2.0f);
 
-        g.setColour(slider.findColour(juce::Slider::thumbColourId));
-        g.fillPath(innerGem);
-
-        // Aether crystal highlight
-        g.setColour(juce::Colours::white.withAlpha(0.9f));
-        g.fillEllipse(thumbPos.x - thumbSize * 0.25f, thumbPos.y - thumbSize * 0.35f,
-                     thumbSize * 0.5f, thumbSize * 0.5f);
+        // Specular highlight
+        g.setColour(juce::Colours::white.withAlpha(0.85f));
+        g.fillEllipse(centre.x - core * 0.35f, centre.y - core * 0.45f,
+                      core * 0.55f, core * 0.45f);
     }
 
     void drawButtonBackground(juce::Graphics& g, juce::Button& button, const juce::Colour& backgroundColour,
@@ -544,8 +530,143 @@ public:
         chevron.lineTo(arrowZone.getCentreX(), arrowZone.getBottom() - 3);
         chevron.lineTo(arrowZone.getRight(), arrowZone.getY() + 3);
 
-        g.setColour(box.findColour(juce::ComboBox::textColourId));
+        g.setColour(box.findColour(juce::ComboBox::arrowColourId));
         g.strokePath(chevron, juce::PathStrokeType(2.0f));
+    }
+
+    //--------------------------------------------------------------------------
+    // Branded popup menus (ComboBox / context) — brass + cyan on navy
+    //--------------------------------------------------------------------------
+    void drawPopupMenuBackground(juce::Graphics& g, int width, int height) override
+    {
+        auto bounds = juce::Rectangle<float>(0.0f, 0.0f,
+                                             static_cast<float>(width),
+                                             static_cast<float>(height));
+
+        juce::ColourGradient bg(
+            juce::Colour(STEEL_OBSIDIAN).brighter(0.06f),
+            bounds.getCentreX(), bounds.getY(),
+            juce::Colour(ABYSS_NAVY),
+            bounds.getCentreX(), bounds.getBottom(), false);
+        g.setGradientFill(bg);
+        g.fillRoundedRectangle(bounds, 6.0f);
+
+        g.setColour(juce::Colour(BRASS_AGED).withAlpha(0.85f));
+        g.drawRoundedRectangle(bounds.reduced(0.5f), 6.0f, 1.8f);
+
+        g.setColour(juce::Colour(GOLD_TEMPLE).withAlpha(0.35f));
+        g.drawRoundedRectangle(bounds.reduced(2.5f), 5.0f, 1.0f);
+
+        g.setColour(juce::Colour(AETHER_CYAN).withAlpha(0.12f));
+        g.drawRoundedRectangle(bounds.reduced(4.0f), 4.0f, 1.0f);
+    }
+
+    void drawPopupMenuItem(juce::Graphics& g, const juce::Rectangle<int>& area,
+                           bool isSeparator, bool isActive, bool isHighlighted,
+                           bool isTicked, bool hasSubMenu,
+                           const juce::String& text, const juce::String& shortcutKeyText,
+                           const juce::Drawable* icon, const juce::Colour* textColourToUse) override
+    {
+        if (isSeparator)
+        {
+            auto r = area.reduced(12, 0).toFloat();
+            g.setColour(juce::Colour(BRASS_AGED).withAlpha(0.45f));
+            g.drawLine(r.getX(), r.getCentreY(), r.getRight(), r.getCentreY(), 1.0f);
+            g.setColour(juce::Colour(AETHER_CYAN).withAlpha(0.12f));
+            g.drawLine(r.getX(), r.getCentreY() + 1.0f, r.getRight(), r.getCentreY() + 1.0f, 1.0f);
+            return;
+        }
+
+        auto r = area.toFloat().reduced(4.0f, 2.0f);
+
+        if (isHighlighted && isActive)
+        {
+            juce::ColourGradient hi(
+                juce::Colour(BRASS_AGED).withAlpha(0.55f),
+                r.getX(), r.getCentreY(),
+                juce::Colour(AETHER_CYAN).withAlpha(0.18f),
+                r.getRight(), r.getCentreY(), false);
+            g.setGradientFill(hi);
+            g.fillRoundedRectangle(r, 4.0f);
+
+            g.setColour(juce::Colour(AETHER_CYAN).withAlpha(0.5f));
+            g.drawRoundedRectangle(r, 4.0f, 1.0f);
+        }
+
+        juce::Colour textColour = textColourToUse != nullptr
+            ? *textColourToUse
+            : (isHighlighted ? juce::Colour(AETHER_CYAN) : juce::Colour(GOLD_TEMPLE));
+
+        if (!isActive)
+            textColour = textColour.withAlpha(0.4f);
+
+        g.setColour(textColour);
+        g.setFont(getPopupMenuFont());
+
+        auto textR = area.reduced(isTicked ? 28 : 12, 0);
+        if (hasSubMenu)
+            textR.removeFromRight(16);
+
+        g.drawFittedText(text, textR, juce::Justification::centredLeft, 1);
+
+        if (shortcutKeyText.isNotEmpty())
+        {
+            g.setColour(juce::Colour(COPPER_STEAM).withAlpha(isActive ? 0.8f : 0.35f));
+            g.drawText(shortcutKeyText, area.reduced(12, 0), juce::Justification::centredRight, true);
+        }
+
+        if (isTicked)
+        {
+            g.setColour(juce::Colour(AETHER_CYAN));
+            auto tickZone = area.withWidth(22).toFloat().reduced(6.0f);
+            juce::Path check;
+            check.startNewSubPath(tickZone.getX(), tickZone.getCentreY());
+            check.lineTo(tickZone.getCentreX() - 1.0f, tickZone.getBottom() - 2.0f);
+            check.lineTo(tickZone.getRight(), tickZone.getY() + 1.0f);
+            g.strokePath(check, juce::PathStrokeType(2.0f));
+        }
+
+        if (hasSubMenu)
+        {
+            g.setColour(textColour);
+            auto arrow = area.withTrimmedLeft(area.getWidth() - 14).toFloat().reduced(3.0f);
+            juce::Path p;
+            p.addTriangle(arrow.getX(), arrow.getY(),
+                          arrow.getRight(), arrow.getCentreY(),
+                          arrow.getX(), arrow.getBottom());
+            g.fillPath(p);
+        }
+
+        juce::ignoreUnused(icon);
+    }
+
+    void getIdealPopupMenuItemSize(const juce::String& text, bool isSeparator,
+                                   int standardMenuItemHeight,
+                                   int& idealWidth, int& idealHeight) override
+    {
+        LookAndFeel_V4::getIdealPopupMenuItemSize(text, isSeparator, standardMenuItemHeight,
+                                                  idealWidth, idealHeight);
+#if JUCE_IOS
+        idealHeight = juce::jmax(idealHeight, isSeparator ? 10 : 36);
+#else
+        idealHeight = juce::jmax(idealHeight, isSeparator ? 8 : 28);
+#endif
+        idealWidth = juce::jmax(idealWidth, 160);
+    }
+
+    juce::Font getPopupMenuFont() override
+    {
+        return juce::Font(juce::FontOptions(14.0f));
+    }
+
+    void preparePopupMenuWindow(juce::Component& window) override
+    {
+        window.setOpaque(false);
+    }
+
+    int getSliderThumbRadius(juce::Slider&) override
+    {
+        return 10;
     }
 
     juce::Font getLabelFont(juce::Label& label) override

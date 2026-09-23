@@ -41,7 +41,7 @@ jobs:
         cmake .. -G Xcode \
           -DCMAKE_SYSTEM_NAME=iOS \
           -DCMAKE_OSX_SYSROOT=iphoneos \
-          -DCMAKE_OSX_DEPLOYMENT_TARGET=13.0
+          -DCMAKE_OSX_DEPLOYMENT_TARGET=15.0
 
     - name: Build for iOS
       run: |

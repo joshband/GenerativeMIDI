@@ -8,7 +8,7 @@ This guide explains how to build the Generative MIDI AUv3 plugin for iOS and iPa
 
 - macOS with Xcode installed (Xcode 14 or later recommended)
 - Apple Developer account (free or paid) for code signing
-- iOS device or simulator running iOS 13.0 or later
+- iOS device or simulator running iOS 15.0 or later / iPadOS 15.0 or later
 - CMake 3.15 or later
 - JUCE linked at `./JUCE`
 - `art/` submodule initialized: `git submodule update --init --recursive`
@@ -50,19 +50,28 @@ Once installed on your device, the Generative MIDI AUv3 plugin will be available
 
 The iOS/iPadOS build shares the desktop engine set:
 
-- **9 UI generators** (Euclidean, 4 algorithmic, 4 stochastic)
-- **Polyrhythm experimental** in the editor (engine + minimal layer UI)
-- Pattern visualization (Euclidean step grid; other modes show an honest empty state)
-- Gate / ratchet / scale / humanization parameters
-- **Not** store packaging, touch-optimized layout, or claimed full MIDI expression UI
+- **10 UI generators** (Euclidean, Polyrhythm experimental, 4 algorithmic, 4 stochastic)
+- Pattern visualization (Euclidean step grid; other modes show activity fallback)
+- Gate / ratchet / scale / humanization / expression / LFO MVP parameters
+- **Not** store packaging or a dedicated mobile-first redesign
 
 ## UI Considerations for iOS
 
-The current UI is the desktop steampunk layout compiled for AUv3:
+The editor is the desktop brass + cyan-on-navy layout with cross-format usability tweaks:
 
+- Default / minimum sizes are DAW-friendly; content scrolls vertically when the host frame is shorter than the preferred height
 - Prefer **landscape** on phone-sized screens
-- Knobs use JUCE drag gestures (works with touch, but not a mobile-first redesign)
+- Touch: slightly larger hit targets (`JUCE_IOS`) for buttons, popup items, and preset rows; knobs still use drag gestures
+- AX titles remain on key controls
 - Expect further layout work before any store submission
+
+## Format notes (macOS vs iOS)
+
+| Format | Where it builds | Notes |
+|--------|-----------------|-------|
+| AU / VST3 / Standalone | macOS CMake (`build/`) | Primary desktop hosts; editor scrolls in short frames |
+| AUv3 | **iOS** CMake (`build_ios.sh` / `CMAKE_SYSTEM_NAME=iOS`) | JUCE sets `JucePlugin_Build_AUv3=0` on desktop macOS MIDI-FX configs; use the iOS target |
+| AUv3 device QA | Physical iPad/iPhone | Not claimed here — sideload / TestFlight only |
 
 ## Troubleshooting
 
@@ -80,6 +89,7 @@ The current UI is the desktop steampunk layout compiled for AUv3:
 - Product → Clean Build Folder
 - Delete `build_ios` and regenerate: `./build_ios.sh clean`
 - Confirm `ls -la JUCE` and `git submodule update --init --recursive`
+- Current Xcode may require **iOS 15.0+** deployment target (see `build_ios.sh`)
 
 ## Advanced Configuration
 
@@ -92,7 +102,7 @@ BUNDLE_ID "com.yourcompany.generativemidi"
 ### Changing Minimum iOS Version
 Edit `build_ios.sh`:
 ```bash
--DCMAKE_OSX_DEPLOYMENT_TARGET=13.0 \
+-DCMAKE_OSX_DEPLOYMENT_TARGET=15.0 \
 ```
 
 ## Distribution

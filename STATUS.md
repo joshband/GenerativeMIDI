@@ -14,8 +14,8 @@
 | Velocity / density LFO | ADVANCED controls (`modLfoEnable` / rate / depth / density depth); matrix UI still archived |
 | `stochasticType` APVTS param | **Legacy** — kept for session load; non-automatable; **unused by DSP** |
 | Modulation matrix | Archived under `archive/modulation_v1/` — not live |
-| AUv3 / iOS | CMake target + docs; **not App Store–ready** |
-| Touch / a11y | No dedicated touch redesign; key controls have AX `setTitle` names |
+| AUv3 / iOS | CMake iOS target (`GenerativeMIDI_AUv3`) + docs; **not App Store–ready**; macOS desktop build has `JucePlugin_Build_AUv3=0` |
+| Touch / a11y | iOS larger hit targets + scrollable editor; key controls have AX `setTitle` names |
 | Tests | Catch2 + `ctest` (**26**, incl. host playhead smoke + polyrhythm layer persistence + Markov trained lookup) in CMake / CI |
 | CI matrix | macOS plugins + iOS AUv3 + Windows/Linux VST3 + pluginval (VST3) |
 | Canonical build | **CMake** (`GenerativeMIDI.jucer` deprecated) |
@@ -43,8 +43,8 @@ Showcase: https://joshband.github.io/GenerativeMIDI/
 
 None for the post-merge polish wave — see Planned for remaining MVP gaps.
 
-### UI polish (2026-09-22 surgical)
-P0–P1 header/pattern/preset sync landed on `master`: demoted SYNAPTIK wordmark, Pattern Display activity fallback, PresetManager listener + single-click load sync, Advanced Ratchet|Stochastic|LFO grouping, status chip, light Preset Browser tokens. Screenshots: [`docs/qa/logs/ui_polish_overview.png`](docs/qa/logs/ui_polish_overview.png), [`docs/qa/logs/ui_polish_presets_open.png`](docs/qa/logs/ui_polish_presets_open.png). Deferred: full DNA rewrite, combo popup redesign, Preset Manager restyle, slider-handle unification, MIDI log pane.
+### UI overhaul (2026-09-22)
+Deferred polish items shipped on `master`: branded combo popups, full Preset Manager restyle, round-cyan slider thumbs, scrollable cross-format editor sizes. Screenshots: [`docs/qa/logs/ui_overhaul_overview.png`](docs/qa/logs/ui_overhaul_overview.png), [`docs/qa/logs/ui_overhaul_combo_popup.png`](docs/qa/logs/ui_overhaul_combo_popup.png), [`docs/qa/logs/ui_overhaul_presets.png`](docs/qa/logs/ui_overhaul_presets.png), [`docs/qa/logs/ui_overhaul_compact.png`](docs/qa/logs/ui_overhaul_compact.png). **Format note:** macOS Debug builds AU + VST3 + Standalone; AUv3 is the **iOS** CMake target (deployment **15.0+**). Device AUv3 QA still deferred.
 
 ## Planned (explicitly deferred)
 
@@ -57,6 +57,9 @@ Continuous CC/PB modulation and MPE (note-on emit shipped).
 
 ### Modulation matrix
 Full router / multi-source panel — not part of current LFO MVP.
+
+### Remaining UI
+MIDI log pane; AUv3 on-device touch QA; App Store packaging.
 
 ## Project metrics
 

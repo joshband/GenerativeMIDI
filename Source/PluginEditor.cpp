@@ -17,27 +17,43 @@ GenerativeMIDIEditor::GenerativeMIDIEditor(GenerativeMIDIProcessor& p)
 {
     setLookAndFeel(&customLookAndFeel);
 
-    // Window size (expression row for MIDI AT/PB/CC)
-    setSize(1400, 820);
+    // Cross-format defaults: usable in typical DAW frames; scroll when shorter
+#if JUCE_IOS
+    setSize(1024, 700);
+    setResizeLimits(640, 480, 2000, 1400);
+#else
+    setSize(1280, 760);
+    setResizeLimits(960, 560, 2000, 1400);
+#endif
     setResizable(true, true);
-    setResizeLimits(1200, 800, 2000, 1300);
+
+    addAndMakeVisible(editorViewport);
+    editorViewport.setViewedComponent(&contentPanel, false);
+    editorViewport.setScrollBarsShown(true, false);
+#if JUCE_IOS
+    editorViewport.setScrollOnDragMode(juce::Viewport::ScrollOnDragMode::all);
+#endif
+    editorViewport.getVerticalScrollBar().setColour(
+        juce::ScrollBar::thumbColourId, juce::Colour(CustomLookAndFeel::BRASS_AGED));
+    editorViewport.getVerticalScrollBar().setColour(
+        juce::ScrollBar::trackColourId, juce::Colour(CustomLookAndFeel::ABYSS_NAVY));
 
     // Compact brand mark (demoted) + product name
-    addAndMakeVisible(titleLabel);
+    contentPanel.addAndMakeVisible(titleLabel);
     titleLabel.setText("SYNAPTIK", juce::dontSendNotification);
     titleLabel.setFont(juce::FontOptions(14.0f).withStyle("Bold"));
     titleLabel.setJustificationType(juce::Justification::centredLeft);
     titleLabel.setColour(juce::Label::textColourId, juce::Colour(CustomLookAndFeel::BRASS_AGED));
     titleLabel.setColour(juce::Label::backgroundColourId, juce::Colours::transparentBlack);
 
-    addAndMakeVisible(productLabel);
+    contentPanel.addAndMakeVisible(productLabel);
     productLabel.setText("Generative MIDI", juce::dontSendNotification);
     productLabel.setFont(juce::FontOptions(17.0f).withStyle("Bold"));
     productLabel.setJustificationType(juce::Justification::centredLeft);
     productLabel.setColour(juce::Label::textColourId, juce::Colour(CustomLookAndFeel::GOLD_TEMPLE));
     productLabel.setColour(juce::Label::backgroundColourId, juce::Colours::transparentBlack);
 
-    addAndMakeVisible(statusChipLabel);
+    contentPanel.addAndMakeVisible(statusChipLabel);
     statusChipLabel.setFont(juce::FontOptions(11.0f));
     statusChipLabel.setJustificationType(juce::Justification::centredLeft);
     statusChipLabel.setColour(juce::Label::textColourId, juce::Colour(CustomLookAndFeel::AETHER_CYAN));
@@ -46,16 +62,16 @@ GenerativeMIDIEditor::GenerativeMIDIEditor(GenerativeMIDIProcessor& p)
     updateStatusChip();
 
     // Pattern display + polyrhythm layer editor (swapped by generator type)
-    addAndMakeVisible(patternDisplay);
+    contentPanel.addAndMakeVisible(patternDisplay);
     polyLayerEditor = std::make_unique<PolyrhythmLayerEditor>(audioProcessor.getPolyrhythmEngine());
-    addChildComponent(polyLayerEditor.get());
+    contentPanel.addChildComponent(polyLayerEditor.get());
 
     // Generator type selector
-    addAndMakeVisible(generatorLabel);
+    contentPanel.addAndMakeVisible(generatorLabel);
     generatorLabel.setText("Generator", juce::dontSendNotification);
     generatorLabel.setJustificationType(juce::Justification::centred);
 
-    addAndMakeVisible(generatorTypeCombo);
+    contentPanel.addAndMakeVisible(generatorTypeCombo);
     generatorTypeCombo.addItemList(juce::StringArray{"Euclidean", "Polyrhythm", "Markov", "L-System", "Cellular", "Probabilistic",
                                                       "Brownian", "Perlin Noise", "Drunk Walk", "Lorenz"}, 1);
     generatorAttachment.reset(new juce::AudioProcessorValueTreeState::ComboBoxAttachment(
@@ -67,110 +83,110 @@ GenerativeMIDIEditor::GenerativeMIDIEditor(GenerativeMIDIProcessor& p)
     };
 
     // MIDI Channel selector
-    addAndMakeVisible(midiChannelLabel);
+    contentPanel.addAndMakeVisible(midiChannelLabel);
     midiChannelLabel.setText("MIDI Ch", juce::dontSendNotification);
     midiChannelLabel.setJustificationType(juce::Justification::centred);
 
-    addAndMakeVisible(midiChannelCombo);
+    contentPanel.addAndMakeVisible(midiChannelCombo);
     for (int i = 1; i <= 16; ++i)
         midiChannelCombo.addItem(juce::String(i), i);
     midiChannelAttachment.reset(new juce::AudioProcessorValueTreeState::ComboBoxAttachment(
         audioProcessor.getValueTreeState(), "midiChannel", midiChannelCombo));
 
     // Tempo knob
-    addAndMakeVisible(tempoSlider);
+    contentPanel.addAndMakeVisible(tempoSlider);
     tempoSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
     tempoSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 80, 20);
     tempoAttachment.reset(new juce::AudioProcessorValueTreeState::SliderAttachment(
         audioProcessor.getValueTreeState(), "tempo", tempoSlider));
-    addAndMakeVisible(tempoLabel);
+    contentPanel.addAndMakeVisible(tempoLabel);
     tempoLabel.setText("Tempo", juce::dontSendNotification);
     tempoLabel.setJustificationType(juce::Justification::centred);
 
     // Euclidean controls
-    addAndMakeVisible(stepsSlider);
+    contentPanel.addAndMakeVisible(stepsSlider);
     stepsSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
     stepsSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 60, 20);
     stepsAttachment.reset(new juce::AudioProcessorValueTreeState::SliderAttachment(
         audioProcessor.getValueTreeState(), "euclideanSteps", stepsSlider));
-    addAndMakeVisible(stepsLabel);
+    contentPanel.addAndMakeVisible(stepsLabel);
     stepsLabel.setText("Steps", juce::dontSendNotification);
     stepsLabel.setJustificationType(juce::Justification::centred);
 
-    addAndMakeVisible(pulsesSlider);
+    contentPanel.addAndMakeVisible(pulsesSlider);
     pulsesSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
     pulsesSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 60, 20);
     pulsesAttachment.reset(new juce::AudioProcessorValueTreeState::SliderAttachment(
         audioProcessor.getValueTreeState(), "euclideanPulses", pulsesSlider));
-    addAndMakeVisible(pulsesLabel);
+    contentPanel.addAndMakeVisible(pulsesLabel);
     pulsesLabel.setText("Pulses", juce::dontSendNotification);
     pulsesLabel.setJustificationType(juce::Justification::centred);
     pulsesLabel.setMinimumHorizontalScale(0.7f);
 
-    addAndMakeVisible(rotationSlider);
+    contentPanel.addAndMakeVisible(rotationSlider);
     rotationSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
     rotationSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 60, 20);
     rotationAttachment.reset(new juce::AudioProcessorValueTreeState::SliderAttachment(
         audioProcessor.getValueTreeState(), "euclideanRotation", rotationSlider));
-    addAndMakeVisible(rotationLabel);
+    contentPanel.addAndMakeVisible(rotationLabel);
     rotationLabel.setText("Rotation", juce::dontSendNotification);
     rotationLabel.setJustificationType(juce::Justification::centred);
 
     // Probability control (applies to all generators)
-    addAndMakeVisible(densitySlider);
+    contentPanel.addAndMakeVisible(densitySlider);
     densitySlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
     densitySlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 60, 20);
     densityAttachment.reset(new juce::AudioProcessorValueTreeState::SliderAttachment(
         audioProcessor.getValueTreeState(), "noteDensity", densitySlider));
-    addAndMakeVisible(densityLabel);
+    contentPanel.addAndMakeVisible(densityLabel);
     densityLabel.setText("Probability", juce::dontSendNotification);
     densityLabel.setJustificationType(juce::Justification::centred);
 
     // Velocity range sliders
-    addAndMakeVisible(velocityMinSlider);
+    contentPanel.addAndMakeVisible(velocityMinSlider);
     velocityMinSlider.setSliderStyle(juce::Slider::LinearVertical);
     velocityMinSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 50, 20);
     velocityMinAttachment.reset(new juce::AudioProcessorValueTreeState::SliderAttachment(
         audioProcessor.getValueTreeState(), "velocityMin", velocityMinSlider));
 
-    addAndMakeVisible(velocityMaxSlider);
+    contentPanel.addAndMakeVisible(velocityMaxSlider);
     velocityMaxSlider.setSliderStyle(juce::Slider::LinearVertical);
     velocityMaxSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 50, 20);
     velocityMaxAttachment.reset(new juce::AudioProcessorValueTreeState::SliderAttachment(
         audioProcessor.getValueTreeState(), "velocityMax", velocityMaxSlider));
 
-    addAndMakeVisible(velocityLabel);
+    contentPanel.addAndMakeVisible(velocityLabel);
     velocityLabel.setText("Velocity Range", juce::dontSendNotification);
     velocityLabel.setJustificationType(juce::Justification::centred);
 
     // Pitch range sliders
-    addAndMakeVisible(pitchMinSlider);
+    contentPanel.addAndMakeVisible(pitchMinSlider);
     pitchMinSlider.setSliderStyle(juce::Slider::LinearVertical);
     pitchMinSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 50, 20);
     pitchMinAttachment.reset(new juce::AudioProcessorValueTreeState::SliderAttachment(
         audioProcessor.getValueTreeState(), "pitchMin", pitchMinSlider));
 
-    addAndMakeVisible(pitchMaxSlider);
+    contentPanel.addAndMakeVisible(pitchMaxSlider);
     pitchMaxSlider.setSliderStyle(juce::Slider::LinearVertical);
     pitchMaxSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 50, 20);
     pitchMaxAttachment.reset(new juce::AudioProcessorValueTreeState::SliderAttachment(
         audioProcessor.getValueTreeState(), "pitchMax", pitchMaxSlider));
 
-    addAndMakeVisible(pitchLabel);
+    contentPanel.addAndMakeVisible(pitchLabel);
     pitchLabel.setText("Pitch Range", juce::dontSendNotification);
     pitchLabel.setJustificationType(juce::Justification::centred);
 
     // Scale controls
-    addAndMakeVisible(scaleLabel);
+    contentPanel.addAndMakeVisible(scaleLabel);
     scaleLabel.setText("Scale", juce::dontSendNotification);
     scaleLabel.setJustificationType(juce::Justification::centred);
 
-    addAndMakeVisible(scaleRootCombo);
+    contentPanel.addAndMakeVisible(scaleRootCombo);
     scaleRootCombo.addItemList(juce::StringArray{"C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"}, 1);
     scaleRootAttachment.reset(new juce::AudioProcessorValueTreeState::ComboBoxAttachment(
         audioProcessor.getValueTreeState(), "scaleRoot", scaleRootCombo));
 
-    addAndMakeVisible(scaleTypeCombo);
+    contentPanel.addAndMakeVisible(scaleTypeCombo);
     scaleTypeCombo.addItemList(juce::StringArray{"Chromatic", "Major", "Minor", "Harmonic Minor", "Melodic Minor",
                                                    "Dorian", "Phrygian", "Lydian", "Mixolydian", "Locrian",
                                                    "Major Pentatonic", "Minor Pentatonic", "Blues", "Whole Tone",
@@ -179,196 +195,196 @@ GenerativeMIDIEditor::GenerativeMIDIEditor(GenerativeMIDIProcessor& p)
         audioProcessor.getValueTreeState(), "scaleType", scaleTypeCombo));
 
     // Swing and humanization controls
-    addAndMakeVisible(swingSlider);
+    contentPanel.addAndMakeVisible(swingSlider);
     swingSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
     swingSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 60, 20);
     swingAttachment.reset(new juce::AudioProcessorValueTreeState::SliderAttachment(
         audioProcessor.getValueTreeState(), "swingAmount", swingSlider));
-    addAndMakeVisible(swingLabel);
+    contentPanel.addAndMakeVisible(swingLabel);
     swingLabel.setText("Swing", juce::dontSendNotification);
     swingLabel.setJustificationType(juce::Justification::centred);
 
-    addAndMakeVisible(timingHumanizeSlider);
+    contentPanel.addAndMakeVisible(timingHumanizeSlider);
     timingHumanizeSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
     timingHumanizeSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 60, 20);
     timingHumanizeAttachment.reset(new juce::AudioProcessorValueTreeState::SliderAttachment(
         audioProcessor.getValueTreeState(), "timingHumanize", timingHumanizeSlider));
-    addAndMakeVisible(timingHumanizeLabel);
+    contentPanel.addAndMakeVisible(timingHumanizeLabel);
     timingHumanizeLabel.setText("Timing", juce::dontSendNotification);
     timingHumanizeLabel.setJustificationType(juce::Justification::centred);
 
-    addAndMakeVisible(velocityHumanizeSlider);
+    contentPanel.addAndMakeVisible(velocityHumanizeSlider);
     velocityHumanizeSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
     velocityHumanizeSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 60, 20);
     velocityHumanizeAttachment.reset(new juce::AudioProcessorValueTreeState::SliderAttachment(
         audioProcessor.getValueTreeState(), "velocityHumanize", velocityHumanizeSlider));
-    addAndMakeVisible(velocityHumanizeLabel);
+    contentPanel.addAndMakeVisible(velocityHumanizeLabel);
     velocityHumanizeLabel.setText("Vel Var", juce::dontSendNotification);
     velocityHumanizeLabel.setJustificationType(juce::Justification::centred);
     velocityHumanizeLabel.setMinimumHorizontalScale(0.7f);
 
     // Gate length controls
-    addAndMakeVisible(gateLengthSlider);
+    contentPanel.addAndMakeVisible(gateLengthSlider);
     gateLengthSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
     gateLengthSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 60, 20);
     gateLengthAttachment.reset(new juce::AudioProcessorValueTreeState::SliderAttachment(
         audioProcessor.getValueTreeState(), "gateLength", gateLengthSlider));
-    addAndMakeVisible(gateLengthLabel);
+    contentPanel.addAndMakeVisible(gateLengthLabel);
     gateLengthLabel.setText("Gate", juce::dontSendNotification);
     gateLengthLabel.setJustificationType(juce::Justification::centred);
 
-    addAndMakeVisible(legatoButton);
+    contentPanel.addAndMakeVisible(legatoButton);
     legatoButton.setButtonText("Legato");
     legatoButton.setClickingTogglesState(true);
     legatoAttachment.reset(new juce::AudioProcessorValueTreeState::ButtonAttachment(
         audioProcessor.getValueTreeState(), "legatoMode", legatoButton));
 
     // MIDI expression (aftertouch / pitch bend / CC) — APVTS params already exist
-    addAndMakeVisible(aftertouchEnableButton);
+    contentPanel.addAndMakeVisible(aftertouchEnableButton);
     aftertouchEnableButton.setButtonText("AT");
     aftertouchEnableButton.setClickingTogglesState(true);
     aftertouchEnableAttachment.reset(new juce::AudioProcessorValueTreeState::ButtonAttachment(
         audioProcessor.getValueTreeState(), "aftertouchEnable", aftertouchEnableButton));
 
-    addAndMakeVisible(aftertouchAmountSlider);
+    contentPanel.addAndMakeVisible(aftertouchAmountSlider);
     aftertouchAmountSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
     aftertouchAmountSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 50, 18);
     aftertouchAmountAttachment.reset(new juce::AudioProcessorValueTreeState::SliderAttachment(
         audioProcessor.getValueTreeState(), "aftertouchAmount", aftertouchAmountSlider));
-    addAndMakeVisible(aftertouchAmountLabel);
+    contentPanel.addAndMakeVisible(aftertouchAmountLabel);
     aftertouchAmountLabel.setText("AT Amt", juce::dontSendNotification);
     aftertouchAmountLabel.setJustificationType(juce::Justification::centred);
 
-    addAndMakeVisible(pitchbendEnableButton);
+    contentPanel.addAndMakeVisible(pitchbendEnableButton);
     pitchbendEnableButton.setButtonText("PB");
     pitchbendEnableButton.setClickingTogglesState(true);
     pitchbendEnableAttachment.reset(new juce::AudioProcessorValueTreeState::ButtonAttachment(
         audioProcessor.getValueTreeState(), "pitchbendEnable", pitchbendEnableButton));
 
-    addAndMakeVisible(pitchbendRangeSlider);
+    contentPanel.addAndMakeVisible(pitchbendRangeSlider);
     pitchbendRangeSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
     pitchbendRangeSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 50, 18);
     pitchbendRangeAttachment.reset(new juce::AudioProcessorValueTreeState::SliderAttachment(
         audioProcessor.getValueTreeState(), "pitchbendRange", pitchbendRangeSlider));
-    addAndMakeVisible(pitchbendRangeLabel);
+    contentPanel.addAndMakeVisible(pitchbendRangeLabel);
     pitchbendRangeLabel.setText("PB Semi", juce::dontSendNotification);
     pitchbendRangeLabel.setJustificationType(juce::Justification::centred);
 
-    addAndMakeVisible(ccEnableButton);
+    contentPanel.addAndMakeVisible(ccEnableButton);
     ccEnableButton.setButtonText("CC");
     ccEnableButton.setClickingTogglesState(true);
     ccEnableAttachment.reset(new juce::AudioProcessorValueTreeState::ButtonAttachment(
         audioProcessor.getValueTreeState(), "ccEnable", ccEnableButton));
 
-    addAndMakeVisible(ccNumberSlider);
+    contentPanel.addAndMakeVisible(ccNumberSlider);
     ccNumberSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
     ccNumberSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 50, 18);
     ccNumberSlider.setNumDecimalPlacesToDisplay(0);
     ccNumberAttachment.reset(new juce::AudioProcessorValueTreeState::SliderAttachment(
         audioProcessor.getValueTreeState(), "ccNumber", ccNumberSlider));
-    addAndMakeVisible(ccNumberLabel);
+    contentPanel.addAndMakeVisible(ccNumberLabel);
     ccNumberLabel.setText("CC #", juce::dontSendNotification);
     ccNumberLabel.setJustificationType(juce::Justification::centred);
 
-    addAndMakeVisible(ccAmountSlider);
+    contentPanel.addAndMakeVisible(ccAmountSlider);
     ccAmountSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
     ccAmountSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 50, 18);
     ccAmountAttachment.reset(new juce::AudioProcessorValueTreeState::SliderAttachment(
         audioProcessor.getValueTreeState(), "ccAmount", ccAmountSlider));
-    addAndMakeVisible(ccAmountLabel);
+    contentPanel.addAndMakeVisible(ccAmountLabel);
     ccAmountLabel.setText("CC Amt", juce::dontSendNotification);
     ccAmountLabel.setJustificationType(juce::Justification::centred);
 
     // Modulation v2 MVP: LFO → velocity
-    addAndMakeVisible(modLfoEnableButton);
+    contentPanel.addAndMakeVisible(modLfoEnableButton);
     modLfoEnableButton.setButtonText("LFO");
     modLfoEnableButton.setClickingTogglesState(true);
     modLfoEnableAttachment.reset(new juce::AudioProcessorValueTreeState::ButtonAttachment(
         audioProcessor.getValueTreeState(), "modLfoEnable", modLfoEnableButton));
 
-    addAndMakeVisible(modLfoRateSlider);
+    contentPanel.addAndMakeVisible(modLfoRateSlider);
     modLfoRateSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
     modLfoRateSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 50, 18);
     modLfoRateAttachment.reset(new juce::AudioProcessorValueTreeState::SliderAttachment(
         audioProcessor.getValueTreeState(), "modLfoRate", modLfoRateSlider));
-    addAndMakeVisible(modLfoRateLabel);
+    contentPanel.addAndMakeVisible(modLfoRateLabel);
     modLfoRateLabel.setText("LFO Hz", juce::dontSendNotification);
     modLfoRateLabel.setJustificationType(juce::Justification::centred);
 
-    addAndMakeVisible(modLfoDepthSlider);
+    contentPanel.addAndMakeVisible(modLfoDepthSlider);
     modLfoDepthSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
     modLfoDepthSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 50, 18);
     modLfoDepthAttachment.reset(new juce::AudioProcessorValueTreeState::SliderAttachment(
         audioProcessor.getValueTreeState(), "modLfoDepth", modLfoDepthSlider));
-    addAndMakeVisible(modLfoDepthLabel);
+    contentPanel.addAndMakeVisible(modLfoDepthLabel);
     modLfoDepthLabel.setText("LFO Vel", juce::dontSendNotification);
     modLfoDepthLabel.setJustificationType(juce::Justification::centred);
 
-    addAndMakeVisible(modLfoDensityDepthSlider);
+    contentPanel.addAndMakeVisible(modLfoDensityDepthSlider);
     modLfoDensityDepthSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
     modLfoDensityDepthSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 50, 18);
     modLfoDensityDepthAttachment.reset(new juce::AudioProcessorValueTreeState::SliderAttachment(
         audioProcessor.getValueTreeState(), "modLfoDensityDepth", modLfoDensityDepthSlider));
-    addAndMakeVisible(modLfoDensityDepthLabel);
+    contentPanel.addAndMakeVisible(modLfoDensityDepthLabel);
     modLfoDensityDepthLabel.setText("LFO Dens", juce::dontSendNotification);
     modLfoDensityDepthLabel.setJustificationType(juce::Justification::centred);
 
     // Ratchet controls
-    addAndMakeVisible(ratchetCountSlider);
+    contentPanel.addAndMakeVisible(ratchetCountSlider);
     ratchetCountSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
     ratchetCountSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 60, 20);
     ratchetCountAttachment.reset(new juce::AudioProcessorValueTreeState::SliderAttachment(
         audioProcessor.getValueTreeState(), "ratchetCount", ratchetCountSlider));
-    addAndMakeVisible(ratchetCountLabel);
+    contentPanel.addAndMakeVisible(ratchetCountLabel);
     ratchetCountLabel.setText("Ratchet", juce::dontSendNotification);
     ratchetCountLabel.setJustificationType(juce::Justification::centred);
 
-    addAndMakeVisible(ratchetProbabilitySlider);
+    contentPanel.addAndMakeVisible(ratchetProbabilitySlider);
     ratchetProbabilitySlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
     ratchetProbabilitySlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 60, 20);
     ratchetProbabilityAttachment.reset(new juce::AudioProcessorValueTreeState::SliderAttachment(
         audioProcessor.getValueTreeState(), "ratchetProbability", ratchetProbabilitySlider));
-    addAndMakeVisible(ratchetProbabilityLabel);
+    contentPanel.addAndMakeVisible(ratchetProbabilityLabel);
     ratchetProbabilityLabel.setText("R. Prob", juce::dontSendNotification);
     ratchetProbabilityLabel.setJustificationType(juce::Justification::centred);
     ratchetProbabilityLabel.setMinimumHorizontalScale(0.65f);
 
-    addAndMakeVisible(ratchetDecaySlider);
+    contentPanel.addAndMakeVisible(ratchetDecaySlider);
     ratchetDecaySlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
     ratchetDecaySlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 60, 20);
     ratchetDecayAttachment.reset(new juce::AudioProcessorValueTreeState::SliderAttachment(
         audioProcessor.getValueTreeState(), "ratchetDecay", ratchetDecaySlider));
-    addAndMakeVisible(ratchetDecayLabel);
+    contentPanel.addAndMakeVisible(ratchetDecayLabel);
     ratchetDecayLabel.setText("R. Decay", juce::dontSendNotification);
     ratchetDecayLabel.setJustificationType(juce::Justification::centred);
     ratchetDecayLabel.setMinimumHorizontalScale(0.65f);
 
     // Stochastic/Chaos controls
-    addAndMakeVisible(stepSizeSlider);
+    contentPanel.addAndMakeVisible(stepSizeSlider);
     stepSizeSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
     stepSizeSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 60, 20);
     stepSizeAttachment.reset(new juce::AudioProcessorValueTreeState::SliderAttachment(
         audioProcessor.getValueTreeState(), "stepSize", stepSizeSlider));
-    addAndMakeVisible(stepSizeLabel);
+    contentPanel.addAndMakeVisible(stepSizeLabel);
     stepSizeLabel.setText("Step Size", juce::dontSendNotification);
     stepSizeLabel.setJustificationType(juce::Justification::centred);
     stepSizeLabel.setMinimumHorizontalScale(0.65f);
 
-    addAndMakeVisible(momentumSlider);
+    contentPanel.addAndMakeVisible(momentumSlider);
     momentumSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
     momentumSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 60, 20);
     momentumAttachment.reset(new juce::AudioProcessorValueTreeState::SliderAttachment(
         audioProcessor.getValueTreeState(), "momentum", momentumSlider));
-    addAndMakeVisible(momentumLabel);
+    contentPanel.addAndMakeVisible(momentumLabel);
     momentumLabel.setText("Momentum", juce::dontSendNotification);
     momentumLabel.setJustificationType(juce::Justification::centred);
 
-    addAndMakeVisible(timeScaleSlider);
+    contentPanel.addAndMakeVisible(timeScaleSlider);
     timeScaleSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
     timeScaleSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 60, 20);
     timeScaleAttachment.reset(new juce::AudioProcessorValueTreeState::SliderAttachment(
         audioProcessor.getValueTreeState(), "timeScale", timeScaleSlider));
-    addAndMakeVisible(timeScaleLabel);
+    contentPanel.addAndMakeVisible(timeScaleLabel);
     timeScaleLabel.setText("Time Scale", juce::dontSendNotification);
     timeScaleLabel.setJustificationType(juce::Justification::centred);
     timeScaleLabel.setMinimumHorizontalScale(0.65f);
@@ -381,22 +397,23 @@ GenerativeMIDIEditor::GenerativeMIDIEditor(GenerativeMIDIProcessor& p)
         label.setJustificationType(juce::Justification::centred);
         label.setColour(juce::Label::textColourId, juce::Colour(CustomLookAndFeel::GOLD_TEMPLE).withAlpha(0.75f));
     };
-    addAndMakeVisible(advancedRatchetGroupLabel);
+    contentPanel.addAndMakeVisible(advancedRatchetGroupLabel);
     styleGroupLabel(advancedRatchetGroupLabel, "RATCHET");
-    addAndMakeVisible(advancedStochasticGroupLabel);
+    contentPanel.addAndMakeVisible(advancedStochasticGroupLabel);
     styleGroupLabel(advancedStochasticGroupLabel, "STOCHASTIC");
-    addAndMakeVisible(advancedLfoGroupLabel);
+    contentPanel.addAndMakeVisible(advancedLfoGroupLabel);
     styleGroupLabel(advancedLfoGroupLabel, "LFO");
 
     // Preset browser button
-    addAndMakeVisible(presetBrowserButton);
+    contentPanel.addAndMakeVisible(presetBrowserButton);
     presetBrowserButton.setButtonText("Presets");
     presetBrowserButton.onClick = [this]()
     {
         if (!presetBrowser)
         {
             presetBrowser = std::make_unique<PresetBrowser>(audioProcessor.getPresetManager());
-            presetBrowser->setSize(500, 600);
+            presetBrowser->setLookAndFeel(&customLookAndFeel);
+            presetBrowser->setSize(520, 640);
         }
 
         juce::DialogWindow::LaunchOptions options;
@@ -412,7 +429,7 @@ GenerativeMIDIEditor::GenerativeMIDIEditor(GenerativeMIDIProcessor& p)
     };
 
     // Current preset label
-    addAndMakeVisible(currentPresetLabel);
+    contentPanel.addAndMakeVisible(currentPresetLabel);
     syncPresetLabel(audioProcessor.getPresetManager().getCurrentPresetName());
     currentPresetLabel.setFont(juce::FontOptions(12.0f));
     currentPresetLabel.setJustificationType(juce::Justification::centred);
@@ -463,13 +480,20 @@ GenerativeMIDIEditor::GenerativeMIDIEditor(GenerativeMIDIProcessor& p)
 GenerativeMIDIEditor::~GenerativeMIDIEditor()
 {
     audioProcessor.getPresetManager().removeListener(this);
+    if (presetBrowser != nullptr)
+        presetBrowser->setLookAndFeel(nullptr);
     setLookAndFeel(nullptr);
 }
 
 //==============================================================================
 void GenerativeMIDIEditor::paint(juce::Graphics& g)
 {
-    auto bounds = getLocalBounds().toFloat();
+    g.fillAll(juce::Colour(CustomLookAndFeel::ABYSS_NAVY));
+}
+
+void GenerativeMIDIEditor::paintContent(juce::Graphics& g)
+{
+    auto bounds = contentPanel.getLocalBounds().toFloat();
 
     // SYNAPTIK: Aged brass panel background texture
     g.fillAll(juce::Colour(CustomLookAndFeel::ABYSS_NAVY));
@@ -482,9 +506,9 @@ void GenerativeMIDIEditor::paint(juce::Graphics& g)
         int tileWidth = 512;
         int tileHeight = 512;
 
-        for (int x = 0; x < getWidth(); x += tileWidth)
+        for (int x = 0; x < contentPanel.getWidth(); x += tileWidth)
         {
-            for (int y = 0; y < getHeight(); y += tileHeight)
+            for (int y = 0; y < contentPanel.getHeight(); y += tileHeight)
             {
                 g.setOpacity(0.25f);
                 g.drawImage(panelTexture,
@@ -571,9 +595,9 @@ void GenerativeMIDIEditor::paint(juce::Graphics& g)
     };
 
     drawBrassOrnament(20, 20, false, false);
-    drawBrassOrnament(getWidth() - 20, 20, true, false);
-    drawBrassOrnament(20, getHeight() - 20, false, true);
-    drawBrassOrnament(getWidth() - 20, getHeight() - 20, true, true);
+    drawBrassOrnament(contentPanel.getWidth() - 20, 20, true, false);
+    drawBrassOrnament(20, contentPanel.getHeight() - 20, false, true);
+    drawBrassOrnament(contentPanel.getWidth() - 20, contentPanel.getHeight() - 20, true, true);
 
     // Gothic brass panels (Art Deco section frames)
     auto drawBrassPanel = [&g](juce::Rectangle<float> area, juce::String label)
@@ -655,8 +679,28 @@ void GenerativeMIDIEditor::paint(juce::Graphics& g)
 
 void GenerativeMIDIEditor::resized()
 {
-    auto area = getLocalBounds();
+    editorViewport.setBounds(getLocalBounds());
 
+    const bool isPolyrhythm = GeneratorTypeMapping::isPolyrhythm(generatorTypeCombo.getSelectedId() - 1);
+    const int contentW = juce::jmax(getWidth(), 960);
+    const int contentH = preferredContentHeight(isPolyrhythm);
+    contentPanel.setSize(contentW, contentH);
+    // layoutContent is invoked from ContentPanel::resized
+}
+
+int GenerativeMIDIEditor::preferredContentHeight(bool isPolyrhythm) const
+{
+    const int header = 52;
+    const int pattern = isPolyrhythm ? 220 : 140;
+    const int generator = 200;
+    const int expression = 250;
+    const int advanced = 160;
+    const int bottomPad = 12;
+    return header + pattern + generator + expression + advanced + bottomPad;
+}
+
+void GenerativeMIDIEditor::layoutContent(juce::Rectangle<int> area)
+{
     // Compact header: brand left, product + status, presets right
     auto titleArea = area.removeFromTop(52).reduced(20, 6);
     auto presetArea = titleArea.removeFromRight(170);
@@ -687,8 +731,13 @@ void GenerativeMIDIEditor::resized()
     generatorPanelBounds = controlsSection.toFloat();
     controlsSection.removeFromTop(20); // Section label
 
-    int knobSize = 90;
+#if JUCE_IOS
+    int knobSize = juce::jlimit(72, 96, (controlsSection.getWidth() - 180) / 6);
+    int spacing = 14;
+#else
+    int knobSize = juce::jlimit(64, 90, (controlsSection.getWidth() - 170) / 6);
     int spacing = 12;
+#endif
 
     auto generatorArea = controlsSection.removeFromLeft(150);
     generatorLabel.setBounds(generatorArea.removeFromTop(20));
@@ -792,12 +841,19 @@ void GenerativeMIDIEditor::resized()
     legatoButton.setBounds(legatoArea.removeFromTop(50).reduced(5));
 
     // Compact MIDI expression row (aftertouch / pitch bend / CC)
+#if JUCE_IOS
+    const int midiKnob = 76;
+    const int midiBtnW = 64;
+    const int midiBtnH = 40;
+#else
     const int midiKnob = 70;
     const int midiBtnW = 56;
+    const int midiBtnH = 36;
+#endif
     expressionMidi.removeFromTop(4);
 
     auto atBtnArea = expressionMidi.removeFromLeft(midiBtnW);
-    aftertouchEnableButton.setBounds(atBtnArea.removeFromTop(36).reduced(2, 4));
+    aftertouchEnableButton.setBounds(atBtnArea.removeFromTop(midiBtnH).reduced(2, 4));
     expressionMidi.removeFromLeft(6);
 
     auto atAmtArea = expressionMidi.removeFromLeft(midiKnob);
@@ -807,7 +863,7 @@ void GenerativeMIDIEditor::resized()
     expressionMidi.removeFromLeft(spacing);
 
     auto pbBtnArea = expressionMidi.removeFromLeft(midiBtnW);
-    pitchbendEnableButton.setBounds(pbBtnArea.removeFromTop(36).reduced(2, 4));
+    pitchbendEnableButton.setBounds(pbBtnArea.removeFromTop(midiBtnH).reduced(2, 4));
     expressionMidi.removeFromLeft(6);
 
     auto pbRangeArea = expressionMidi.removeFromLeft(midiKnob);
@@ -817,7 +873,7 @@ void GenerativeMIDIEditor::resized()
     expressionMidi.removeFromLeft(spacing);
 
     auto ccBtnArea = expressionMidi.removeFromLeft(midiBtnW);
-    ccEnableButton.setBounds(ccBtnArea.removeFromTop(36).reduced(2, 4));
+    ccEnableButton.setBounds(ccBtnArea.removeFromTop(midiBtnH).reduced(2, 4));
     expressionMidi.removeFromLeft(6);
 
     auto ccNumArea = expressionMidi.removeFromLeft(midiKnob);
@@ -885,8 +941,15 @@ void GenerativeMIDIEditor::resized()
     advancedSection.removeFromLeft(groupGap);
 
     // Modulation v2 MVP controls (LFO → velocity)
-    auto modEnableArea = advancedSection.removeFromLeft(48);
-    modLfoEnableButton.setBounds(modEnableArea.withSizeKeepingCentre(48, 28));
+#if JUCE_IOS
+    const int lfoBtnW = 56;
+    const int lfoBtnH = 36;
+#else
+    const int lfoBtnW = 48;
+    const int lfoBtnH = 28;
+#endif
+    auto modEnableArea = advancedSection.removeFromLeft(lfoBtnW);
+    modLfoEnableButton.setBounds(modEnableArea.withSizeKeepingCentre(lfoBtnW, lfoBtnH));
 
     advancedSection.removeFromLeft(6);
 
