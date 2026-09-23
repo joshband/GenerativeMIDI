@@ -77,7 +77,7 @@ No auval/pluginval/ctest failures observed on this campaign.
 ## 5. Helpful new features (grounded)
 
 - **MIDI activity meter / last-note HUD** in Standalone.
-- **Built-in MIDI log pane** for expression/channel debugging — **shipped** (collapsible bottom strip; see `auv3_sim_midi_log.png`).
+- **Built-in MIDI log pane** for expression/channel debugging — **shipped** (collapsible bottom strip; see `auv3_sim_midi_log.jpg`).
 - **“QA mode”** that cycles generators for N bars and reports note counts.
 - **Transport indicator** — Host playing / Standalone free-run / Stopped.
 - **IAC / virtual MIDI out** preference in Standalone.
