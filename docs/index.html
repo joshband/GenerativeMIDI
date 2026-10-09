@@ -118,15 +118,15 @@
         <p class="section__lead"><strong class="plain">The path a note takes: from your music app, through the plugin, to an instrument.</strong> <span class="tech">What exists now: <a class="term" href="#g-daw">host</a> → format wrapper → processor/params → engines → MIDI out.</span></p>
         <figure class="diagram diagram--shot">
           <img src="assets/standalone-screenshot.jpg" width="1600" height="983" alt="Screenshot of the Generative MIDI Standalone app in a dark steel and cyan theme. The Pattern panel shows a live Drunk Walk melody as a stepped pitch line with extra root, chord and arp parts as markers. Below are Performance knobs, Musical controls (velocity and pitch ranges, scale, mono or poly voice, swing, timing, gate), a Shape panel with expression and ratchet controls, and an LFO and modulation row. A Piano button and a Parts menu sit in the top bar.">
-          <figcaption><strong class="plain">This is the real app.</strong> Screenshot of the Standalone app, captured 9 Oct 2026 from a local Release build. Drunk Walk is playing with 4 parts and the piano on. The interface may change in later commits.</figcaption>
+          <figcaption><strong class="plain">This is the real app.</strong> Screenshot of the Standalone app, captured 9 Oct 2026 from a local Release build that includes the UTF-8 label fix (PR #15). Drunk Walk is playing with 4 parts and the piano on. The interface may change in later commits.</figcaption>
         </figure>
         <h3 class="gallery-title" id="gallery-title">What the ten generators draw</h3>
         <p class="plain">Each generator shows its own picture of the music it is making.</p>
         <ul class="gallery" aria-labelledby="gallery-title">
           <li>
             <figure>
-              <img src="assets/pattern-euclidean.jpg" width="1100" height="279" alt="Euclidean pattern display: a ring of 16 steps with 13 lit." loading="lazy">
-              <figcaption><strong>Euclidean.</strong> Hits spaced evenly around a ring (here 13 of 16 steps).</figcaption>
+              <img src="assets/pattern-euclidean.jpg" width="1100" height="279" alt="Euclidean pattern display: a ring of 16 steps with 4 evenly spaced steps lit." loading="lazy">
+              <figcaption><strong>Euclidean.</strong> Hits spaced evenly around a ring (here 4 of 16 steps).</figcaption>
             </figure>
           </li>
           <li>
@@ -180,11 +180,11 @@
           <li>
             <figure>
               <img src="assets/pattern-lorenz.jpg" width="1100" height="279" alt="Lorenz pattern display: a small cluster of note markers near the centre of the panel." loading="lazy">
-              <figcaption><strong>Lorenz.</strong> A path traced by chaotic equations, shown as a tight cluster of note markers here.</figcaption>
+              <figcaption><strong>Lorenz.</strong> Notes follow a chaotic system; here the markers have gathered in a tight cluster near the centre.</figcaption>
             </figure>
           </li>
         </ul>
-        <p class="tech">Pattern panels cropped from real Standalone captures taken 9 Oct 2026 from a local Release build, with Parts set to 4, so root, chord and arp markers also appear. Captures are a single moment of a free-running pattern.</p>
+        <p class="tech">Pattern panels cropped from real Standalone captures taken 9 Oct 2026 from a local Release build, with Parts set to 4, so root, chord and arp markers also appear. Each is a single moment of a free-running pattern. Full-window originals: <code>docs/qa/logs/generators_20261009/</code>.</p>
         <figure class="diagram">
           <picture>
             <source media="(max-width: 720px)" srcset="assets/signal-path-narrow.svg" width="320" height="480">

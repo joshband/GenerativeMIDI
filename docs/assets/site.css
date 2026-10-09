@@ -1021,3 +1021,11 @@ details > :not(summary),
   font-weight: 600;
   margin-bottom: 0.25rem;
 }
+
+.gallery li {
+  display: flex;
+}
+
+.gallery figure {
+  width: 100%;
+}
