@@ -407,7 +407,7 @@ GenerativeMIDIEditor::GenerativeMIDIEditor(GenerativeMIDIProcessor& p)
     modLfoDepthAttachment.reset(new juce::AudioProcessorValueTreeState::SliderAttachment(
         audioProcessor.getValueTreeState(), "modLfoDepth", modLfoDepthSlider));
     contentPanel.addAndMakeVisible(modLfoDepthLabel);
-    modLfoDepthLabel.setText("LFO → Velocity", juce::dontSendNotification);
+    modLfoDepthLabel.setText(juce::String::fromUTF8("LFO → Velocity"), juce::dontSendNotification);
     modLfoDepthLabel.setJustificationType(juce::Justification::centred);
 
     contentPanel.addAndMakeVisible(modLfoDensityDepthSlider);
@@ -416,7 +416,7 @@ GenerativeMIDIEditor::GenerativeMIDIEditor(GenerativeMIDIProcessor& p)
     modLfoDensityDepthAttachment.reset(new juce::AudioProcessorValueTreeState::SliderAttachment(
         audioProcessor.getValueTreeState(), "modLfoDensityDepth", modLfoDensityDepthSlider));
     contentPanel.addAndMakeVisible(modLfoDensityDepthLabel);
-    modLfoDensityDepthLabel.setText("LFO → Density", juce::dontSendNotification);
+    modLfoDensityDepthLabel.setText(juce::String::fromUTF8("LFO → Density"), juce::dontSendNotification);
     modLfoDensityDepthLabel.setJustificationType(juce::Justification::centred);
 
     contentPanel.addAndMakeVisible(modShRateSlider);
@@ -1947,7 +1947,7 @@ void GenerativeMIDIEditor::updateStatusChip()
     else
         state = "generating";
 
-    const juce::String chip = context + " · " + state;
+    const juce::String chip = context + juce::String::fromUTF8(" · ") + state;
     if (statusChipLabel.getText() != chip)
         statusChipLabel.setText(chip, juce::dontSendNotification);
 }

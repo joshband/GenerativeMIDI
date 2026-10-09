@@ -148,7 +148,7 @@ public:
         if (drawn == 0)
         {
             g.setColour (juce::Colour (CustomLookAndFeel::COPPER_STEAM).withAlpha (0.7f));
-            g.drawText ("Waiting for note activity…",
+            g.drawText (juce::String::fromUTF8 ("Waiting for note activity…"),
                         logArea.reduced (8.0f),
                         juce::Justification::centredLeft, false);
         }
