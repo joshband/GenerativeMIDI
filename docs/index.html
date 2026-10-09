@@ -118,49 +118,73 @@
         <p class="section__lead"><strong class="plain">The path a note takes: from your music app, through the plugin, to an instrument.</strong> <span class="tech">What exists now: <a class="term" href="#g-daw">host</a> → format wrapper → processor/params → engines → MIDI out.</span></p>
         <figure class="diagram diagram--shot">
           <img src="assets/standalone-screenshot.jpg" width="1600" height="983" alt="Screenshot of the Generative MIDI Standalone app in a dark steel and cyan theme. The Pattern panel shows a live Drunk Walk melody as a stepped pitch line with extra root, chord and arp parts as markers. Below are Performance knobs, Musical controls (velocity and pitch ranges, scale, mono or poly voice, swing, timing, gate), a Shape panel with expression and ratchet controls, and an LFO and modulation row. A Piano button and a Parts menu sit in the top bar.">
-          <figcaption><strong class="plain">This is the real app.</strong> Screenshot of the Standalone app, captured 9 Oct 2026 from a local Release build of the current <code>master</code>. Drunk Walk is playing with 4 parts and the piano on. Two LFO labels show a garbled arrow character; that is how the app rendered when captured, not a site error. The interface may change in later commits.</figcaption>
+          <figcaption><strong class="plain">This is the real app.</strong> Screenshot of the Standalone app, captured 9 Oct 2026 from a local Release build. Drunk Walk is playing with 4 parts and the piano on. The interface may change in later commits.</figcaption>
         </figure>
-        <h3 class="gallery-title" id="gallery-title">What six of the generators draw</h3>
+        <h3 class="gallery-title" id="gallery-title">What the ten generators draw</h3>
         <p class="plain">Each generator shows its own picture of the music it is making.</p>
         <ul class="gallery" aria-labelledby="gallery-title">
           <li>
             <figure>
-              <img src="assets/pattern-euclidean.jpg" width="1100" height="196" alt="Euclidean pattern display: a ring of 16 steps with 4 lit." loading="lazy">
-              <figcaption><strong>Euclidean.</strong> Hits spaced evenly around a ring (here 4 of 16 steps).</figcaption>
+              <img src="assets/pattern-euclidean.jpg" width="1100" height="279" alt="Euclidean pattern display: a ring of 16 steps with 13 lit." loading="lazy">
+              <figcaption><strong>Euclidean.</strong> Hits spaced evenly around a ring (here 13 of 16 steps).</figcaption>
             </figure>
           </li>
           <li>
             <figure>
-              <img src="assets/pattern-markov.jpg" width="1100" height="196" alt="Markov pattern display: a row of six note markers on a line, the last one highlighted." loading="lazy">
-              <figcaption><strong>Markov.</strong> A row of notes, each picked based on the note before it.</figcaption>
+              <img src="assets/pattern-polyrhythm.jpg" width="1100" height="279" alt="Polyrhythm layer editor with one layer: a 16-step row with several steps lit, and sliders for division, length, pitch and velocity." loading="lazy">
+              <figcaption><strong>Polyrhythm (experimental).</strong> Rhythm layers with their own length and speed; one layer is shown here.</figcaption>
             </figure>
           </li>
           <li>
             <figure>
-              <img src="assets/pattern-probabilistic.jpg" width="1100" height="196" alt="Probabilistic pattern display: a short row of note markers with a highlighted last note." loading="lazy">
+              <img src="assets/pattern-markov.jpg" width="1100" height="279" alt="Markov pattern display: a line of notes that wanders up and down, with small part markers beside it." loading="lazy">
+              <figcaption><strong>Markov.</strong> A winding row of notes, each picked based on the notes before it.</figcaption>
+            </figure>
+          </li>
+          <li>
+            <figure>
+              <img src="assets/pattern-lsystem.jpg" width="1100" height="279" alt="L-System pattern display: five rows of A and B tiles stacked in a staircase, with the bottom row holding the notes and one tile lit." loading="lazy">
+              <figcaption><strong>L-System.</strong> Rows of A and B tiles grow by rewrite rules, one new row per generation; the bottom row holds the notes.</figcaption>
+            </figure>
+          </li>
+          <li>
+            <figure>
+              <img src="assets/pattern-cellular.jpg" width="1100" height="279" alt="Cellular pattern display: a wide grid of dark and lit cells with note markers over it." loading="lazy">
+              <figcaption><strong>Cellular.</strong> A grid of on/off cells that updates by simple rules; lit cells become notes.</figcaption>
+            </figure>
+          </li>
+          <li>
+            <figure>
+              <img src="assets/pattern-probabilistic.jpg" width="1100" height="279" alt="Probabilistic pattern display: a mostly flat row of note markers with a highlighted last note." loading="lazy">
               <figcaption><strong>Probabilistic.</strong> Notes land by chance; the density knob sets how often.</figcaption>
             </figure>
           </li>
           <li>
             <figure>
-              <img src="assets/pattern-brownian.jpg" width="1100" height="196" alt="Brownian pattern display: a nearly flat pitch line ending in a bright dot." loading="lazy">
+              <img src="assets/pattern-brownian.jpg" width="1100" height="279" alt="Brownian pattern display: a pitch line drifting up and down in small steps, with note markers." loading="lazy">
               <figcaption><strong>Brownian.</strong> A pitch line that drifts in small random steps.</figcaption>
             </figure>
           </li>
           <li>
             <figure>
-              <img src="assets/pattern-drunk-walk.jpg" width="1100" height="196" alt="Drunk Walk pattern display: a stepped pitch line rising from left to right." loading="lazy">
+              <img src="assets/pattern-perlin.jpg" width="1100" height="279" alt="Perlin noise pattern display: a smooth, gently curving pitch line with note markers." loading="lazy">
+              <figcaption><strong>Perlin Noise.</strong> Smooth, flowing pitch changes that never quite repeat.</figcaption>
+            </figure>
+          </li>
+          <li>
+            <figure>
+              <img src="assets/pattern-drunk-walk.jpg" width="1100" height="279" alt="Drunk Walk pattern display: a stepped pitch line rising and falling, with note markers." loading="lazy">
               <figcaption><strong>Drunk Walk.</strong> Pitch stumbles up and down one step at a time.</figcaption>
             </figure>
           </li>
           <li>
             <figure>
-              <img src="assets/pattern-lorenz.jpg" width="1100" height="196" alt="Lorenz pattern display: a looping line path with a bright dot at the current point." loading="lazy">
-              <figcaption><strong>Lorenz.</strong> A path traced by chaotic equations; the bright dot is the current point.</figcaption>
+              <img src="assets/pattern-lorenz.jpg" width="1100" height="279" alt="Lorenz pattern display: a small cluster of note markers near the centre of the panel." loading="lazy">
+              <figcaption><strong>Lorenz.</strong> A path traced by chaotic equations, shown as a tight cluster of note markers here.</figcaption>
             </figure>
           </li>
         </ul>
-        <p class="tech">Pattern panels cropped from real Standalone captures (<code>docs/qa/logs/viz_*.png</code>, 24 Sep 2026). Perlin, Cellular, L-System and Polyrhythm are not shown here.</p>
+        <p class="tech">Pattern panels cropped from real Standalone captures taken 9 Oct 2026 from a local Release build, with Parts set to 4, so root, chord and arp markers also appear. Captures are a single moment of a free-running pattern.</p>
         <figure class="diagram">
           <picture>
             <source media="(max-width: 720px)" srcset="assets/signal-path-narrow.svg" width="320" height="480">
