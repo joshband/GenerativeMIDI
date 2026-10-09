@@ -5,6 +5,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Josh Band · Generative MIDI</title>
   <meta name="description" content="Josh Band — full-stack ownership of Generative MIDI: core engines, AU/VST3 wrappers, and evidence-backed engineering. Hiring-facing project showcase.">
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#0c1014">
+  <script>document.documentElement.classList.add('js');</script>
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Josh Band · Generative MIDI">
+  <meta property="og:description" content="Josh Band — full-stack ownership of Generative MIDI: core engines, AU/VST3 wrappers, and evidence-backed engineering. Hiring-facing project showcase.">
+  <meta property="og:url" content="https://joshband.github.io/GenerativeMIDI/index.html">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Josh Band · Generative MIDI">
+  <meta name="twitter:description" content="Josh Band — full-stack ownership of Generative MIDI: core engines, AU/VST3 wrappers, and evidence-backed engineering. Hiring-facing project showcase.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Karla:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -24,14 +34,14 @@
     </nav>
   </header>
 
-  <header class="hero">
+  <section class="hero" aria-labelledby="hero-title">
     <div class="hero__glow" aria-hidden="true"></div>
     <div class="hero__inner">
       <div class="brand-stack">
         <p class="brand-builder">Josh Band</p>
         <p class="brand-product">Generative MIDI</p>
       </div>
-      <h1 class="hero__thesis">Full-stack ownership of a generative MIDI plugin: engines, host formats, and verification.</h1>
+      <h1 class="hero__thesis" id="hero-title">Full-stack ownership of a generative MIDI plugin: engines, host formats, and verification.</h1>
       <p class="hero__plain">A <a class="term" href="#g-plugin">plugin</a> that invents melodies and rhythms for you. You choose a style; it writes the notes and sends them to the instrument you pick.</p>
       <p class="hero__midi"><strong>What’s <a class="term" href="#g-midi">MIDI</a>?</strong> A way for music software to pass notes around — which note, how hard, how long — instead of sending sound itself.</p>
       <p class="hero__support">A macOS MIDI effect built end-to-end in C++/<a class="term" href="#g-juce">JUCE</a>, with architecture decisions and build evidence kept on disk for employers who want proof, not pitch.</p>
@@ -40,9 +50,9 @@
         <a class="cta cta--ghost" href="https://github.com/joshband/GenerativeMIDI" rel="noopener noreferrer">GitHub</a>
       </div>
     </div>
-  </header>
+  </section>
 
-  <main id="main">
+  <main id="main" tabindex="-1">
     <p class="reading-guide">Not a musician or engineer? Read the bold lines. Engineers: the detail and links are one click away.</p>
 
     <section class="section" data-reveal aria-labelledby="proves-title">
@@ -109,6 +119,16 @@
         <figure class="diagram">
           <img src="assets/signal-path.svg?v=2" width="920" height="160" alt="Illustrative signal path from DAW host through format wrapper, processor, engines, to MIDI out">
           <figcaption>Illustrative signal path — not a measured trace.</figcaption>
+          <details class="flow-text">
+            <summary>Text version of the signal path</summary>
+            <ol>
+              <li><strong>DAW host</strong> — the music app, with a MIDI effect slot.</li>
+              <li><strong>Format wrapper</strong> — AU, VST3, or Standalone.</li>
+              <li><strong>PluginProcessor and parameters</strong> — the settings list (APVTS) and plugin lifecycle.</li>
+              <li><strong>Core engines</strong> — generate and schedule the notes.</li>
+              <li><strong>MIDI out</strong> — notes go to an instrument.</li>
+            </ol>
+          </details>
         </figure>
         <figure class="diagram">
           <img src="assets/editor-chrome.svg" width="920" height="420" alt="Illustrative Generative MIDI editor chrome showing pattern display, generator controls, and expression panel">

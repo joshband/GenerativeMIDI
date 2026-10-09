@@ -5,6 +5,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Engineering · Josh Band · Generative MIDI</title>
   <meta name="description" content="Engineering case study: architecture, realtime boundaries, parameter bridging, and on-disk proof for Generative MIDI.">
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#0c1014">
+  <script>document.documentElement.classList.add('js');</script>
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Engineering · Josh Band · Generative MIDI">
+  <meta property="og:description" content="Engineering case study: architecture, realtime boundaries, parameter bridging, and on-disk proof for Generative MIDI.">
+  <meta property="og:url" content="https://joshband.github.io/GenerativeMIDI/engineering.html">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Engineering · Josh Band · Generative MIDI">
+  <meta name="twitter:description" content="Engineering case study: architecture, realtime boundaries, parameter bridging, and on-disk proof for Generative MIDI.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Karla:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -24,16 +34,16 @@
     </nav>
   </header>
 
-  <header class="page-intro">
+  <section class="page-intro" aria-labelledby="page-title">
     <div class="page-intro__inner">
       <p class="section__label">Case study</p>
-      <h1>Engineering</h1>
+      <h1 id="page-title">Engineering</h1>
       <p class="plain">How the plugin is built, and the evidence behind it.</p>
       <p class="tech">A generative MIDI effect that owns timing-safe generation across multiple algorithmic engines, wrapped for real hosts, with decisions and evidence kept on disk.</p>
     </div>
-  </header>
+  </section>
 
-  <main id="main">
+  <main id="main" tabindex="-1">
     <section class="section section--narrow" aria-labelledby="short-title">
       <div class="section__inner">
         <div class="in-short">
@@ -68,6 +78,16 @@
         <figure class="diagram">
           <img src="assets/signal-path.svg?v=2" width="920" height="160" alt="Illustrative signal path from DAW host through format wrapper, processor, engines, to MIDI out">
           <figcaption>Illustrative signal path — not a measured trace.</figcaption>
+          <details class="flow-text">
+            <summary>Text version of the signal path</summary>
+            <ol>
+              <li><strong>DAW host</strong> — the music app, with a MIDI effect slot.</li>
+              <li><strong>Format wrapper</strong> — AU, VST3, or Standalone.</li>
+              <li><strong>PluginProcessor and parameters</strong> — the settings list (APVTS) and plugin lifecycle.</li>
+              <li><strong>Core engines</strong> — generate and schedule the notes.</li>
+              <li><strong>MIDI out</strong> — notes go to an instrument.</li>
+            </ol>
+          </details>
         </figure>
         <figure class="diagram">
           <img src="assets/editor-chrome.svg" width="920" height="420" alt="Illustrative Generative MIDI editor chrome showing pattern display, generator controls, and expression panel">
@@ -121,91 +141,77 @@
       <div class="section__inner">
         <p class="section__label">Proof</p>
         <h2 class="section__title" id="proof-title">Proof table</h2>
-        <p class="section__lead">Links open the repository evidence on GitHub (<code>master</code>).</p>
-        <div class="table-wrap">
+        <p class="section__lead">Each file name is a link to that file on GitHub (<code>master</code>).</p>
+        <span class="visually-hidden" id="proof-scroll-label">Proof table (scrollable region)</span>
+        <div class="table-wrap" role="region" aria-labelledby="proof-scroll-label" tabindex="0">
           <table class="proof-table">
+            <caption class="visually-hidden">Repository evidence files, with what each one shows</caption>
             <thead>
               <tr>
-                <th scope="col">Evidence</th>
+                <th scope="col">Evidence file</th>
                 <th scope="col">What it shows</th>
-                <th scope="col">Link</th>
               </tr>
             </thead>
             <tbody>
               <tr>
-                <td>STATUS.md</td>
+                <td><a href="https://github.com/joshband/GenerativeMIDI/blob/master/STATUS.md" rel="noopener noreferrer">STATUS.md<span class="visually-hidden"> on GitHub</span></a></td>
                 <td><strong class="plain">The project’s honest progress report.</strong> v0.8.0 honest snapshot: 10 UI generators (incl. experimental Polyrhythm), 11 factory presets, MIDI expression note-on emit, realtime hot-path notes, Catch2/CI, Host/UI smoke</td>
-                <td><a href="https://github.com/joshband/GenerativeMIDI/blob/master/STATUS.md" rel="noopener noreferrer">blob</a></td>
               </tr>
               <tr>
-                <td>.github/workflows/ci.yml</td>
+                <td><a href="https://github.com/joshband/GenerativeMIDI/blob/master/.github/workflows/ci.yml" rel="noopener noreferrer">.github/workflows/ci.yml<span class="visually-hidden"> on GitHub</span></a></td>
                 <td><strong class="plain">The recipe for the automatic build-and-test robot.</strong> Canonical CI: four jobs — macOS plugin build + <code>ctest</code> (29) + pluginval VST3; iOS AUv3 build; Windows VST3 build + <code>ctest</code> + pluginval; Linux VST3 build + <code>ctest</code> + pluginval</td>
-                <td><a href="https://github.com/joshband/GenerativeMIDI/blob/master/.github/workflows/ci.yml" rel="noopener noreferrer">blob</a></td>
               </tr>
               <tr>
-                <td>Tests/EngineTests.cpp</td>
+                <td><a href="https://github.com/joshband/GenerativeMIDI/blob/master/Tests/EngineTests.cpp" rel="noopener noreferrer">Tests/EngineTests.cpp<span class="visually-hidden"> on GitHub</span></a></td>
                 <td><strong class="plain">Automated checks of the note-making logic.</strong> Catch2 suite (26 cases): engines, mapping, migration, clock, factory round-trip, import hardening, ModLfo, polyrhythm rate/persistence, Markov trained lookup, MIDI activity log</td>
-                <td><a href="https://github.com/joshband/GenerativeMIDI/blob/master/Tests/EngineTests.cpp" rel="noopener noreferrer">blob</a></td>
               </tr>
               <tr>
-                <td>Tests/HostSmokeTests.cpp</td>
+                <td><a href="https://github.com/joshband/GenerativeMIDI/blob/master/Tests/HostSmokeTests.cpp" rel="noopener noreferrer">Tests/HostSmokeTests.cpp<span class="visually-hidden"> on GitHub</span></a></td>
                 <td><strong class="plain">Automated checks that the plugin makes notes while a music app is playing, and stays quiet when stopped.</strong> Catch2 suite (3 cases): headless host playhead smoke (playing emits note-ons, stopped emits none) + polyrhythm layer persistence through get/setStateInformation</td>
-                <td><a href="https://github.com/joshband/GenerativeMIDI/blob/master/Tests/HostSmokeTests.cpp" rel="noopener noreferrer">blob</a></td>
               </tr>
               <tr>
-                <td>docs/user/SMOKE_CHECKLIST.md</td>
+                <td><a href="https://github.com/joshband/GenerativeMIDI/blob/master/docs/user/SMOKE_CHECKLIST.md" rel="noopener noreferrer">docs/user/SMOKE_CHECKLIST.md<span class="visually-hidden"> on GitHub</span></a></td>
                 <td><strong class="plain">A by-hand checklist for trying the plugin in an app.</strong> Manual Standalone/DAW smoke: 10 generators, factories, expression, LFO, channel routing (not automated UI tests)</td>
-                <td><a href="https://github.com/joshband/GenerativeMIDI/blob/master/docs/user/SMOKE_CHECKLIST.md" rel="noopener noreferrer">blob</a></td>
               </tr>
               <tr>
-                <td>docs/qa/QA_FINDINGS_v0.8.0.md</td>
+                <td><a href="https://github.com/joshband/GenerativeMIDI/blob/master/docs/qa/QA_FINDINGS_v0.8.0.md" rel="noopener noreferrer">docs/qa/QA_FINDINGS_v0.8.0.md<span class="visually-hidden"> on GitHub</span></a></td>
                 <td><strong class="plain">Written results from testing in real music apps.</strong> Host/UI campaign: ctest/auval/pluginval, Standalone Polyrhythm menu proof, REAPER transport gate via TwelveTake MCP; headless stop-gate + layer persistence follow-ups</td>
-                <td><a href="https://github.com/joshband/GenerativeMIDI/blob/master/docs/qa/QA_FINDINGS_v0.8.0.md" rel="noopener noreferrer">blob</a></td>
               </tr>
               <tr>
-                <td>docs/qa/reaper/MCP_SETUP.md</td>
+                <td><a href="https://github.com/joshband/GenerativeMIDI/blob/master/docs/qa/reaper/MCP_SETUP.md" rel="noopener noreferrer">docs/qa/reaper/MCP_SETUP.md<span class="visually-hidden"> on GitHub</span></a></td>
                 <td><strong class="plain">How the test setup for the REAPER music app was wired up.</strong> TwelveTake REAPER MCP install + GenerativeMIDI transport-gate helpers (agent Host QA)</td>
-                <td><a href="https://github.com/joshband/GenerativeMIDI/blob/master/docs/qa/reaper/MCP_SETUP.md" rel="noopener noreferrer">blob</a></td>
               </tr>
               <tr>
-                <td>BUILD_VERIFICATION.md</td>
+                <td><a href="https://github.com/joshband/GenerativeMIDI/blob/master/BUILD_VERIFICATION.md" rel="noopener noreferrer">BUILD_VERIFICATION.md<span class="visually-hidden"> on GitHub</span></a></td>
                 <td><strong class="plain">Proof the plugin built on a Mac at an earlier point.</strong> Historical local macOS AU / VST3 / Standalone build pass after submodule migration</td>
-                <td><a href="https://github.com/joshband/GenerativeMIDI/blob/master/BUILD_VERIFICATION.md" rel="noopener noreferrer">blob</a></td>
               </tr>
               <tr>
-                <td>CHANGELOG.md</td>
+                <td><a href="https://github.com/joshband/GenerativeMIDI/blob/master/CHANGELOG.md" rel="noopener noreferrer">CHANGELOG.md<span class="visually-hidden"> on GitHub</span></a></td>
                 <td><strong class="plain">A dated list of what changed in each version.</strong> Versioned behavior history (Keep a Changelog)</td>
-                <td><a href="https://github.com/joshband/GenerativeMIDI/blob/master/CHANGELOG.md" rel="noopener noreferrer">blob</a></td>
               </tr>
               <tr>
-                <td>CMakeLists.txt</td>
+                <td><a href="https://github.com/joshband/GenerativeMIDI/blob/master/CMakeLists.txt" rel="noopener noreferrer">CMakeLists.txt<span class="visually-hidden"> on GitHub</span></a></td>
                 <td><strong class="plain">The build recipe: which plugin formats get produced.</strong> Plugin formats: AU, AUv3, VST3, Standalone; Catch2 / <code>ctest</code> wiring</td>
-                <td><a href="https://github.com/joshband/GenerativeMIDI/blob/master/CMakeLists.txt" rel="noopener noreferrer">blob</a></td>
               </tr>
               <tr>
-                <td>docs/developer/BUILD.md</td>
+                <td><a href="https://github.com/joshband/GenerativeMIDI/blob/master/docs/developer/BUILD.md" rel="noopener noreferrer">docs/developer/BUILD.md<span class="visually-hidden"> on GitHub</span></a></td>
                 <td><strong class="plain">How to build the plugin yourself.</strong> Build, install, and <code>ctest</code> instructions for developers</td>
-                <td><a href="https://github.com/joshband/GenerativeMIDI/blob/master/docs/developer/BUILD.md" rel="noopener noreferrer">blob</a></td>
               </tr>
               <tr>
-                <td>docs/user/PRESET_GUIDE.md</td>
+                <td><a href="https://github.com/joshband/GenerativeMIDI/blob/master/docs/user/PRESET_GUIDE.md" rel="noopener noreferrer">docs/user/PRESET_GUIDE.md<span class="visually-hidden"> on GitHub</span></a></td>
                 <td><strong class="plain">An explanation of the ready-made presets.</strong> User-facing preset guide. Note: this guide predates the Polyrhythm preset and still says 10 presets / 9 generators; the code has 11 presets / 10 generators</td>
-                <td><a href="https://github.com/joshband/GenerativeMIDI/blob/master/docs/user/PRESET_GUIDE.md" rel="noopener noreferrer">blob</a></td>
               </tr>
               <tr>
-                <td>docs/design/SYNAPTIK_UI_SPEC.md</td>
+                <td><a href="https://github.com/joshband/GenerativeMIDI/blob/master/docs/design/SYNAPTIK_UI_SPEC.md" rel="noopener noreferrer">docs/design/SYNAPTIK_UI_SPEC.md<span class="visually-hidden"> on GitHub</span></a></td>
                 <td><strong class="plain">The design plan for how the plugin should look.</strong> UI specification / craft direction</td>
-                <td><a href="https://github.com/joshband/GenerativeMIDI/blob/master/docs/design/SYNAPTIK_UI_SPEC.md" rel="noopener noreferrer">blob</a></td>
               </tr>
               <tr>
-                <td>docs/sessions/</td>
+                <td><a href="https://github.com/joshband/GenerativeMIDI/blob/master/docs/sessions/README.md" rel="noopener noreferrer">docs/sessions/<span class="visually-hidden"> on GitHub</span></a></td>
                 <td><strong class="plain">Day-by-day work logs.</strong> Day-by-day implementation logs</td>
-                <td><a href="https://github.com/joshband/GenerativeMIDI/blob/master/docs/sessions/README.md" rel="noopener noreferrer">blob</a></td>
               </tr>
               <tr>
-                <td>REPOSITORY_AUDIT_2025-10-18.md</td>
+                <td><a href="https://github.com/joshband/GenerativeMIDI/blob/master/REPOSITORY_AUDIT_2025-10-18.md" rel="noopener noreferrer">REPOSITORY_AUDIT_2025-10-18.md<span class="visually-hidden"> on GitHub</span></a></td>
                 <td><strong class="plain">A cleanup record explaining what was archived and why.</strong> Archive decisions (modulation, polyrhythm UI), active structure</td>
-                <td><a href="https://github.com/joshband/GenerativeMIDI/blob/master/REPOSITORY_AUDIT_2025-10-18.md" rel="noopener noreferrer">blob</a></td>
               </tr>
             </tbody>
           </table>
