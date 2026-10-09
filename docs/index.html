@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Josh Band · Generative MIDI</title>
-  <meta name="description" content="Josh Band — full-stack ownership of Generative MIDI: DSP/core engines, AU/VST3 wrappers, and evidence-backed engineering. Hiring-facing project showcase.">
+  <meta name="description" content="Josh Band — full-stack ownership of Generative MIDI: core engines, AU/VST3 wrappers, and evidence-backed engineering. Hiring-facing project showcase.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Karla:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -48,7 +48,7 @@
         <p class="section__lead">Three layers one person owns — not a thin UI over someone else’s engine.</p>
         <ul class="claim-grid">
           <li>
-            <h3>DSP / core</h3>
+            <h3>Core engines</h3>
             <p>Generative engines (Euclidean, algorithmic, stochastic/chaos), scale quantization, swing, gate, and ratchet paths that feed MIDI scheduling.</p>
           </li>
           <li>
@@ -115,13 +115,13 @@
           <div class="boundary--shipped">
             <h3>Shipped / verified</h3>
             <ul>
-              <li><strong>v0.8.0</strong> per STATUS (~37 parameters incl. expression + LFO; MIDI channel; stochastic UI).</li>
-              <li>macOS <strong>AU / VST3 / Standalone</strong> (historical local); CI: macOS + iOS + Windows + Linux via <code>.github/workflows/ci.yml</code> + pluginval (VST3).</li>
+              <li><strong>v0.8.0</strong> per STATUS — <strong>38</strong> registered parameters (<strong>37</strong> automatable; one legacy slot is kept only so old sessions load), incl. expression + LFO; MIDI channel; stochastic UI.</li>
+              <li>macOS <strong>AU / VST3 / Standalone</strong> (historical local); CI builds on macOS, iOS (AUv3), Windows, and Linux via <code>.github/workflows/ci.yml</code>, with pluginval on the VST3 build for macOS, Windows, and Linux.</li>
               <li><strong>10 generators</strong> in the editor (Euclidean, <em>experimental Polyrhythm</em>, Markov, L-System, Cellular, Probabilistic, Brownian, Perlin, Drunk Walk, Lorenz).</li>
               <li><strong>Factory presets</strong> live (11 including Polyrhythm Layers).</li>
               <li><strong>MIDI expression</strong> — note-on AT / PB / CC (static PB — not MPE). <strong>ADVANCED LFO</strong> → velocity (and density) — not a full modulation matrix.</li>
               <li><strong>Realtime hot-path hardening</strong> — Euclidean / ratchet / algorithmic / EventScheduler steady-state alloc-free. Residual: trained Markov map-key vector.</li>
-              <li>Evidence: Catch2 / <code>ctest</code> in CI (<strong>26</strong>) + format builds + <a href="https://github.com/joshband/GenerativeMIDI/blob/master/docs/qa/QA_FINDINGS_v0.8.0.md" rel="noopener noreferrer">Host/UI QA findings</a> (Standalone + REAPER MCP transport gate). Manual smoke: <a href="https://github.com/joshband/GenerativeMIDI/blob/master/docs/user/SMOKE_CHECKLIST.md" rel="noopener noreferrer">SMOKE_CHECKLIST.md</a>.</li>
+              <li>Evidence: Catch2 / <code>ctest</code> in CI (<strong>29</strong> test cases) + format builds + <a href="https://github.com/joshband/GenerativeMIDI/blob/master/docs/qa/QA_FINDINGS_v0.8.0.md" rel="noopener noreferrer">Host/UI QA findings</a> (Standalone + REAPER MCP transport gate). Manual smoke: <a href="https://github.com/joshband/GenerativeMIDI/blob/master/docs/user/SMOKE_CHECKLIST.md" rel="noopener noreferrer">SMOKE_CHECKLIST.md</a>.</li>
             </ul>
           </div>
           <div class="boundary--deferred">

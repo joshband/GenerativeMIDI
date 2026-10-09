@@ -50,9 +50,9 @@
         <ul>
           <li><strong>Core engines</strong> — Euclidean, Algorithmic (Markov, L-System, Cellular, Probabilistic), Stochastic (Brownian, Perlin, Drunk Walk, Lorenz); Polyrhythm retained in core.</li>
           <li><strong>MIDI path</strong> — MIDIGenerator, clock/event scheduling, gate and ratchet controllers.</li>
-          <li><strong>PluginProcessor</strong> — parameters (31), generator dispatch, host callbacks.</li>
-          <li><strong>Formats</strong> — AU, VST3, Standalone verified locally historically; AUv3 configured in CMake with iOS docs (not store-ready). CI: <code>.github/workflows/ci.yml</code>.</li>
-          <li><strong>Editor</strong> — LookAndFeel / steampunk craft; bitmap UI path documented; Polyrhythm not in APVTS or dropdown; 10 factory presets; MIDI expression (AT/PB/CC note-on emit).</li>
+          <li><strong>PluginProcessor</strong> — parameters (38 registered, 37 automatable), generator dispatch, host callbacks.</li>
+          <li><strong>Formats</strong> — AU, VST3, Standalone verified locally historically; AUv3 configured in CMake with iOS docs (not store-ready). CI (<code>.github/workflows/ci.yml</code>) builds on macOS, iOS (AUv3), Windows, and Linux; pluginval runs on the VST3 build for macOS, Windows, and Linux.</li>
+          <li><strong>Editor</strong> — LookAndFeel / steampunk craft; bitmap UI path documented; Polyrhythm (experimental) is selectable in the generator dropdown and APVTS; 11 factory presets; MIDI expression (AT/PB/CC note-on emit).</li>
         </ul>
         <figure class="diagram">
           <img src="assets/signal-path.svg?v=2" width="920" height="160" alt="Illustrative signal path from DAW host through format wrapper, processor, engines, to MIDI out">
@@ -72,7 +72,7 @@
         <ul class="hard-parts">
           <li>
             <h3>Realtime / scheduling</h3>
-            <p>Note generation must respect host block timing. Gate length and ratchet features are described in STATUS with sample-accurate intent. Steady-state hot path is allocation-hardened (Euclidean regen, ratchet offsets, algorithmic single-note, EventScheduler pre-reserved queue; over-capacity schedules dropped). Residual risk called out in STATUS: trained Markov map-key vector on lookup. Engine behavior is covered by Catch2 / <code>ctest</code> in CI (<strong>25</strong> tests, incl. headless host playhead smoke + polyrhythm layer persistence); host transport gating is also exercised via REAPER + TwelveTake MCP and the manual <a href="https://github.com/joshband/GenerativeMIDI/blob/master/docs/user/SMOKE_CHECKLIST.md" rel="noopener noreferrer">smoke checklist</a> — not a published latency bench suite.</p>
+            <p>Note generation must respect host block timing. Gate length and ratchet features are described in STATUS with sample-accurate intent. Steady-state hot path is allocation-hardened (Euclidean regen, ratchet offsets, algorithmic single-note, EventScheduler pre-reserved queue; over-capacity schedules dropped). Residual risk called out in STATUS: trained Markov map-key vector on lookup. Engine behavior is covered by Catch2 / <code>ctest</code> in CI (<strong>29</strong> test cases, incl. headless host playhead smoke + polyrhythm layer persistence); host transport gating is also exercised via REAPER + TwelveTake MCP and the manual <a href="https://github.com/joshband/GenerativeMIDI/blob/master/docs/user/SMOKE_CHECKLIST.md" rel="noopener noreferrer">smoke checklist</a> — not a published latency bench suite.</p>
           </li>
           <li>
             <h3>Parameter bridging</h3>
@@ -84,7 +84,7 @@
           </li>
           <li>
             <h3>Measurement contracts</h3>
-            <p>On-disk contracts are STATUS.md, BUILD_VERIFICATION.md, CHANGELOG, CI (<code>.github/workflows/ci.yml</code> + Catch2 / <code>ctest</code> ×25), <a href="https://github.com/joshband/GenerativeMIDI/blob/master/docs/qa/QA_FINDINGS_v0.8.0.md" rel="noopener noreferrer">QA findings</a>, and the manual <a href="https://github.com/joshband/GenerativeMIDI/blob/master/docs/user/SMOKE_CHECKLIST.md" rel="noopener noreferrer">SMOKE_CHECKLIST</a> — not invented coverage percentages. Prefer “build passed / tests ran / feature listed / smoke steps exercised” over marketing metrics.</p>
+            <p>On-disk contracts are STATUS.md, BUILD_VERIFICATION.md, CHANGELOG, CI (<code>.github/workflows/ci.yml</code> + Catch2 / <code>ctest</code> ×29), <a href="https://github.com/joshband/GenerativeMIDI/blob/master/docs/qa/QA_FINDINGS_v0.8.0.md" rel="noopener noreferrer">QA findings</a>, and the manual <a href="https://github.com/joshband/GenerativeMIDI/blob/master/docs/user/SMOKE_CHECKLIST.md" rel="noopener noreferrer">SMOKE_CHECKLIST</a> — not invented coverage percentages. Prefer “build passed / tests ran / feature listed / smoke steps exercised” over marketing metrics.</p>
           </li>
         </ul>
       </div>
@@ -112,13 +112,18 @@
               </tr>
               <tr>
                 <td>.github/workflows/ci.yml</td>
-                <td>Canonical CI: macOS plugin build + <code>ctest</code> (25); iOS AUv3 build job; pluginval VST3</td>
+                <td>Canonical CI: four jobs — macOS plugin build + <code>ctest</code> (29) + pluginval VST3; iOS AUv3 build; Windows VST3 build + <code>ctest</code> + pluginval; Linux VST3 build + <code>ctest</code> + pluginval</td>
                 <td><a href="https://github.com/joshband/GenerativeMIDI/blob/master/.github/workflows/ci.yml" rel="noopener noreferrer">blob</a></td>
               </tr>
               <tr>
                 <td>Tests/EngineTests.cpp</td>
-                <td>Catch2 suite (26 cases): engines, mapping, migration, clock, factory round-trip, import hardening, ModLfo, polyrhythm rate/persistence, Markov trained lookup, headless host playhead smoke</td>
+                <td>Catch2 suite (26 cases): engines, mapping, migration, clock, factory round-trip, import hardening, ModLfo, polyrhythm rate/persistence, Markov trained lookup, MIDI activity log</td>
                 <td><a href="https://github.com/joshband/GenerativeMIDI/blob/master/Tests/EngineTests.cpp" rel="noopener noreferrer">blob</a></td>
+              </tr>
+              <tr>
+                <td>Tests/HostSmokeTests.cpp</td>
+                <td>Catch2 suite (3 cases): headless host playhead smoke (playing emits note-ons, stopped emits none) + polyrhythm layer persistence through get/setStateInformation
+                <td><a href="https://github.com/joshband/GenerativeMIDI/blob/master/Tests/HostSmokeTests.cpp" rel="noopener noreferrer">blob</a></td>
               </tr>
               <tr>
                 <td>docs/user/SMOKE_CHECKLIST.md</td>
@@ -157,7 +162,7 @@
               </tr>
               <tr>
                 <td>docs/user/PRESET_GUIDE.md</td>
-                <td>10 factory presets on the live 9-generator APVTS surface</td>
+                <td>User-facing preset guide. Note: this guide predates the Polyrhythm preset and still says 10 presets / 9 generators; the code has 11 presets / 10 generators</td>
                 <td><a href="https://github.com/joshband/GenerativeMIDI/blob/master/docs/user/PRESET_GUIDE.md" rel="noopener noreferrer">blob</a></td>
               </tr>
               <tr>
