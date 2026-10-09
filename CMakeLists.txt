@@ -59,10 +59,14 @@ set(SOURCE_FILES
     Source/DSP/ClockManager.h
     Source/DSP/EventScheduler.cpp
     Source/DSP/EventScheduler.h
+    Source/DSP/PianoSynth.h
+    Source/Core/HarmonyParts.h
     Source/Modulation/ModLfo.h
     Source/Modulation/ModulationDestination.h
+    Source/Modulation/ModulationRouter.h
     Source/Core/PresetManager.cpp
     Source/Core/PresetManager.h
+    Source/UI/AccessibleComboBox.h
     Source/UI/PresetBrowser.cpp
     Source/UI/PresetBrowser.h
     Source/UI/PolyrhythmLayerEditor.h

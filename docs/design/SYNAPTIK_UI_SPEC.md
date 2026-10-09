@@ -1,5 +1,7 @@
 # SYNAPTIK – UI Design Specification
 
+> Historical. The shipping editor follows [MACHINED_UI.md](MACHINED_UI.md).
+
 **Where circuits dream — and music thinks.**
 
 ---

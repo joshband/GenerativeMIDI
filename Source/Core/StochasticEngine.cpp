@@ -139,44 +139,33 @@ void StochasticEngine::updateBrownianMotion(float deltaTime)
 
 void StochasticEngine::updatePerlinNoise(float deltaTime)
 {
-    noiseTime += deltaTime * timeScale;
+    // Step size is terrain smoothness. 0.1 keeps the original sample rate.
+    const float freq = std::pow(0.1f / std::max(stepSize, 0.01f), 0.85f);
+    noiseTime += deltaTime * timeScale * freq;
 
-    // Multi-octave Perlin noise (fractal Brownian motion)
-    float amplitude = 1.0f;
-    float frequency = 1.0f;
-    float value = 0.0f;
-    float maxValue = 0.0f;
+    // Momentum is octave persistence. 0.9 keeps the original 0.5 blend.
+    const float persistence = std::clamp(0.5f + (momentum - 0.9f) * 1.5f, 0.05f, 0.9f);
 
-    for (int i = 0; i < octaves; ++i)
+    auto accumulate = [this, persistence](float timeOffset)
     {
-        value += perlinNoise(noiseTime * frequency, i * 100.0f) * amplitude;
-        maxValue += amplitude;
+        float amplitude = 1.0f;
+        float frequency = 1.0f;
+        float value = 0.0f;
+        float maxValue = 0.0f;
 
-        amplitude *= 0.5f;
-        frequency *= 2.0f;
-    }
+        for (int i = 0; i < octaves; ++i)
+        {
+            value += perlinNoise(noiseTime * frequency + timeOffset, i * 100.0f) * amplitude;
+            maxValue += amplitude;
+            amplitude *= persistence;
+            frequency *= 2.0f;
+        }
 
-    // Normalize to 0.0-1.0
-    currentValue = (value / maxValue + 1.0f) * 0.5f;
-    currentValue = std::clamp(currentValue, 0.0f, 1.0f);
+        return (value / std::max(maxValue, 0.0001f) + 1.0f) * 0.5f;
+    };
 
-    // Secondary value uses different phase
-    float secondaryAmplitude = 1.0f;
-    float secondaryFrequency = 1.0f;
-    float secondaryVal = 0.0f;
-    float secondaryMax = 0.0f;
-
-    for (int i = 0; i < octaves; ++i)
-    {
-        secondaryVal += perlinNoise(noiseTime * secondaryFrequency + 1000.0f, i * 100.0f) * secondaryAmplitude;
-        secondaryMax += secondaryAmplitude;
-
-        secondaryAmplitude *= 0.5f;
-        secondaryFrequency *= 2.0f;
-    }
-
-    secondaryValue = (secondaryVal / secondaryMax + 1.0f) * 0.5f;
-    secondaryValue = std::clamp(secondaryValue, 0.0f, 1.0f);
+    currentValue = std::clamp(accumulate(0.0f), 0.0f, 1.0f);
+    secondaryValue = std::clamp(accumulate(1000.0f), 0.0f, 1.0f);
 }
 
 float StochasticEngine::perlinNoise(float x, float y) const
@@ -252,8 +241,10 @@ void StochasticEngine::updateDrunkWalk(float deltaTime)
         }
     }
 
-    // Smooth interpolation towards target position
-    currentValue += (drunkPosition - currentValue) * 0.3f;
+    // Momentum is how smoothly the pitch glides onto each step.
+    // 0.9 matches the previous fixed 0.3 follow.
+    const float follow = std::clamp((1.0f - momentum) * 3.0f, 0.02f, 1.0f);
+    currentValue += (drunkPosition - currentValue) * follow;
 
     // Secondary value has different step pattern
     if (uniform01(rng) < 0.3f)  // Less frequent updates
@@ -273,8 +264,9 @@ void StochasticEngine::updateLorenzAttractor(float deltaTime)
     // dy/dt = x * (rho - z) - y
     // dz/dt = x * y - beta * z
 
-    // Use multiple integration steps for accuracy
-    int steps = static_cast<int>(deltaTime / dt);
+    // Step size is the Euler increment. 0.1 keeps the original dt.
+    const float h = dt * (stepSize / 0.1f);
+    int steps = static_cast<int>(deltaTime / h);
     steps = std::max(1, std::min(steps, 100));
 
     for (int i = 0; i < steps; ++i)
@@ -287,9 +279,9 @@ void StochasticEngine::updateLorenzAttractor(float deltaTime)
         float dy = x * (rho - z) - y;
         float dz = x * y - beta * z;
 
-        x += dx * dt * timeScale;
-        y += dy * dt * timeScale;
-        z += dz * dt * timeScale;
+        x += dx * h * timeScale;
+        y += dy * h * timeScale;
+        z += dz * h * timeScale;
 
         // Scale back to 0.0-1.0 range
         currentValue = x / 60.0f + 0.5f;
@@ -300,5 +292,14 @@ void StochasticEngine::updateLorenzAttractor(float deltaTime)
         currentValue = std::clamp(currentValue, 0.0f, 1.0f);
         secondaryValue = std::clamp(secondaryValue, 0.0f, 1.0f);
         tertiaryValue = std::clamp(tertiaryValue, 0.0f, 1.0f);
+    }
+
+    // Momentum damps the orbit toward its midpoint. 0.9 and above stay undamped.
+    const float leak = std::max(0.0f, (0.9f - momentum) * 0.55f);
+    if (leak > 0.0f)
+    {
+        currentValue += (0.5f - currentValue) * leak;
+        secondaryValue += (0.5f - secondaryValue) * leak;
+        tertiaryValue += (0.45f - tertiaryValue) * leak;
     }
 }

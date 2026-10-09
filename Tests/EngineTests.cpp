@@ -10,11 +10,14 @@
 #include "Core/EuclideanEngine.h"
 #include "Core/PolyrhythmEngine.h"
 #include "Core/ScaleQuantizer.h"
+#include "Core/HarmonyParts.h"
 #include "Core/GeneratorTypeMapping.h"
 #include "Core/StochasticEngine.h"
 #include "DSP/ClockManager.h"
+#include "DSP/PianoSynth.h"
 #include "Modulation/ModLfo.h"
 #include "Modulation/ModulationDestination.h"
+#include "Modulation/ModulationRouter.h"
 
 TEST_CASE("EuclideanEngine pulse count matches requested pulses", "[euclidean]")
 {
@@ -114,6 +117,118 @@ TEST_CASE("MarkovChain trained generateOrDefault uses learned transitions", "[ma
     // Repeated lookups from a deterministic trained state stay on the learned next.
     for (int i = 0; i < 32; ++i)
         REQUIRE(chain.generateOrDefault(state, 1, 48) == 62);
+}
+
+TEST_CASE("Untrained Markov walk follows order and step", "[markov]")
+{
+    AlgorithmicEngine engine;
+    engine.setGeneratorType(AlgorithmicEngine::Markov);
+    engine.setPitchRange(48, 72);
+    engine.setMarkovControls(1, 4, 0.0f);
+
+    REQUIRE(engine.generateNextNote() == 64);
+    REQUIRE(engine.generateNextNote() == 60);
+    REQUIRE(engine.generateNextNote() == 64);
+
+    engine.setMarkovControls(3, 2, 0.0f);
+    REQUIRE(engine.generateNextNote() == 66);
+    REQUIRE(engine.generateNextNote() == 68);
+    REQUIRE(engine.generateNextNote() == 66);
+}
+
+TEST_CASE("Markov history serial keeps advancing after the ring fills", "[markov]")
+{
+    AlgorithmicEngine engine;
+    engine.setGeneratorType(AlgorithmicEngine::Markov);
+    engine.setPitchRange(48, 72);
+    engine.setMarkovControls(1, 2, 0.0f);
+
+    int distinct = 0;
+    int previous = -1;
+    for (int i = 0; i < 200; ++i)
+    {
+        const int note = engine.generateNextNote();
+        if (note != previous)
+            ++distinct;
+        previous = note;
+    }
+
+    REQUIRE(engine.getHistorySerial() == 200u);
+    REQUIRE(engine.getHistoryCount() < 200);
+    REQUIRE(engine.getHistoryNoteFromNewest(0) == previous);
+    REQUIRE(distinct > 2);
+}
+
+TEST_CASE("L-System grammar and interval change the tape", "[lsystem]")
+{
+    char symbols[LSystemCatalog::kMaxSymbols];
+    int length = 0;
+    LSystemCatalog::expand(0, 4, symbols, LSystemCatalog::kMaxSymbols, length);
+    REQUIRE(juce::String(symbols) == "ABAABABA");
+
+    AlgorithmicEngine engine;
+    engine.setGeneratorType(AlgorithmicEngine::LSystem);
+    engine.setPitchRange(48, 84);
+    engine.setLSystemControls(0, 1, 5);
+
+    // Generation 1 is "AB": center, then center plus the interval.
+    REQUIRE(engine.generateNextNote() == 66);
+    REQUIRE(engine.generateNextNote() == 71);
+    REQUIRE(engine.generateNextNote() == 66);
+
+    engine.setLSystemControls(3, 1, 2);
+    // Koch generation 1 is "A+B": A at center, + raises an octave, B adds the interval.
+    REQUIRE(engine.generateNextNote() == 66);
+    REQUIRE(engine.generateNextNote() == 80);
+}
+
+TEST_CASE("Cellular rule, seed, and listen choose the sounding cell", "[cellular]")
+{
+    AlgorithmicEngine engine;
+    engine.setGeneratorType(AlgorithmicEngine::CellularAutomatonType);
+    engine.setPitchRange(40, 71);
+
+    engine.setCellularControls(204, 4, 4);
+    const int voiced = engine.generateNextNote();
+    // Identity rule holds one live cell, so the pitch stays put.
+    REQUIRE(voiced >= 40);
+    REQUIRE(voiced <= 71);
+    REQUIRE(voiced != 60);
+    REQUIRE(engine.generateNextNote() == voiced);
+
+    engine.setCellularControls(204, 4, 0);
+    REQUIRE(engine.generateNextNote() == -1);
+
+    engine.setCellularControls(0, 4, 4);
+    REQUIRE(engine.generateNextNote() == -1);
+}
+
+TEST_CASE("Cellular rule 30 pitch changes as the row evolves", "[cellular]")
+{
+    AlgorithmicEngine engine;
+    engine.setGeneratorType(AlgorithmicEngine::CellularAutomatonType);
+    engine.setPitchRange(48, 84);
+    engine.setCellularControls(30, 16, 16);
+
+    bool seen[128] {};
+    int distinct = 0;
+    int sounded = 0;
+    for (int i = 0; i < 40; ++i)
+    {
+        const int note = engine.generateNextNote();
+        if (note < 0)
+            continue;
+        REQUIRE(note <= 127);
+        ++sounded;
+        if (!seen[note])
+        {
+            seen[note] = true;
+            ++distinct;
+        }
+    }
+
+    REQUIRE(sounded > 1);
+    REQUIRE(distinct > 1);
 }
 
 TEST_CASE("PolyrhythmEngine seeds audible default layer", "[polyrhythm]")
@@ -507,6 +622,9 @@ TEST_CASE("ModLfo bipolar sine stays in range and advances", "[modulation]")
     // Advance a quarter period at 1 Hz → ~+1
     lfo.advance(0.25);
     REQUIRE(lfo.getBipolar() == Catch::Approx(1.0f).margin(0.02f));
+    REQUIRE(lfo.peekBipolar(0.0) == Catch::Approx(lfo.getBipolar()).margin(1.0e-5f));
+    REQUIRE(lfo.peekBipolar(-0.25) == Catch::Approx(0.0f).margin(0.02f));
+    REQUIRE(lfo.getBipolar() == Catch::Approx(1.0f).margin(0.02f));
 
     // Half period from start → ~0 (after another quarter)
     lfo.advance(0.25);
@@ -516,6 +634,93 @@ TEST_CASE("ModLfo bipolar sine stays in range and advances", "[modulation]")
     REQUIRE(ModLfo::applyToUnipolar(0.1f, -1.0f, 0.5f) == Catch::Approx(0.0f));
     REQUIRE(kModulationDestinationCount >= 2);
     REQUIRE(static_cast<int>(ModulationDestination::Velocity) == 0);
+}
+
+TEST_CASE("Piano synth sounds a note and falls silent after release", "[piano]")
+{
+    PianoSynth piano;
+    juce::AudioBuffer<float> buffer(2, 256);
+    juce::MidiBuffer midi;
+    midi.addEvent(juce::MidiMessage::noteOn(1, 60, 0.9f), 0);
+
+    buffer.clear();
+    piano.render(buffer, midi, 48000.0);
+    REQUIRE(buffer.getMagnitude(0, 0, 256) > 0.01f);
+    REQUIRE(buffer.getMagnitude(1, 0, 256) > 0.01f);
+
+    midi.clear();
+    midi.addEvent(juce::MidiMessage::noteOff(1, 60), 0);
+    float tail = 1.0f;
+    for (int i = 0; i < 200 && tail >= 0.01f; ++i)
+    {
+        buffer.clear();
+        piano.render(buffer, midi, 48000.0);
+        midi.clear();
+        tail = buffer.getMagnitude(0, 0, 256);
+    }
+    REQUIRE(tail < 0.01f);
+}
+
+TEST_CASE("Modulation router sums slots and keeps a zero amount as identity", "[modulation]")
+{
+    ModSampleHold hold;
+    hold.reset();
+    hold.setRateHz(10.0f);
+    REQUIRE(hold.getBipolar() == Catch::Approx(0.0f));
+    for (int i = 0; i < 40; ++i)
+    {
+        hold.advance(0.2);
+        REQUIRE(hold.getBipolar() >= -1.0f);
+        REQUIRE(hold.getBipolar() <= 1.0f);
+    }
+
+    ModulationRouter::Frame frame;
+    frame.lfoEnabled = true;
+    frame.lfo = 1.0f;
+    frame.sampleHold = 1.0f;
+    frame.velocityAmount = 0.0f;
+    auto mix = ModulationRouter::evaluate(frame);
+    REQUIRE(mix.velocityDelta == Catch::Approx(0.0f));
+    REQUIRE(ModulationRouter::applyAdditive(0.5f, mix.velocityDelta, 0.0f, 1.0f) == Catch::Approx(0.5f));
+    REQUIRE_FALSE(mix.ccRouted);
+
+    frame.velocityAmount = 0.25f;
+    frame.lfo = -1.0f;
+    mix = ModulationRouter::evaluate(frame);
+    REQUIRE(mix.velocityDelta == Catch::Approx(-0.25f));
+    REQUIRE(ModulationRouter::applyAdditive(0.1f, mix.velocityDelta, 0.0f, 1.0f) == Catch::Approx(0.0f));
+
+    frame.lfoEnabled = false;
+    frame.velocityAmount = 1.0f;
+    mix = ModulationRouter::evaluate(frame);
+    REQUIRE(mix.velocityDelta == Catch::Approx(0.0f));
+
+    frame.lfoEnabled = true;
+    frame.lfo = 1.0f;
+    frame.sampleHold = 1.0f;
+    frame.extras[0] = { static_cast<int>(ModulationRouter::Source::Lfo),
+                        static_cast<int>(ModulationRouter::SlotDest::Gate), 0.4f };
+    frame.extras[1] = { static_cast<int>(ModulationRouter::Source::SampleHold),
+                        static_cast<int>(ModulationRouter::SlotDest::Gate), 0.4f };
+    mix = ModulationRouter::evaluate(frame);
+    REQUIRE(mix.gateDelta == Catch::Approx(0.8f));
+    REQUIRE(ModulationRouter::applyAdditive(0.5f, mix.gateDelta, 0.0f, 1.0f) == Catch::Approx(1.0f));
+
+    frame.extras[0].dest = static_cast<int>(ModulationRouter::SlotDest::Pitch);
+    frame.extras[0].amount = 1.0f;
+    frame.extras[1].dest = static_cast<int>(ModulationRouter::SlotDest::Off);
+    mix = ModulationRouter::evaluate(frame);
+    REQUIRE(mix.pitchSemitones == Catch::Approx(12.0f));
+
+    frame.extras[0] = { static_cast<int>(ModulationRouter::Source::SampleHold),
+                        static_cast<int>(ModulationRouter::SlotDest::Cc), 0.5f };
+    frame.extras[1] = { static_cast<int>(ModulationRouter::Source::Lfo),
+                        static_cast<int>(ModulationRouter::SlotDest::Cc), 0.5f };
+    frame.sampleHold = -1.0f;
+    frame.lfo = 1.0f;
+    mix = ModulationRouter::evaluate(frame);
+    REQUIRE(mix.ccRouted);
+    REQUIRE(mix.ccDelta == Catch::Approx(0.0f));
 }
 
 TEST_CASE("PolyrhythmEngine ValueTree round-trips layer fields", "[polyrhythm][persist]")
@@ -569,6 +774,46 @@ TEST_CASE("PolyrhythmEngine ValueTree round-trips layer fields", "[polyrhythm][p
     REQUIRE(b->pitchOffset == 12);
     REQUIRE(b->pattern[1]);
     REQUIRE(b->pitches[1] == 48);
+}
+
+TEST_CASE("PolyrhythmEngine step toggles persist at each layer length", "[polyrhythm]")
+{
+    PolyrhythmEngine engine;
+    engine.setLayerLength(0, 5);
+    engine.clearLayer(0);
+    engine.setStep(0, 2, true, 0.4f, 70);
+    engine.setStep(0, 2, false, 0.4f, 70);
+
+    auto* layer = engine.getLayer(0);
+    REQUIRE(layer != nullptr);
+    REQUIRE_FALSE(layer->pattern[2]);
+    REQUIRE(layer->velocities[2] == Catch::Approx(0.4f));
+    REQUIRE(layer->pitches[2] == 70);
+
+    const int second = engine.addLayer();
+    engine.setLayerLength(second, 9);
+    engine.clearLayer(second);
+    engine.setStep(second, 8, true, 0.25f, 40);
+
+    REQUIRE(engine.getLayer(0)->length == 5);
+    REQUIRE(engine.getLayer(second)->length == 9);
+    REQUIRE(engine.getLayer(0)->pattern.size() != engine.getLayer(second)->pattern.size());
+
+    engine.setLayerLength(0, 8);
+    REQUIRE_FALSE(engine.getLayer(0)->pattern[2]);
+    REQUIRE(engine.getLayer(0)->pitches[2] == 70);
+    REQUIRE_FALSE(engine.getLayer(0)->pattern[7]);
+
+    PolyrhythmEngine restored;
+    restored.loadFromValueTree(engine.toValueTree());
+    REQUIRE(restored.getNumLayers() == 2);
+    REQUIRE(restored.getLayer(0)->length == 8);
+    REQUIRE_FALSE(restored.getLayer(0)->pattern[2]);
+    REQUIRE(restored.getLayer(0)->velocities[2] == Catch::Approx(0.4f));
+    REQUIRE(restored.getLayer(0)->pitches[2] == 70);
+    REQUIRE(restored.getLayer(second)->length == 9);
+    REQUIRE(restored.getLayer(second)->pattern[8]);
+    REQUIRE(restored.getLayer(second)->pitches[8] == 40);
 }
 
 TEST_CASE("migrateGeneratorTypeIndex shifts 9-gen layout", "[mapping][migration]")
@@ -696,5 +941,27 @@ TEST_CASE("MidiActivityLog formatEvent includes type note vel channel", "[midi-l
     REQUIRE(s.contains("ON"));
     REQUIRE(s.contains("vel"));
     REQUIRE(s.contains("ch 3"));
+}
+
+TEST_CASE("Harmony parts build a scale triad and wrap channels", "[harmony]")
+{
+    const int major[] = { 0, 2, 4, 5, 7, 9, 11 };
+    const auto cMajor = HarmonyParts::triadForMelody(60, 0, major, 7, false);
+    REQUIRE(cMajor.root == 48);
+    REQUIRE(cMajor.third == 52);
+    REQUIRE(cMajor.fifth == 55);
+
+    const auto eMajorTriad = HarmonyParts::triadForMelody(64, 0, nullptr, 0, true);
+    REQUIRE(eMajorTriad.root == 52);
+    REQUIRE(eMajorTriad.third == 56);
+    REQUIRE(eMajorTriad.fifth == 59);
+
+    REQUIRE(HarmonyParts::roleChannel(1, 0) == 1);
+    REQUIRE(HarmonyParts::roleChannel(1, 1) == 2);
+    REQUIRE(HarmonyParts::roleChannel(1, 2) == 3);
+    REQUIRE(HarmonyParts::roleChannel(1, 3) == 4);
+    REQUIRE(HarmonyParts::roleChannel(15, 1) == 16);
+    REQUIRE(HarmonyParts::roleChannel(15, 2) == 1);
+    REQUIRE(HarmonyParts::roleChannel(15, 3) == 2);
 }
 

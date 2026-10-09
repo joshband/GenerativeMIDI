@@ -59,16 +59,9 @@ Steps: 16, Pulses: 9  → [X·X·X·X·X·X·X·X]   (Complex polyrhythm)
 
 ---
 
-### 2. Polyrhythm Engine (deferred)
+### 2. Polyrhythm Engine (experimental)
 
-**Status:** Core `PolyrhythmEngine` sources remain in the tree for a future feature branch. **Not exposed** in the current editor dropdown or APVTS generator choice list (UI shows **9** generators).
-
-**Intended behavior (when restored):**
-- Multiple independent rhythmic layers
-- Per-layer length, pitch, velocity, phase
-- Enable/disable per layer
-
-Until then, create layered feels with multiple plugin instances on different MIDI channels.
+**Status:** Selectable in the generator list (index 1). Each layer is a step row in the pattern well. Click or drag a step to toggle a hit. The row is as long as that layer's step count, so a shorter layer ends before a longer one (polymeter). Add and remove layers, and set division, length, pitch, and velocity per layer. Edits are stored on the layer and come back with the session and preset (schema 1.2). Extra layers scroll inside the pattern section.
 
 ---
 
@@ -86,6 +79,11 @@ Until then, create layered feels with multiple plugin instances on different MID
 - Statistical coherence
 - Controllable randomness
 - Can learn from existing music
+
+**Controls:**
+- **Order** — how many steps a direction holds before it turns
+- **Step** — interval of that move, in semitones
+- **Surprise** — chance of a jump inside the pitch range instead of the next contour step
 
 **Musical Applications:**
 - Jazz improvisation
@@ -122,6 +120,11 @@ Generation 4: ABAABABA
 - Fibonacci-like sequences
 - Fractal structures
 
+**Controls:**
+- **Grammar** — Fib (`A → AB`, `B → A`), Thue, Cantor, or Koch
+- **Generation** — how many times the rules rewrite the axiom
+- **Interval** — semitone gap between symbols. `+` and `-` still shift by an octave
+
 **Musical Applications:**
 - Evolving melodic lines
 - Recursive rhythmic structures
@@ -150,6 +153,11 @@ Generation 4: ABAABABA
 - Deterministic but unpredictable
 - Pattern evolution over time
 - Mathematical beauty
+
+**Controls:**
+- **Rule** — Wolfram rule, 0–255 (default 30)
+- **Seed** — which cell starts on. Changing it resets the row
+- **Listen** — which cell is heard. An off cell is a rest; an on cell plays a pitch from its place in the row
 
 **Musical Applications:**
 - Generative rhythms
@@ -483,8 +491,8 @@ Result: Loose, sloppy, experimental jazz
 - **Gate Length**: 1-200% of step duration
 - **Ratchet Decay**: Exponential velocity falloff for repeats
 - **Polyphonic Aftertouch**: Per-note pressure on note-on when AT enabled (EXPRESSION UI)
-- **Control Change (CC)**: CC number + amount on note-on when CC enabled (EXPRESSION UI)
-- **Pitch Bend**: Static wheel offset from PB Semi (1–24) when PB enabled — not continuous/MPE
+- **Control Change (CC)**: CC number + amount on note-on when CC enabled. While a note is held, the amount follows the velocity LFO when that LFO is on and its depth is above zero. A modulation route aimed at CC replaces that coupling.
+- **Pitch Bend**: Wheel offset from PB Semi (1–24) on note-on when PB enabled. The same held-note LFO moves that offset unless a modulation route aims at Bend. Not MPE.
 
 ### Timing
 
@@ -523,7 +531,8 @@ Result: Loose, sloppy, experimental jazz
   - Gold: Euclidean
   - Green Verdigris: Algorithmic
   - Violet: Stochastic/Chaos
-- **MIDI Channel**: Channel selector (1-16)
+- **MIDI Channel**: Channel selector (1-16). Melody uses this channel
+- **Parts**: 1 is melody only. 2 adds the chord root, 3 adds the triad, 4 adds an arp of that triad. Each extra part uses the next MIDI channel, wrapping after 16. The pitch stack draws only those parts: melody circles, then a brass root square, three steel chord triangles, and a clay arp diamond. Height is the pitch. The same marks travel through the scrolling picture. The caption names only the parts that are on.
 - **Tempo**: Master BPM control (20-400)
 
 #### 3. EUCLIDEAN CONTROLS (context-aware)
@@ -546,11 +555,13 @@ Result: Loose, sloppy, experimental jazz
 - **Timing**: Humanization knob (0-50ms)
 - **Vel Var**: Velocity randomness knob (0-100%)
 - **AT / AT Amt**: Polyphonic aftertouch enable + pressure (emitted on note-on)
-- **PB / PB Semi**: Pitch bend enable + range in semitones (static wheel offset, not MPE)
-- **CC / CC # / CC Amt**: Control-change enable, CC number (1–127), amount
+- **PB / PB Semi**: Pitch bend enable + range in semitones. Static on note-on. While a note is held it follows the velocity LFO, unless a modulation route aims at Bend. Not MPE.
+- **CC / CC # / CC Amt**: Control-change enable, CC number (1–127), and amount. Held notes follow the velocity LFO unless a modulation route aims at CC.
+- **Modulation**: LFO switch and rate, sample-and-hold rate, then four routes. Route 1 is LFO → velocity. Route 2 is LFO → density. Routes 3 and 4 choose LFO or S&H and a destination: Off, Gate, Pitch (±12 semitones), CC, or Bend. Amount 0 leaves the destination alone. Schema stays 1.2.
 
 #### 6. ARTICULATION
 - **Gate Length**: Note duration (1-200%)
+- **Voice**: Poly lets notes overlap. Mono ends the previous melody note before the next one. The pitch stack keeps the newest melody circle in Mono, and every melody pitch still inside the gate in Poly. The caption says Mono or Poly. The chord part still stacks its notes in Mono.
 - **Legato**: Overlapping notes toggle
 - **Ratchet**: Number of repeats (1-16)
 - **R Prob**: Ratchet probability (0-100%)
@@ -575,7 +586,7 @@ Result: Loose, sloppy, experimental jazz
 - **Resizable**: 1200x500 to 2000x1000 pixels
 - **30Hz refresh**: Editor timer drives Euclidean playhead visualization
 - **Real-time feedback**: Immediate parameter response
-- **38 registered parameters (37 automatable)**: Full automation support; one legacy slot (`stochasticType`) is non-automatable and kept only for session load
+- **57 registered parameters (56 automatable)**: Full automation support; one legacy slot (`stochasticType`) is non-automatable and kept only for session load
 - **Touch / iPad**: AUv3 builds exist (iOS CMake target, deployment 15+); scrollable editor + larger hit targets — not App Store–ready / not a mobile-first redesign
 - **Editor sizes**: Desktop default 1280×760 (min 960×560); short host frames scroll vertically so Advanced stays reachable
 
@@ -855,7 +866,7 @@ Result: Complex West African polyrhythm
 ## Technical Specifications
 
 ### Audio
-- **Format**: MIDI only (no audio processing)
+- **Format**: AU, VST3, and AUv3 are MIDI only. The standalone app can play a built-in piano from the same notes (Piano switch, off by default).
 - **Channels**: 16 MIDI channels
 - **Polyphony**: Unlimited (MIDI messages)
 - **Latency**: < 1ms processing time
@@ -902,7 +913,7 @@ Product status is tracked as **v0.8.0** in [STATUS.md](../../STATUS.md) (not a s
 
 ### Current (v0.8.0)
 - ✅ 9 UI generators (Euclidean, algorithmic ×4, stochastic ×4)
-- ✅ Polyrhythm experimental in UI (minimal layer editor)
+- ✅ Polyrhythm experimental in UI (step rows, click to toggle, polymeter lengths)
 - ✅ Scale quantization, swing, humanization, gate, ratchet
 - ✅ MIDI channel routing, preset browser, steampunk LookAndFeel
 - ✅ Catch2 / `ctest` harness; CI via GitHub Actions

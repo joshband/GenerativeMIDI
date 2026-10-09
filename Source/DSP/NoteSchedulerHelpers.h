@@ -16,8 +16,11 @@
 
 namespace NoteSchedulerHelpers
 {
-    /** Schedule a note with optional ratcheting. Uses stack buffer for offsets (max 16). */
-    inline void scheduleGeneratedNote(EventScheduler& scheduler,
+    /**
+     * Schedule a note with optional ratcheting. Uses stack buffer for offsets (max 16).
+     * Returns the sample time of the latest note-off.
+     */
+    inline int64_t scheduleGeneratedNote(EventScheduler& scheduler,
                                       RatchetEngine& ratchetEngine,
                                       GateLengthController& gateLengthController,
                                       int pitch,
@@ -35,6 +38,8 @@ namespace NoteSchedulerHelpers
         if (useRatcheting)
             ratchetCount = ratchetEngine.fillRatchetOffsets(samplesPerStep, ratchetOffsets, 16);
 
+        int64_t latestOff = baseSample;
+
         for (int ratchetIdx = 0; ratchetIdx < ratchetCount; ++ratchetIdx)
         {
             const float ratchetVelocity = ratchetEngine.calculateRatchetVelocity(velocity, ratchetIdx);
@@ -44,8 +49,12 @@ namespace NoteSchedulerHelpers
                                      baseSample + ratchetTimingOffset);
 
             const int noteDuration = gateLengthController.calculateGateLengthSamples(samplesPerStep);
-            scheduler.scheduleNoteOff(pitch, midiChannel,
-                                      baseSample + ratchetTimingOffset + noteDuration);
+            const int64_t offSample = baseSample + ratchetTimingOffset + noteDuration;
+            scheduler.scheduleNoteOff(pitch, midiChannel, offSample);
+            if (offSample > latestOff)
+                latestOff = offSample;
         }
+
+        return latestOff;
     }
 }

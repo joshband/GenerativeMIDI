@@ -13,87 +13,91 @@ sleep 0.3
 osascript -e 'tell application "System Events" to key code 53' || true
 sleep 0.2
 
-GEN=$(osascript <<'EOF'
-tell application "System Events"
-  tell process "Generative MIDI"
-    set frontmost to true
-    set p to pop up button 1 of window 1
-    set pos to position of p
-    set sz to size of p
-    set cx to ((item 1 of pos) + (item 1 of sz) / 2) as integer
-    set cy to ((item 2 of pos) + (item 2 of sz) / 2) as integer
-    return (cx as string) & "," & (cy as string)
+# Named set on a main-window popup. Do not open the menu or use window 1:
+# the JUCE popup is a separate window and its menu items are not clickable.
+select_popup() {
+  local title="$1"
+  local name="$2"
+  local got
+  got=$(osascript - "$title" "$name" <<'EOF'
+on run argv
+  set controlName to item 1 of argv
+  set targetName to item 2 of argv
+  tell application "System Events"
+    tell process "Generative MIDI"
+      set frontmost to true
+      set value of pop up button controlName of window "Generative MIDI" to targetName
+      delay 0.2
+      return value of pop up button controlName of window "Generative MIDI"
+    end tell
   end tell
-end tell
+end run
 EOF
 )
-echo "GEN_CLICK=$GEN" | tee -a "$LOG"
-GENX=$(printf '%s' "$GEN" | awk -F',' '{gsub(/ /,"",$1); print $1}')
-GENY=$(printf '%s' "$GEN" | awk -F',' '{gsub(/ /,"",$2); print $2}')
-echo "GENX=$GENX GENY=$GENY" | tee -a "$LOG"
-
-cycle_to() {
-  local name="$1"
-  local downs="$2"
-  osascript -e 'tell application "Generative MIDI" to activate'
-  sleep 0.15
-  cliclick "c:${GENX},${GENY}"
-  sleep 0.4
-  osascript <<EOF
-tell application "System Events"
-  repeat $((downs + 8))
-    key code 126
-    delay 0.025
-  end repeat
-  delay 0.05
-  repeat $downs
-    key code 125
-    delay 0.05
-  end repeat
-  delay 0.05
-  key code 36
-end tell
-EOF
-  sleep 0.45
-  local v
-  v=$(osascript -e 'tell application "System Events" to tell process "Generative MIDI" to get value of pop up button 1 of window 1' || echo "AX_FAIL")
-  echo "cycle_target=$name got=$v" | tee -a "$LOG"
+  echo "select ${title}=$name got=$got" | tee -a "$LOG"
+  if [[ "$got" != "$name" ]]; then
+    echo "MISMATCH ${title} expected=$name got=$got" | tee -a "$LOG"
+    exit 1
+  fi
 }
 
-# Select Polyrhythm (index 1 = 1 down from Euclidean)
-cycle_to "Polyrhythm" 1
-screencapture -x docs/qa/logs/standalone_polyrhythm_selected.png
+select_generator() {
+  select_popup "Generator Type" "$1"
+}
 
-cycle_to "Markov" 2
+GENERATORS=(
+  "Euclidean"
+  "Polyrhythm"
+  "Markov"
+  "L-System"
+  "Cellular"
+  "Probabilistic"
+  "Brownian"
+  "Perlin Noise"
+  "Drunk Walk"
+  "Lorenz"
+)
+
+for name in "${GENERATORS[@]}"; do
+  select_generator "$name"
+done
+
+select_generator "Polyrhythm"
+screencapture -x docs/qa/logs/standalone_polyrhythm_layers.png
+select_generator "Markov"
 screencapture -x docs/qa/logs/standalone_markov.png
-
-cycle_to "Brownian" 6
+select_generator "Brownian"
 screencapture -x docs/qa/logs/standalone_brownian.png
 
-cycle_to "Polyrhythm" 1
-screencapture -x docs/qa/logs/standalone_polyrhythm_layers.png
-
-# Presets
-PRESET=$(osascript <<'EOF'
-tell application "System Events"
-  tell process "Generative MIDI"
-    set frontmost to true
-    set b to button "Presets" of window 1
-    set pos to position of b
-    set sz to size of b
-    set cx to ((item 1 of pos) + (item 1 of sz) / 2) as integer
-    set cy to ((item 2 of pos) + (item 2 of sz) / 2) as integer
-    return (cx as string) & "," & (cy as string)
-  end tell
-end tell
-EOF
+# Preset, MIDI channel, and scale: same named set, no menu click.
+PRESETS=(
+  "Euclidean Basic"
+  "Euclidean Complex"
+  "Polyrhythm Layers"
+  "Brownian Drift"
+  "Markov Melody"
+  "L-System Fractal"
+  "Cellular Automata"
+  "Probabilistic Sparse"
+  "Ratchet Groove"
+  "Ambient Drift"
+  "Percussive Hits"
 )
-echo "PRESET_CLICK=$PRESET" | tee -a "$LOG"
-cliclick "c:$PRESET"
-sleep 0.7
-screencapture -x docs/qa/logs/standalone_presets_menu.png
-osascript -e 'tell application "System Events" to key code 53' || true
-sleep 0.2
+for name in "${PRESETS[@]}"; do
+  select_popup "Preset" "$name"
+done
+
+for name in 1 8 16; do
+  select_popup "MIDI Channel" "$name"
+done
+
+for name in C "F#" B; do
+  select_popup "Scale Root" "$name"
+done
+
+for name in Chromatic Major Blues "Harmonic Major"; do
+  select_popup "Scale Type" "$name"
+done
 
 # LFO toggle
 LFO=$(osascript <<'EOF'
@@ -116,7 +120,7 @@ screencapture -x docs/qa/logs/standalone_lfo_toggled.png
 echo "LFO toggled (single click)" | tee -a "$LOG"
 echo "Density/Probability knobs visible in UI screenshots (Probability default 0.50)" | tee -a "$LOG"
 
-FINAL=$(osascript -e 'tell application "System Events" to tell process "Generative MIDI" to get value of pop up button 1 of window 1' || echo AX_FAIL)
+FINAL=$(osascript -e 'tell application "System Events" to tell process "Generative MIDI" to get value of pop up button "Generator Type" of window "Generative MIDI"' || echo AX_FAIL)
 echo "FINAL_GENERATOR=$FINAL" | tee -a "$LOG"
 ls -la docs/qa/logs/standalone_*.png | tee -a "$LOG"
 echo "DONE" | tee -a "$LOG"

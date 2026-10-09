@@ -2,8 +2,7 @@
   ==============================================================================
     CustomLookAndFeel.h
 
-    SYNAPTIK - Gilded Steampunk Aesthetic
-    Where Victorian brass meets neural fire and sacred geometry breathes steam
+    Sleek skeuomorphic chrome — machined graphite, soft highlights, one ice accent.
 
   ==============================================================================
 */
@@ -15,22 +14,36 @@
 class CustomLookAndFeel : public juce::LookAndFeel_V4
 {
 public:
-    // SYNAPTIK Gilded Steampunk Palette
+    // Cool machined palette. Names kept so existing call sites stay valid.
+    static constexpr uint32_t ABYSS_NAVY = 0xff101318;       // Window ground
+    static constexpr uint32_t BRASS_AGED = 0xff8E98A6;       // Aluminum edge
+    static constexpr uint32_t GOLD_TEMPLE = 0xffE7EDF2;      // Primary text / highlight
+    static constexpr uint32_t COPPER_STEAM = 0xffB4BEC9;     // Secondary text
+    static constexpr uint32_t BRONZE_GOTHIC = 0xff2A313B;    // Inset shadow
+    static constexpr uint32_t STEEL_OBSIDIAN = 0xff1A1F27;   // Raised panel
 
-    // FOUNDATION METALS - Structural colors
-    static constexpr uint32_t ABYSS_NAVY = 0xff0A1628;       // Background - deep void
-    static constexpr uint32_t BRASS_AGED = 0xffB8860B;       // Primary metal - aged brass
-    static constexpr uint32_t GOLD_TEMPLE = 0xffFFD700;      // Accents - polished gold
-    static constexpr uint32_t COPPER_STEAM = 0xffB87333;     // Warm highlights - copper
-    static constexpr uint32_t BRONZE_GOTHIC = 0xff665D1E;    // Shadows - dark bronze
-    static constexpr uint32_t STEEL_OBSIDIAN = 0xff1A2F3A;   // Dark panels
+    static constexpr uint32_t AETHER_CYAN = 0xff5EE0FF;      // Interaction: thumbs, focus, open chevron
+    static constexpr uint32_t AMBER_TESLA = 0xff9AA6B4;      // Neutral metal fill
+    static constexpr uint32_t ACCENT_ALGORITHM = 0xff6FAF92; // Cooled green, algorithmic family
+    static constexpr uint32_t ACCENT_STOCHASTIC = 0xff8D84B5; // Muted violet, stochastic family
+    // Part roles. Melody keeps the generator family colour. These three stay put.
+    static constexpr uint32_t PART_ROOT = 0xffE0C08A;        // Warm brass, bass
+    static constexpr uint32_t PART_CHORD = 0xff7EB0C9;       // Steel, triad
+    static constexpr uint32_t PART_ARP = 0xffC4897A;         // Clay, walking tone
+    // Legacy names. Live UI uses the family accents above, not these saturated hues.
+    static constexpr uint32_t VIOLET_ALCHEMY = ACCENT_STOCHASTIC;
+    static constexpr uint32_t ROSE_STEAM = 0xff8E98A6;
+    static constexpr uint32_t GREEN_VERDIGRIS = ACCENT_ALGORITHM;
 
-    // ENERGY COLORS - Glowing accents
-    static constexpr uint32_t AETHER_CYAN = 0xff00CED1;      // Primary glow - cyan
-    static constexpr uint32_t AMBER_TESLA = 0xffFFBF00;      // Warm energy - amber
-    static constexpr uint32_t VIOLET_ALCHEMY = 0xff9370DB;   // Mystical - violet
-    static constexpr uint32_t ROSE_STEAM = 0xffFF69B4;       // Heated metal - rose
-    static constexpr uint32_t GREEN_VERDIGRIS = 0xff50C878;  // Patina - green
+    /** Rhythm is warm aluminum. Algorithmic and stochastic use the family accents. */
+    static juce::Colour familyAccent(int generatorIndex)
+    {
+        if (generatorIndex <= 1)
+            return juce::Colour(GOLD_TEMPLE);
+        if (generatorIndex <= 5)
+            return juce::Colour(ACCENT_ALGORITHM);
+        return juce::Colour(ACCENT_STOCHASTIC);
+    }
 
     CustomLookAndFeel()
     {
@@ -50,12 +63,13 @@ public:
 
         // Text - golden brass labels
         setColour(juce::Label::textColourId, juce::Colour(GOLD_TEMPLE));
+        setColour(juce::Label::backgroundColourId, juce::Colours::transparentBlack);
 
         // Buttons - mechanical switches
         setColour(juce::TextButton::buttonColourId, juce::Colour(STEEL_OBSIDIAN));
         setColour(juce::TextButton::buttonOnColourId, juce::Colour(BRASS_AGED));
         setColour(juce::TextButton::textColourOffId, juce::Colour(COPPER_STEAM));
-        setColour(juce::TextButton::textColourOnId, juce::Colour(ABYSS_NAVY));
+        setColour(juce::TextButton::textColourOnId, juce::Colour(GOLD_TEMPLE));
 
         // Combo boxes - brass plates
         setColour(juce::ComboBox::backgroundColourId, juce::Colour(STEEL_OBSIDIAN));
@@ -70,6 +84,11 @@ public:
         setColour(juce::PopupMenu::headerTextColourId, juce::Colour(COPPER_STEAM));
         setColour(juce::PopupMenu::highlightedBackgroundColourId, juce::Colour(BRASS_AGED).darker(0.25f));
         setColour(juce::PopupMenu::highlightedTextColourId, juce::Colour(AETHER_CYAN));
+
+        setColour(juce::Slider::textBoxTextColourId, juce::Colour(GOLD_TEMPLE));
+        setColour(juce::Slider::textBoxBackgroundColourId, juce::Colour(0xff12161C));
+        setColour(juce::Slider::textBoxOutlineColourId, juce::Colour(BRASS_AGED).withAlpha(0.35f));
+        setColour(juce::Slider::textBoxHighlightColourId, juce::Colour(AETHER_CYAN).withAlpha(0.35f));
     }
 
     juce::Image loadAsset(const juce::String& relativePath)
@@ -107,32 +126,7 @@ public:
 
     void loadUIAssets()
     {
-        // Load knob images from art/themes/victorian-steampunk (256px)
-        knobOrnate = loadAsset("ui-elements/knobs/img_8150_256.png");
-        knobConcentric = loadAsset("ui-elements/knobs/img_8183_256.png");
-        knobSimple = loadAsset("ui-elements/knobs/img_8200_256.png");
-
-        // Load slider components
-        sliderVerticalRail = loadAsset("ui-elements/sliders/slider_brass_vertical_256.png");
-        sliderPointer = loadAsset("ui-elements/sliders/pointer_aether_staff_256.png");
-
-        // Load panel backgrounds
-        panelBrass = loadAsset("ui-elements/panels/img_8119_512.png");
-        panelAged = loadAsset("ui-elements/panels/img_8120_512.png");
-        panelVerdigris = loadAsset("ui-elements/panels/img_8138_512.png");
-
-        // Load decorative frames and ornaments
-        frameArtDeco = loadAsset("ui-elements/frames/frame_art_deco_panel_256.png");
-        labelBrassPlate = loadAsset("ui-elements/frames/label_brass_plate_128.png");
-        cornerOrnament = loadAsset("ui-elements/decorative/img_8121_128.png");
-
-        // Load button assets
-        buttonOrnate = loadAsset("ui-elements/buttons/button_cross_ornate_128.png");
-
-        if (knobOrnate.isValid())
-            DBG("Victorian Steampunk UI Assets Loaded Successfully!");
-        else
-            DBG("Warning: Victorian UI assets not found - using procedural fallback");
+        // Procedural chrome is the product. Victorian bitmaps are not scanned or drawn.
     }
 
     void drawRotarySlider(juce::Graphics& g, int x, int y, int width, int height,
@@ -144,8 +138,7 @@ public:
         auto centreY = y + height * 0.5f;
         auto angle = rotaryStartAngle + sliderPos * (rotaryEndAngle - rotaryStartAngle);
 
-        // If we have a loaded knob image, use hybrid approach (image + pointer)
-        if (knobOrnate.isValid())
+        if (false && knobOrnate.isValid())
         {
             // Aether glow (outer radiance)
             auto glowRadius = radius + 12.0f;
@@ -213,126 +206,69 @@ public:
         }
         else
         {
-            // Fallback: Use original procedural drawing if images not loaded
-            auto rx = centreX - radius;
-            auto ry = centreY - radius;
-            auto rw = radius * 2.0f;
+            const float rx = centreX - radius;
+            const float ry = centreY - radius;
+            const float rw = radius * 2.0f;
+            const bool hot = slider.isMouseOverOrDragging() || slider.isMouseButtonDown();
 
-            // Aether glow (outer radiance)
-            auto glowRadius = radius + 12.0f;
-            juce::ColourGradient aetherGlow(
-                juce::Colour(AETHER_CYAN).withAlpha(0.3f),
-                centreX, centreY,
-                juce::Colour(AMBER_TESLA).withAlpha(0.0f),
-                centreX, centreY - glowRadius,
-                true);
-            g.setGradientFill(aetherGlow);
-            g.fillEllipse(centreX - glowRadius, centreY - glowRadius, glowRadius * 2.0f, glowRadius * 2.0f);
+            g.setColour(juce::Colours::black.withAlpha(0.4f));
+            g.fillEllipse(rx + 1.0f, ry + 2.0f, rw, rw);
 
-            // Polished gold rim (ornate bezel)
-            g.setColour(slider.findColour(juce::Slider::rotarySliderOutlineColourId));
-            g.drawEllipse(rx - 3, ry - 3, rw + 6, rw + 6, 3.0f);
-
-            // Inner shadow ring (depth)
-            g.setColour(juce::Colour(BRONZE_GOTHIC).withAlpha(0.6f));
-            g.drawEllipse(rx - 1, ry - 1, rw + 2, rw + 2, 2.0f);
-
-            // Aged brass body with metallic gradient
-            juce::ColourGradient brassGrad(
-                juce::Colour(BRASS_AGED).brighter(0.2f), centreX - radius * 0.5f, ry,
-                juce::Colour(BRASS_AGED).darker(0.3f), centreX + radius * 0.5f, ry + rw,
+            juce::ColourGradient bezel(
+                juce::Colour(0xffC5CED6), centreX, ry,
+                juce::Colour(BRASS_AGED), centreX, ry + rw,
                 false);
-            g.setGradientFill(brassGrad);
+            g.setGradientFill(bezel);
             g.fillEllipse(rx, ry, rw, rw);
 
-            // Verdigris patina accent (aged copper detail)
-            g.setColour(juce::Colour(GREEN_VERDIGRIS).withAlpha(0.15f));
-            g.fillEllipse(rx + rw * 0.6f, ry + rw * 0.1f, rw * 0.3f, rw * 0.3f);
+            const float dish = radius * 0.78f;
+            juce::ColourGradient dishGrad(
+                juce::Colour(0xff12161C), centreX, centreY - dish,
+                juce::Colour(0xff2A313B), centreX, centreY + dish,
+                false);
+            g.setGradientFill(dishGrad);
+            g.fillEllipse(centreX - dish, centreY - dish, dish * 2.0f, dish * 2.0f);
 
-            // Engraved tick marks (12 positions - Victorian clock aesthetic)
-            g.setColour(juce::Colour(BRONZE_GOTHIC));
-            for (int i = 0; i < 12; ++i)
+            g.setColour(juce::Colour(BRASS_AGED));
+            constexpr int kScaleTicks = 6;
+            const float travel = rotaryEndAngle - rotaryStartAngle;
+            for (int i = 0; i < kScaleTicks; ++i)
             {
-                float tickAngle = i * (juce::MathConstants<float>::twoPi / 12.0f) - juce::MathConstants<float>::halfPi;
-                float x1 = centreX + radius * 0.75f * std::cos(tickAngle);
-                float y1 = centreY + radius * 0.75f * std::sin(tickAngle);
-                float x2 = centreX + radius * 0.88f * std::cos(tickAngle);
-                float y2 = centreY + radius * 0.88f * std::sin(tickAngle);
-                g.drawLine(x1, y1, x2, y2, 2.0f);
+                const float t = static_cast<float>(i) / static_cast<float>(kScaleTicks - 1);
+                const float tickAngle = rotaryStartAngle + travel * t;
+                const bool endTick = i == 0 || i == kScaleTicks - 1;
+                const float inner = radius * (endTick ? 0.82f : 0.90f);
+                const float outer = radius * 0.98f;
+                g.drawLine(centreX + std::sin(tickAngle) * inner, centreY - std::cos(tickAngle) * inner,
+                           centreX + std::sin(tickAngle) * outer, centreY - std::cos(tickAngle) * outer,
+                           endTick ? 1.25f : 1.0f);
             }
 
-            // Golden energy arc (value indicator with glow)
             juce::Path valueArc;
-            valueArc.addCentredArc(centreX, centreY, radius * 0.82f, radius * 0.82f,
+            valueArc.addCentredArc(centreX, centreY, radius * 0.62f, radius * 0.62f,
                                   0.0f, rotaryStartAngle, angle, true);
+            g.setColour(juce::Colour(AETHER_CYAN).withAlpha(0.95f));
+            g.strokePath(valueArc, juce::PathStrokeType(2.0f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
 
-            // Arc glow
-            g.setColour(slider.findColour(juce::Slider::rotarySliderFillColourId).withAlpha(0.4f));
-            g.strokePath(valueArc, juce::PathStrokeType(5.0f));
-
-            // Arc core
-            g.setColour(slider.findColour(juce::Slider::rotarySliderFillColourId));
-            g.strokePath(valueArc, juce::PathStrokeType(2.5f));
-
-            // Aether crystal center hub
-            auto hubRadius = radius * 0.22f;
-
-            // Hub glow
-            juce::ColourGradient hubGlow(
-                juce::Colour(AETHER_CYAN).withAlpha(0.6f), centreX, centreY,
-                juce::Colour(AETHER_CYAN).withAlpha(0.0f), centreX, centreY - hubRadius * 2.5f,
-                true);
-            g.setGradientFill(hubGlow);
-            g.fillEllipse(centreX - hubRadius * 1.8f, centreY - hubRadius * 1.8f,
-                         hubRadius * 3.6f, hubRadius * 3.6f);
-
-            // Hub brass ring
+            juce::Path needle;
+            needle.addRoundedRectangle(-1.0f, -radius * 0.55f, 2.0f, radius * 0.4f, 0.8f);
+            needle.applyTransform(juce::AffineTransform::rotation(angle).translated(centreX, centreY));
             g.setColour(juce::Colour(GOLD_TEMPLE));
-            g.drawEllipse(centreX - hubRadius, centreY - hubRadius,
-                         hubRadius * 2.0f, hubRadius * 2.0f, 2.0f);
+            g.fillPath(needle);
 
-            // Hub copper fill
-            juce::ColourGradient hubGrad(
-                juce::Colour(COPPER_STEAM).brighter(0.1f), centreX, centreY - hubRadius,
-                juce::Colour(COPPER_STEAM).darker(0.2f), centreX, centreY + hubRadius,
+            const float hub = radius * 0.16f;
+            juce::ColourGradient cap(
+                juce::Colour(GOLD_TEMPLE), centreX, centreY - hub,
+                juce::Colour(BRASS_AGED), centreX, centreY + hub,
                 false);
-            g.setGradientFill(hubGrad);
-            g.fillEllipse(centreX - hubRadius * 0.9f, centreY - hubRadius * 0.9f,
-                         hubRadius * 1.8f, hubRadius * 1.8f);
+            g.setGradientFill(cap);
+            g.fillEllipse(centreX - hub, centreY - hub, hub * 2.0f, hub * 2.0f);
 
-            // Crystal highlight
-            g.setColour(juce::Colour(AETHER_CYAN).withAlpha(0.7f));
-            g.fillEllipse(centreX - hubRadius * 0.4f, centreY - hubRadius * 0.5f,
-                         hubRadius * 0.8f, hubRadius * 0.8f);
-
-            // Glowing aether pointer (energy beam)
-            juce::Path pointer;
-            auto pointerLength = radius * 0.68f;
-            auto pointerThickness = 4.0f;
-
-            // Pointer glow trail (wider)
-            pointer.addRoundedRectangle(-pointerThickness * 0.8f, -radius + hubRadius,
-                                       pointerThickness * 1.6f, pointerLength,
-                                       pointerThickness * 0.4f);
-            pointer.applyTransform(juce::AffineTransform::rotation(angle).translated(centreX, centreY));
-            g.setColour(slider.findColour(juce::Slider::thumbColourId).withAlpha(0.5f));
-            g.fillPath(pointer);
-
-            // Pointer core beam
-            juce::Path pointerCore;
-            pointerCore.addRoundedRectangle(-pointerThickness * 0.35f, -radius + hubRadius,
-                                           pointerThickness * 0.7f, pointerLength * 0.95f,
-                                           pointerThickness * 0.35f);
-            pointerCore.applyTransform(juce::AffineTransform::rotation(angle).translated(centreX, centreY));
-            g.setColour(slider.findColour(juce::Slider::thumbColourId));
-            g.fillPath(pointerCore);
-
-            // Pointer tip highlight (bright aether spark)
-            auto tipX = centreX + std::sin(angle) * (radius - hubRadius * 1.2f);
-            auto tipY = centreY - std::cos(angle) * (radius - hubRadius * 1.2f);
-            g.setColour(juce::Colours::white.withAlpha(0.9f));
-            g.fillEllipse(tipX - pointerThickness * 0.5f, tipY - pointerThickness * 0.5f,
-                         pointerThickness, pointerThickness);
+            if (hot)
+            {
+                g.setColour(juce::Colour(AETHER_CYAN).withAlpha(slider.isMouseButtonDown() ? 0.9f : 0.55f));
+                g.drawEllipse(rx + 0.5f, ry + 0.5f, rw - 1.0f, rw - 1.0f, 1.5f);
+            }
         }
     }
 
@@ -341,7 +277,7 @@ public:
                          const juce::Slider::SliderStyle style, juce::Slider& slider) override
     {
         // For vertical sliders with loaded rail image, use image-based rendering
-        if (!slider.isHorizontal() && sliderVerticalRail.isValid())
+        if (false && !slider.isHorizontal() && sliderVerticalRail.isValid())
         {
             // Draw brass vertical rail image
             auto railBounds = juce::Rectangle<float>(static_cast<float>(x), static_cast<float>(y),
@@ -420,7 +356,8 @@ public:
         else
             thumbPos = { x + width * 0.5f, sliderPos };
 
-        drawRoundCyanThumb(g, thumbPos, 14.0f, slider.findColour(juce::Slider::thumbColourId));
+        const float thumbR = (slider.isMouseOverOrDragging() || slider.isMouseButtonDown()) ? 16.0f : 13.0f;
+        drawRoundCyanThumb(g, thumbPos, thumbR, slider.findColour(juce::Slider::thumbColourId));
     }
 
     static void drawRoundCyanThumb(juce::Graphics& g, juce::Point<float> centre,
@@ -436,8 +373,7 @@ public:
         g.fillEllipse(centre.x - thumbRadius * 1.6f, centre.y - thumbRadius * 1.6f,
                       thumbRadius * 3.2f, thumbRadius * 3.2f);
 
-        // Brass bezel ring
-        g.setColour(juce::Colour(GOLD_TEMPLE).withAlpha(0.9f));
+        g.setColour(juce::Colour(0xffD5DCE4));
         g.fillEllipse(centre.x - thumbRadius, centre.y - thumbRadius,
                       thumbRadius * 2.0f, thumbRadius * 2.0f);
 
@@ -463,42 +399,83 @@ public:
     void drawButtonBackground(juce::Graphics& g, juce::Button& button, const juce::Colour& backgroundColour,
                              bool shouldDrawButtonAsHighlighted, bool shouldDrawButtonAsDown) override
     {
-        auto bounds = button.getLocalBounds().toFloat().reduced(2.0f);
-
-        auto baseColour = backgroundColour;
-        if (shouldDrawButtonAsDown)
-            baseColour = baseColour.brighter(0.4f);
-        else if (shouldDrawButtonAsHighlighted)
-            baseColour = baseColour.brighter(0.15f);
-
-        // Aether glow when active
-        if (button.getToggleState() || shouldDrawButtonAsHighlighted)
+        if (button.getComponentID() == "section-header")
         {
-            juce::ColourGradient glowGrad(
-                juce::Colour(AETHER_CYAN).withAlpha(0.4f),
-                bounds.getCentreX(), bounds.getCentreY(),
-                juce::Colour(AMBER_TESLA).withAlpha(0.0f),
-                bounds.getCentreX(), bounds.getCentreY() - bounds.getHeight(),
-                true);
-            g.setGradientFill(glowGrad);
-            g.fillRoundedRectangle(bounds.expanded(5.0f), 8.0f);
+            auto bounds = button.getLocalBounds().toFloat();
+            if (shouldDrawButtonAsHighlighted || shouldDrawButtonAsDown)
+            {
+                g.setColour(juce::Colours::white.withAlpha(shouldDrawButtonAsDown ? 0.06f : 0.04f));
+                g.fillRect(bounds);
+            }
+            g.setColour(juce::Colour(BRASS_AGED).withAlpha(0.28f));
+            g.drawLine(bounds.getX() + 12.0f, bounds.getBottom() - 0.5f,
+                       bounds.getRight() - 12.0f, bounds.getBottom() - 0.5f, 1.0f);
+            return;
         }
 
-        // Brass body gradient
-        juce::ColourGradient buttonGrad(baseColour.brighter(0.15f),
-                                        bounds.getX(), bounds.getCentreY(),
-                                        baseColour.darker(0.25f),
-                                        bounds.getRight(), bounds.getCentreY(), false);
-        g.setGradientFill(buttonGrad);
+        auto bounds = button.getLocalBounds().toFloat().reduced(2.0f);
+        juce::ignoreUnused(backgroundColour, shouldDrawButtonAsDown);
+
+        g.setColour(juce::Colour(STEEL_OBSIDIAN));
         g.fillRoundedRectangle(bounds, 6.0f);
 
-        // Brass rim
-        g.setColour(juce::Colour(BRASS_AGED).withAlpha(button.getToggleState() ? 0.9f : 0.5f));
-        g.drawRoundedRectangle(bounds, 6.0f, 2.0f);
+        const bool on = button.getToggleState();
+        g.setColour(on ? juce::Colour(AETHER_CYAN).withAlpha(shouldDrawButtonAsHighlighted ? 1.0f : 0.85f)
+                       : juce::Colour(BRASS_AGED).withAlpha(shouldDrawButtonAsHighlighted ? 0.8f : 0.5f));
+        g.drawRoundedRectangle(bounds, 6.0f, on ? 1.25f : 1.0f);
+    }
 
-        // Inner shadow (mechanical depth)
-        g.setColour(juce::Colour(BRONZE_GOTHIC).withAlpha(0.4f));
-        g.drawRoundedRectangle(bounds.reduced(2.0f), 4.0f, 1.0f);
+    void drawButtonText(juce::Graphics& g, juce::TextButton& button,
+                        bool shouldDrawButtonAsHighlighted, bool shouldDrawButtonAsDown) override
+    {
+        if (button.getComponentID() != "section-header")
+        {
+            LookAndFeel_V4::drawButtonText(g, button, shouldDrawButtonAsHighlighted, shouldDrawButtonAsDown);
+            return;
+        }
+
+        auto area = button.getLocalBounds().reduced(12, 0);
+        const bool open = button.getToggleState();
+        auto chevron = area.removeFromLeft(16).toFloat().reduced(1.0f, 8.0f);
+        juce::Path path;
+        if (open)
+        {
+            path.startNewSubPath(chevron.getX(), chevron.getY());
+            path.lineTo(chevron.getCentreX(), chevron.getBottom());
+            path.lineTo(chevron.getRight(), chevron.getY());
+        }
+        else
+        {
+            path.startNewSubPath(chevron.getX(), chevron.getY());
+            path.lineTo(chevron.getRight(), chevron.getCentreY());
+            path.lineTo(chevron.getX(), chevron.getBottom());
+        }
+        g.setColour(open ? juce::Colour(AETHER_CYAN) : juce::Colour(BRASS_AGED));
+        g.strokePath(path, juce::PathStrokeType(1.6f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
+
+        g.setColour(juce::Colour(BRASS_AGED));
+        g.setFont(juce::Font(juce::FontOptions(11.0f)).withExtraKerningFactor(0.16f));
+        g.drawFittedText(button.getButtonText(), area, juce::Justification::centredLeft, 1);
+    }
+
+    void drawLabel(juce::Graphics& g, juce::Label& label) override
+    {
+        if (dynamic_cast<juce::Slider*>(label.getParentComponent()) == nullptr)
+        {
+            LookAndFeel_V4::drawLabel(g, label);
+            return;
+        }
+
+        auto box = label.getLocalBounds().toFloat().reduced(0.5f);
+        g.setColour(juce::Colour(ABYSS_NAVY).withAlpha(0.9f));
+        g.fillRoundedRectangle(box, 3.0f);
+        g.setColour(juce::Colour(BRASS_AGED).withAlpha(0.45f));
+        g.drawRoundedRectangle(box, 3.0f, 1.0f);
+
+        g.setColour(juce::Colour(GOLD_TEMPLE));
+        g.setFont(juce::FontOptions(11.0f));
+        g.drawFittedText(label.getText(), label.getLocalBounds().reduced(2, 0),
+                         juce::Justification::centred, 1);
     }
 
     void drawComboBox(juce::Graphics& g, int width, int height, bool,
@@ -513,15 +490,16 @@ public:
             box.findColour(juce::ComboBox::backgroundColourId).darker(0.2f),
             bounds.getCentreX(), bounds.getBottom(), false);
         g.setGradientFill(plateGrad);
-        g.fillRoundedRectangle(bounds.reduced(1.0f), 4.0f);
+        g.fillRoundedRectangle(bounds.reduced(1.0f), 7.0f);
 
         // Brass bezel
-        g.setColour(box.findColour(juce::ComboBox::outlineColourId));
-        g.drawRoundedRectangle(bounds, 4.0f, 2.0f);
+        const bool hot = box.isMouseOver() || box.isPopupActive();
+        g.setColour(hot ? juce::Colour(AETHER_CYAN).withAlpha(0.75f)
+                        : box.findColour(juce::ComboBox::outlineColourId).withAlpha(0.55f));
+        g.drawRoundedRectangle(bounds.reduced(0.5f), 7.0f, hot ? 1.4f : 1.0f);
 
-        // Inner shadow
-        g.setColour(juce::Colour(BRONZE_GOTHIC).withAlpha(0.4f));
-        g.drawRoundedRectangle(bounds.reduced(2.5f), 3.0f, 1.0f);
+        g.setColour(juce::Colours::white.withAlpha(0.08f));
+        g.drawLine(bounds.getX() + 8.0f, bounds.getY() + 1.5f, bounds.getRight() - 28.0f, bounds.getY() + 1.5f, 1.0f);
 
         // Brass chevron
         auto arrowZone = bounds.removeFromRight(24.0f).reduced(6.0f);
@@ -669,10 +647,9 @@ public:
         return 10;
     }
 
-    juce::Font getLabelFont(juce::Label& label) override
+    juce::Font getLabelFont(juce::Label&) override
     {
-        // Stencil-style bold font for vintage pedal look
-        return juce::Font(label.getHeight() * 0.7f, juce::Font::bold);
+        return juce::FontOptions(11.0f);
     }
 
     // Public accessors for UI assets (for use in editor paint())

@@ -202,21 +202,15 @@ void PresetBrowser::paint(juce::Graphics& g)
     g.setGradientFill(bg);
     g.fillAll();
 
-    // Outer brass frame
-    g.setColour(juce::Colour(CustomLookAndFeel::BRASS_AGED).withAlpha(0.85f));
-    g.drawRoundedRectangle(bounds.reduced(3.0f), 8.0f, 2.0f);
-    g.setColour(juce::Colour(CustomLookAndFeel::GOLD_TEMPLE).withAlpha(0.35f));
-    g.drawRoundedRectangle(bounds.reduced(5.5f), 7.0f, 1.0f);
-    g.setColour(juce::Colour(CustomLookAndFeel::AETHER_CYAN).withAlpha(0.12f));
-    g.drawRoundedRectangle(bounds.reduced(8.0f), 6.0f, 1.0f);
+    g.setColour(juce::Colours::white.withAlpha(0.10f));
+    g.drawRoundedRectangle(bounds.reduced(3.0f), 12.0f, 1.0f);
 
-    // Title plate
     auto titlePlate = juce::Rectangle<float>(bounds.getX() + 18.0f, 10.0f,
                                              bounds.getWidth() - 36.0f, 28.0f);
     juce::ColourGradient plateGrad(
-        juce::Colour(CustomLookAndFeel::BRASS_AGED).brighter(0.12f),
+        juce::Colour(0xff2A313B),
         titlePlate.getCentreX(), titlePlate.getY(),
-        juce::Colour(CustomLookAndFeel::BRASS_AGED).darker(0.15f),
+        juce::Colour(0xff1A1F27),
         titlePlate.getCentreX(), titlePlate.getBottom(), false);
     g.setGradientFill(plateGrad);
     g.fillRoundedRectangle(titlePlate, 4.0f);

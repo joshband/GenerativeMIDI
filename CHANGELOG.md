@@ -7,7 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Voice is Poly or Mono. Poly lets melody notes overlap. Mono ends the previous melody note before the next one. A pitch stack shows those notes, and the same marks travel through the scrolling picture: the newest melody circle in Mono, and every melody pitch still inside the gate in Poly. Parts 2 adds the root square, 3 the three chord triangles, 4 the arp diamond. Polyrhythm uses the same stack beside the rows, with M, R, C, and A. Schema stays 1.2.
+- Modulation is a fixed four-slot bar under the faceplate. Slots 1 and 2 stay LFO to velocity and LFO to density. Slots 3 and 4 can send the LFO or a sample-and-hold to gate, pitch, CC, or pitch bend. Schema stays 1.2.
+- The standalone app has a Piano switch, off by default. On, it plays the generated MIDI through a small built-in piano. AU and VST3 stay MIDI effects and do not open an audio output.
+- Polyrhythm layers are step rows: click or drag a well to toggle a hit, and each row is only as long as that layer's step count so unequal lengths read as polymeter. Edits stay on the existing layer snapshot (schema 1.2).
+- While a note is held, CC amount and pitch-bend range follow the velocity LFO unless a modulation slot targets that destination. Note-on expression is unchanged when that LFO is off or its depth is zero.
+
 ### Changed
+- The pattern is the display, and Performance, Musical, and Shape share one faceplate. Knobs carry an aluminum scale, and Expression, Ratchet, LFO, and Legato keep a name with the control.
+- The pattern is an inset well, knobs are a machined bezel and dish, and type splits into section titles, control names, and inset readouts.
+- Knobs, faders, and switches share one cell: a control, a value, and a short name. Shape keeps aftertouch, ratchet, and the LFO on separate rows so they no longer overlap.
+- The pattern stays about two-fifths of the window. Performance, Musical, and Shape share the row beneath it, with knobs packed into grids instead of stretched across the panel.
+- The MIDI log starts collapsed. Opening it still pins the strip and gives the freed height back to the pattern.
+- The editor is one header row and four full-width section bars that start open and still fit the default window. Ice is only for interaction. The pattern playhead and generator name use a rhythm, algorithmic, or stochastic accent.
+- Generator, Preset, MIDI channel, Scale Root, and Scale Type accept an accessibility value, so UI checks select an item by name instead of clicking the popup menu.
+- Markov, L-System, and Cellular each have their own performance knobs, and those knobs change the notes. Markov walks a contour (Order, Step, Surprise). L-System plays a fixed grammar tape (Grammar, Generation, Interval). Cellular listens to one cell of a Wolfram row (Rule, Seed, Listen).
+- Step Size and Momentum now drive Perlin, Drunk Walk, and Lorenz. Factory defaults keep the previous motion: Perlin smoothness and octave blend, Drunk Walk glide, and Lorenz step size with damping only below the default momentum.
+- Pattern views share one well language: a Euclidean ring, a polyrhythm lane per layer, Cellular generations, an L-system growth stack, Markov and Probabilistic pitch chains, and a scoped trace for Brownian, Perlin, Drunk Walk, and Lorenz.
+- Editor hierarchy is a pattern cavity, a performance row for the current generator, a musical row, and a collapsed Shape disclosure. The MIDI log stays pinned under the viewport. Spare height fills the pattern cavity, and each control row spans its panel.
+- A loaded preset label becomes Edited when the generator combo changes, and returns to the preset name if that generator is selected again.
+- Visual chrome is machined graphite with soft highlights and a single ice accent: procedural knobs, inset panels, and no Victorian bitmap ornaments.
 - Editor lays out to the actual window width (minimum 720) so Expression no longer clips below 960px.
 - Non-Euclidean pattern band draws a readable activity meter; disabled Euclidean and stochastic knobs leave the layout instead of sitting at full size.
 

@@ -108,6 +108,9 @@ void MarkovChain::setOrder(int newOrder)
 // ============================================================================
 LSystemEngine::LSystemEngine() : axiom("A")
 {
+    // Fibonacci word. iterate() and the pattern view both read these rules.
+    addRule('A', "AB");
+    addRule('B', "A");
 }
 
 void LSystemEngine::setAxiom(const juce::String& ax)
@@ -173,6 +176,94 @@ juce::String LSystemEngine::iterate(int generations)
     return current;
 }
 
+namespace LSystemCatalog
+{
+    struct Rule
+    {
+        char symbol;
+        const char* replacement;
+    };
+
+    struct Grammar
+    {
+        const char* label;
+        const char* axiom;
+        Rule rules[2];
+        int ruleCount;
+    };
+
+    const Grammar& grammarAt(int index)
+    {
+        static const Grammar grammars[] = {
+            { "Fib", "A", { { 'A', "AB" }, { 'B', "A" } }, 2 },
+            { "Thue", "A", { { 'A', "AB" }, { 'B', "BA" } }, 2 },
+            { "Cantor", "A", { { 'A', "ABA" }, { 'B', "BBB" } }, 2 },
+            { "Koch", "A", { { 'A', "A+B" }, { 'B', "A-B" } }, 2 },
+        };
+
+        const int clamped = juce::jlimit(0, kCount - 1, index);
+        return grammars[clamped];
+    }
+
+    const char* name(int grammarIndex)
+    {
+        return grammarAt(grammarIndex).label;
+    }
+
+    void expand(int grammarIndex, int generations, char* dest, int capacity, int& outLength)
+    {
+        outLength = 0;
+        if (dest == nullptr || capacity <= 1)
+            return;
+
+        const Grammar& grammar = grammarAt(grammarIndex);
+        char buffers[2][kMaxSymbols];
+        int length = 0;
+        for (const char* symbol = grammar.axiom; *symbol != '\0' && length < kMaxSymbols - 1; ++symbol)
+            buffers[0][length++] = *symbol;
+        buffers[0][length] = '\0';
+
+        int source = 0;
+        const int steps = juce::jlimit(0, 8, generations);
+        for (int generation = 0; generation < steps; ++generation)
+        {
+            const int destination = 1 - source;
+            int written = 0;
+            for (int i = 0; i < length && written < kMaxSymbols - 1; ++i)
+            {
+                const char* replacement = nullptr;
+                for (int ruleIndex = 0; ruleIndex < grammar.ruleCount; ++ruleIndex)
+                {
+                    if (grammar.rules[ruleIndex].symbol == buffers[source][i])
+                    {
+                        replacement = grammar.rules[ruleIndex].replacement;
+                        break;
+                    }
+                }
+
+                if (replacement == nullptr)
+                {
+                    buffers[destination][written++] = buffers[source][i];
+                    continue;
+                }
+
+                for (const char* symbol = replacement; *symbol != '\0' && written < kMaxSymbols - 1; ++symbol)
+                    buffers[destination][written++] = *symbol;
+            }
+
+            buffers[destination][written] = '\0';
+            length = written;
+            source = destination;
+        }
+
+        const int copy = juce::jmin(length, capacity - 1);
+        for (int i = 0; i < copy; ++i)
+            dest[i] = buffers[source][i];
+        dest[copy] = '\0';
+        outLength = copy;
+    }
+}
+
 std::vector<int> LSystemEngine::toMidiNotes(const juce::String& sequence, int baseNote)
 {
     std::vector<int> notes;
@@ -205,7 +296,12 @@ std::vector<int> LSystemEngine::toMidiNotes(const juce::String& sequence, int ba
 // ============================================================================
 CellularAutomaton::CellularAutomaton(int size) : cells(size, false), scratch(size, false)
 {
+    // A single center cell. All-off is a fixed point of rule 30, so a blank
+    // row never moves.
+    if (!cells.empty())
+        cells[cells.size() / 2] = true;
     initialState = cells;
+    publish();
 }
 
 void CellularAutomaton::setRule(int ruleNumber)
@@ -213,11 +309,31 @@ void CellularAutomaton::setRule(int ruleNumber)
     rule = juce::jlimit(0, 255, ruleNumber);
 }
 
+void CellularAutomaton::seedCell(int index)
+{
+    if (cells.empty())
+        return;
+
+    const int onIndex = juce::jlimit(0, static_cast<int>(cells.size()) - 1, index);
+    if (initialState.size() != cells.size())
+        initialState.assign(cells.size(), false);
+
+    for (size_t i = 0; i < cells.size(); ++i)
+    {
+        const bool on = static_cast<int>(i) == onIndex;
+        cells[i] = on;
+        initialState[i] = on;
+    }
+
+    publish();
+}
+
 void CellularAutomaton::setState(const std::vector<bool>& state)
 {
     cells = state;
     scratch.assign(cells.size(), false);
     initialState = state;
+    publish();
 }
 
 void CellularAutomaton::randomizeState(float density)
@@ -225,6 +341,7 @@ void CellularAutomaton::randomizeState(float density)
     for (size_t i = 0; i < cells.size(); ++i)
         cells[i] = random.nextFloat() < density;
     initialState = cells;
+    publish();
 }
 
 std::vector<bool> CellularAutomaton::step()
@@ -249,6 +366,43 @@ void CellularAutomaton::stepInPlace()
 
     for (size_t i = 0; i < n; ++i)
         cells[i] = scratch[i];
+
+    publish();
+}
+
+void CellularAutomaton::publish()
+{
+    uint64_t mask = 0;
+    const int n = juce::jmin(64, static_cast<int>(cells.size()));
+    for (int i = 0; i < n; ++i)
+        if (cells[static_cast<size_t>(i)])
+            mask |= (uint64_t { 1 } << static_cast<unsigned>(i));
+
+    bits.store(mask, std::memory_order_relaxed);
+    sizeBits.store(n, std::memory_order_relaxed);
+    generation.fetch_add(1, std::memory_order_release);
+}
+
+int CellularAutomaton::copyCells(bool* dest, int destCap, int& countOut) const
+{
+    countOut = 0;
+    if (dest == nullptr || destCap <= 0)
+        return generation.load(std::memory_order_acquire);
+
+    for (;;)
+    {
+        const int g1 = generation.load(std::memory_order_acquire);
+        const uint64_t mask = bits.load(std::memory_order_acquire);
+        const int n = juce::jmin(destCap, sizeBits.load(std::memory_order_acquire));
+        const int g2 = generation.load(std::memory_order_acquire);
+        if (g1 != g2)
+            continue;
+
+        for (int i = 0; i < n; ++i)
+            dest[i] = (mask & (uint64_t { 1 } << static_cast<unsigned>(i))) != 0;
+        countOut = n;
+        return g1;
+    }
 }
 
 bool CellularAutomaton::getCell(int index) const
@@ -261,6 +415,7 @@ bool CellularAutomaton::getCell(int index) const
 void CellularAutomaton::reset()
 {
     cells = initialState;
+    publish();
 }
 
 bool CellularAutomaton::applyRule(bool left, bool center, bool right)
@@ -415,12 +570,144 @@ void AlgorithmicEngine::setVelocityRange(float minVel, float maxVel)
     velocityVariance = (maxVel - minVel) / 4.0f; // Keep most values within range
 }
 
+void AlgorithmicEngine::setMarkovControls(int order, int stepSemitones, float surprise)
+{
+    const int clampedOrder = juce::jlimit(1, 4, order);
+    if (clampedOrder != markovChain.getOrder())
+        markovChain.setOrder(clampedOrder);
+
+    markovStep = juce::jlimit(1, 12, stepSemitones);
+    markovSurprise = juce::jlimit(0.0f, 1.0f, surprise);
+}
+
+void AlgorithmicEngine::setLSystemControls(int grammar, int generation, int interval)
+{
+    const int clampedGrammar = juce::jlimit(0, LSystemCatalog::kCount - 1, grammar);
+    const int clampedGeneration = juce::jlimit(0, 6, generation);
+    const int clampedInterval = juce::jlimit(1, 12, interval);
+    if (clampedGrammar == lsystemGrammar
+        && clampedGeneration == lsystemGeneration
+        && clampedInterval == lsystemInterval
+        && pitchMin == lsystemBuiltMin
+        && pitchMax == lsystemBuiltMax
+        && lsystemNoteCount > 0)
+        return;
+
+    lsystemGrammar = clampedGrammar;
+    lsystemGeneration = clampedGeneration;
+    lsystemInterval = clampedInterval;
+    rebuildLSystemNotes();
+}
+
+void AlgorithmicEngine::setCellularControls(int rule, int seed, int listen)
+{
+    cellularAutomaton.setRule(rule);
+    const int clampedSeed = juce::jlimit(0, 31, seed);
+    if (clampedSeed != cellularSeed)
+    {
+        cellularSeed = clampedSeed;
+        cellularAutomaton.seedCell(clampedSeed);
+    }
+
+    const int size = juce::jmax(1, cellularAutomaton.getSize());
+    cellularListen = juce::jlimit(0, size - 1, listen);
+}
+
+void AlgorithmicEngine::rebuildLSystemNotes()
+{
+    char symbols[LSystemCatalog::kMaxSymbols];
+    int length = 0;
+    LSystemCatalog::expand(lsystemGrammar, lsystemGeneration, symbols, LSystemCatalog::kMaxSymbols, length);
+
+    lsystemNoteCount = 0;
+    lsystemCursor = 0;
+    int cursor = pitchMin + juce::jmax(0, pitchMax - pitchMin) / 2;
+
+    for (int i = 0; i < length && lsystemNoteCount < kLSystemNotes; ++i)
+    {
+        int emitted = -1;
+        switch (symbols[i])
+        {
+            case 'A': emitted = cursor; break;
+            case 'B': emitted = cursor + lsystemInterval; break;
+            case 'C': emitted = cursor + lsystemInterval * 2; break;
+            case 'D': emitted = cursor + lsystemInterval * 3; break;
+            case '+': cursor = juce::jlimit(0, 127, cursor + 12); break;
+            case '-': cursor = juce::jlimit(0, 127, cursor - 12); break;
+            case '[': cursor = juce::jlimit(0, 127, cursor + 1); break;
+            case ']': cursor = juce::jlimit(0, 127, cursor - 1); break;
+            default: break;
+        }
+
+        if (emitted >= 0)
+            lsystemNotes[lsystemNoteCount++] = juce::jlimit(pitchMin, pitchMax, emitted);
+    }
+
+    if (lsystemNoteCount == 0)
+        lsystemNotes[lsystemNoteCount++] = juce::jlimit(pitchMin, pitchMax, cursor);
+
+    lsystemBuiltMin = pitchMin;
+    lsystemBuiltMax = pitchMax;
+}
+
+int AlgorithmicEngine::nextUntrainedMarkovNote()
+{
+    const int order = juce::jmax(1, markovChain.getOrder());
+    const int span = juce::jmax(0, pitchMax - pitchMin);
+    const int center = pitchMin + span / 2;
+    const int last = historyCount > 0 ? getHistoryNoteFromNewest(0) : center;
+
+    int note = last;
+    if (markovSurprise > 0.0f && random.nextFloat() < markovSurprise)
+    {
+        note = pitchMin + (span > 0 ? random.nextInt(span + 1) : 0);
+        markovRun = 0;
+    }
+    else
+    {
+        if (markovRun >= order)
+        {
+            markovDirection = -markovDirection;
+            markovRun = 0;
+        }
+
+        note = last + markovDirection * juce::jmax(1, markovStep);
+        if (note > pitchMax)
+        {
+            note = pitchMax;
+            markovDirection = -1;
+            markovRun = 0;
+        }
+        else if (note < pitchMin)
+        {
+            note = pitchMin;
+            markovDirection = 1;
+            markovRun = 0;
+        }
+
+        ++markovRun;
+    }
+
+    note = juce::jlimit(pitchMin, pitchMax, note);
+    pushHistory(note);
+    return note;
+}
+
+int AlgorithmicEngine::getHistoryNoteFromNewest(int age) const
+{
+    if (age < 0 || age >= historyCount)
+        return -1;
+    const int idx = (historyWrite - 1 - age + kHistoryCap) % kHistoryCap;
+    return noteHistory[idx];
+}
+
 void AlgorithmicEngine::pushHistory(int note)
 {
     noteHistory[historyWrite] = note;
     historyWrite = (historyWrite + 1) % kHistoryCap;
     if (historyCount < kHistoryCap)
         ++historyCount;
+    historySerial.fetch_add(1, std::memory_order_release);
 }
 
 int AlgorithmicEngine::generateNextNote()
@@ -429,8 +716,19 @@ int AlgorithmicEngine::generateNextNote()
     {
         case Markov:
         {
+            if (!markovChain.hasTransitions())
+                return nextUntrainedMarkovNote();
+
             const int order = markovChain.getOrder();
             const int fallback = juce::jlimit(pitchMin, pitchMax, 60);
+            const int span = juce::jmax(0, pitchMax - pitchMin);
+
+            if (markovSurprise > 0.0f && random.nextFloat() < markovSurprise)
+            {
+                const int jumped = pitchMin + (span > 0 ? random.nextInt(span + 1) : 0);
+                pushHistory(jumped);
+                return jumped;
+            }
 
             while (historyCount < order)
                 pushHistory(fallback + (historyCount % 12));
@@ -451,17 +749,36 @@ int AlgorithmicEngine::generateNextNote()
 
         case LSystem:
         {
-            // Default axiom/rules yield a single middle-C — avoid String iterate on RT.
-            // (Custom rules via addRule are not used on the live UI path.)
-            return juce::jlimit(pitchMin, pitchMax, 60);
+            if (lsystemNoteCount <= 0)
+                rebuildLSystemNotes();
+
+            const int note = lsystemNotes[lsystemCursor];
+            lsystemCursor = (lsystemCursor + 1) % juce::jmax(1, lsystemNoteCount);
+            return note;
         }
 
         case CellularAutomatonType:
         {
             cellularAutomaton.stepInPlace();
-            if (cellularAutomaton.getCell(0))
-                return juce::jlimit(pitchMin, pitchMax, 60);
-            return -1; // Rest
+            const int size = cellularAutomaton.getSize();
+            if (size <= 0)
+                return -1;
+
+            const int index = juce::jlimit(0, size - 1, cellularListen);
+            if (!cellularAutomaton.getCell(index))
+                return -1;
+
+            // Listen gates the note. Pitch reads the live row with that cell
+            // as the origin, so rule, seed, and listen move the pitch as the
+            // automaton evolves. A fixed map of the listen index repeats one note.
+            int weighted = 0;
+            for (int i = 0; i < size; ++i)
+                if (cellularAutomaton.getCell((index + i) % size))
+                    weighted += i + 1;
+
+            const int maxWeight = size * (size + 1) / 2;
+            const int span = juce::jmax(0, pitchMax - pitchMin);
+            return pitchMin + (weighted * span) / juce::jmax(1, maxWeight);
         }
 
         case Probabilistic:

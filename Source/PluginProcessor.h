@@ -17,6 +17,7 @@
 #include "Core/StochasticEngine.h"
 #include "Core/MIDIGenerator.h"
 #include "Core/ScaleQuantizer.h"
+#include "Core/HarmonyParts.h"
 #include "Core/SwingEngine.h"
 #include "Core/GateLengthController.h"
 #include "Core/RatchetEngine.h"
@@ -24,8 +25,10 @@
 #include "DSP/ClockManager.h"
 #include "DSP/EventScheduler.h"
 #include "DSP/MidiActivityLog.h"
+#include "DSP/PianoSynth.h"
 #include "Modulation/ModLfo.h"
 #include "Modulation/ModulationDestination.h"
+#include "Modulation/ModulationRouter.h"
 
 class GenerativeMIDIProcessor : public juce::AudioProcessor
 {
@@ -40,6 +43,8 @@ public:
 #ifndef JucePlugin_PreferredChannelConfigurations
     bool isBusesLayoutSupported(const BusesLayout& layouts) const override;
 #endif
+    bool canAddBus(bool isInput) const override;
+    bool canApplyBusCountChange(bool isInput, bool isAddingBuses, BusProperties& outNewBusProperties) override;
 
     void processBlock(juce::AudioBuffer<float>&, juce::MidiBuffer&) override;
 
@@ -146,8 +151,20 @@ private:
     static constexpr const char* PARAM_MOMENTUM = "momentum";
     static constexpr const char* PARAM_TIME_SCALE = "timeScale";
 
+    static constexpr const char* PARAM_MARKOV_ORDER = "markovOrder";
+    static constexpr const char* PARAM_MARKOV_STEP = "markovStep";
+    static constexpr const char* PARAM_MARKOV_SURPRISE = "markovSurprise";
+    static constexpr const char* PARAM_LSYSTEM_GRAMMAR = "lsystemGrammar";
+    static constexpr const char* PARAM_LSYSTEM_GENERATION = "lsystemGeneration";
+    static constexpr const char* PARAM_LSYSTEM_INTERVAL = "lsystemInterval";
+    static constexpr const char* PARAM_CELLULAR_RULE = "cellularRule";
+    static constexpr const char* PARAM_CELLULAR_SEED = "cellularSeed";
+    static constexpr const char* PARAM_CELLULAR_LISTEN = "cellularListen";
+
     // MIDI routing parameters
     static constexpr const char* PARAM_MIDI_CHANNEL = "midiChannel";
+    static constexpr const char* PARAM_VOICE_MODE = "voiceMode";
+    static constexpr const char* PARAM_PART_COUNT = "partCount";
 
     // MIDI expression parameters
     static constexpr const char* PARAM_AFTERTOUCH_ENABLE = "aftertouchEnable";
@@ -163,6 +180,14 @@ private:
     static constexpr const char* PARAM_MOD_LFO_RATE = "modLfoRate";
     static constexpr const char* PARAM_MOD_LFO_DEPTH = "modLfoDepth";
     static constexpr const char* PARAM_MOD_LFO_DENSITY_DEPTH = "modLfoDensityDepth";
+    static constexpr const char* PARAM_MOD_SH_RATE = "modShRate";
+    static constexpr const char* PARAM_MOD_ROUTE3_SOURCE = "modRoute3Source";
+    static constexpr const char* PARAM_MOD_ROUTE3_DEST = "modRoute3Dest";
+    static constexpr const char* PARAM_MOD_ROUTE3_AMOUNT = "modRoute3Amount";
+    static constexpr const char* PARAM_MOD_ROUTE4_SOURCE = "modRoute4Source";
+    static constexpr const char* PARAM_MOD_ROUTE4_DEST = "modRoute4Dest";
+    static constexpr const char* PARAM_MOD_ROUTE4_AMOUNT = "modRoute4Amount";
+    static constexpr const char* PARAM_PIANO_ENABLE = "pianoEnable";
 
     // Processing state
     int64_t currentSamplePosition = 0;
@@ -171,11 +196,37 @@ private:
     std::atomic<bool> clockAdvancing { false };
     juce::Random rtRandom;
     ModLfo modLfo;
+    ModSampleHold modSampleHold;
+    PianoSynth pianoSynth;
     MidiActivityLog midiActivityLog;
 
     // Helper methods
     void processGenerativeOutput(juce::MidiBuffer& midiMessages, int numSamples);
     void onSubdivisionHit(int subdivision);
+    bool continuousExpressionActive() const;
+    void emitContinuousExpression(int64_t sampleTime);
+    void scheduleExpressionSweep(int64_t noteOn, int64_t noteOff);
+    void scheduleRoleParts(int step, int melodyChannel, int samplesPerStep,
+                           float velocityMin, float velocityMax);
+    ModulationRouter::Frame readModFrame(float lfo, float sampleHold) const;
+
+    // Held-note CC / pitch bend. Fixed members only — no heap on the audio thread.
+    int64_t expressionHoldUntil = 0;
+    int currentBlockSamples = 0;
+    int lastHeldCcNumber = -1;
+    int lastHeldCcValue = -1;
+    int lastHeldPitchBend = -1;
+
+    // One held melody note per MIDI channel. Mono steals on the melody channel only.
+    struct MelodyVoice
+    {
+        int pitch = -1;
+        int64_t offSample = 0;
+        bool active = false;
+    };
+    MelodyVoice melodyVoices[16] {};
+    HarmonyParts::Triad currentTriad {};
+    bool harmonyFromMelody = false;
 
     juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout();
 

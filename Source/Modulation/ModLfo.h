@@ -55,6 +55,17 @@ public:
     }
 
     /**
+     * Bipolar value at a time offset from the last advance(), without moving phase.
+     * Negative deltas look back into the block that was just advanced.
+     */
+    float peekBipolar(double deltaSeconds) const noexcept
+    {
+        double peeked = phase + static_cast<double>(rateHz) * deltaSeconds;
+        peeked -= std::floor(peeked);
+        return static_cast<float>(std::sin(peeked * juce::MathConstants<double>::twoPi));
+    }
+
+    /**
      * Apply bipolar modulation to a unipolar base (e.g. velocity).
      * result = clamp(base + bipolar * depth, 0, 1)
      */

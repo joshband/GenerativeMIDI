@@ -20,8 +20,8 @@ int PolyrhythmEngine::addLayer()
     PolyrhythmLayer layer;
     layer.resize(16);
 
-    // Seed an audible sparse default so selecting Polyrhythm / adding a layer
-    // produces MIDI without requiring step editing (MVP). Pattern editing UI TBD.
+    // Seed an audible sparse default. The layer editor can toggle these steps;
+    // edits stay on the layer and round-trip through toValueTree.
     const int layerIndex = static_cast<int>(layers.size());
     layer.division = juce::jlimit(1, 32, 3 + layerIndex); // distinct divisions per layer
     for (int i = 0; i < layer.length; ++i)

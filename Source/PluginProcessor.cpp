@@ -12,6 +12,20 @@
 #include "Core/GeneratorTypeMapping.h"
 #include "DSP/NoteSchedulerHelpers.h"
 
+namespace
+{
+int quantizeCc(float value)
+{
+    return static_cast<int>(juce::jlimit(0.0f, 1.0f, value) * 127.0f);
+}
+
+int quantizePitchWheel(float bendMinus1To1)
+{
+    const int bendValue = static_cast<int>((bendMinus1To1 + 1.0f) * 0.5f * 16383.0f);
+    return juce::jlimit(0, 16383, bendValue);
+}
+}
+
 //==============================================================================
 GenerativeMIDIProcessor::GenerativeMIDIProcessor()
 #ifndef JucePlugin_PreferredChannelConfigurations
@@ -29,6 +43,9 @@ GenerativeMIDIProcessor::GenerativeMIDIProcessor()
     parameters(*this, nullptr, juce::Identifier("GenerativeMIDI"), createParameterLayout()),
     presetManager(parameters, polyrhythmEngine)
 {
+    if (wrapperType == wrapperType_Standalone)
+        addBus(false);
+
     // Setup clock manager callback
     clockManager.onSubdivisionHit = [this](int subdivision) {
         onSubdivisionHit(subdivision);
@@ -140,9 +157,36 @@ juce::AudioProcessorValueTreeState::ParameterLayout GenerativeMIDIProcessor::cre
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
         PARAM_TIME_SCALE, "Time Scale", 0.01f, 10.0f, 1.0f));
 
+    params.push_back(std::make_unique<juce::AudioParameterInt>(
+        PARAM_MARKOV_ORDER, "Markov Order", 1, 4, 2));
+    params.push_back(std::make_unique<juce::AudioParameterInt>(
+        PARAM_MARKOV_STEP, "Markov Step", 1, 12, 2));
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(
+        PARAM_MARKOV_SURPRISE, "Markov Surprise", 0.0f, 1.0f, 0.1f));
+    params.push_back(std::make_unique<juce::AudioParameterInt>(
+        PARAM_LSYSTEM_GRAMMAR, "L-System Grammar", 0, LSystemCatalog::kCount - 1, 0));
+    params.push_back(std::make_unique<juce::AudioParameterInt>(
+        PARAM_LSYSTEM_GENERATION, "L-System Generation", 0, 6, 4));
+    params.push_back(std::make_unique<juce::AudioParameterInt>(
+        PARAM_LSYSTEM_INTERVAL, "L-System Interval", 1, 12, 2));
+    params.push_back(std::make_unique<juce::AudioParameterInt>(
+        PARAM_CELLULAR_RULE, "Cellular Rule", 0, 255, 30));
+    params.push_back(std::make_unique<juce::AudioParameterInt>(
+        PARAM_CELLULAR_SEED, "Cellular Seed", 0, 31, 16));
+    params.push_back(std::make_unique<juce::AudioParameterInt>(
+        PARAM_CELLULAR_LISTEN, "Cellular Listen", 0, 31, 16));
+
     // MIDI Routing
     params.push_back(std::make_unique<juce::AudioParameterInt>(
         PARAM_MIDI_CHANNEL, "MIDI Channel", 1, 16, 1));
+
+    params.push_back(std::make_unique<juce::AudioParameterChoice>(
+        PARAM_VOICE_MODE, "Voice",
+        juce::StringArray { "Poly", "Mono" }, 0));
+
+    params.push_back(std::make_unique<juce::AudioParameterChoice>(
+        PARAM_PART_COUNT, "Parts",
+        juce::StringArray { "1", "2", "3", "4" }, 0));
 
     // MIDI Expression
     params.push_back(std::make_unique<juce::AudioParameterBool>(
@@ -166,7 +210,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout GenerativeMIDIProcessor::cre
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
         PARAM_CC_AMOUNT, "CC Amount", 0.0f, 1.0f, 0.5f));
 
-    // Modulation v2 MVP: one LFO → velocity (see docs/developer/MODULATION_V2.md)
+    // Modulation v2: LFO depths plus two free routes (see docs/developer/MODULATION_V2.md)
     params.push_back(std::make_unique<juce::AudioParameterBool>(
         PARAM_MOD_LFO_ENABLE, "Mod LFO Enable", false));
 
@@ -179,6 +223,31 @@ juce::AudioProcessorValueTreeState::ParameterLayout GenerativeMIDIProcessor::cre
 
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
         PARAM_MOD_LFO_DENSITY_DEPTH, "Mod LFO Density Depth", 0.0f, 1.0f, 0.0f));
+
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(
+        PARAM_MOD_SH_RATE, "Mod S&H Rate",
+        juce::NormalisableRange<float>(0.05f, 20.0f, 0.01f, 0.4f), 1.0f));
+
+    params.push_back(std::make_unique<juce::AudioParameterChoice>(
+        PARAM_MOD_ROUTE3_SOURCE, "Mod Route 3 Source",
+        juce::StringArray { "LFO", "S&H" }, 0));
+    params.push_back(std::make_unique<juce::AudioParameterChoice>(
+        PARAM_MOD_ROUTE3_DEST, "Mod Route 3 Destination",
+        juce::StringArray { "Off", "Gate", "Pitch", "CC", "Bend" }, 0));
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(
+        PARAM_MOD_ROUTE3_AMOUNT, "Mod Route 3 Amount", 0.0f, 1.0f, 0.0f));
+
+    params.push_back(std::make_unique<juce::AudioParameterChoice>(
+        PARAM_MOD_ROUTE4_SOURCE, "Mod Route 4 Source",
+        juce::StringArray { "LFO", "S&H" }, 0));
+    params.push_back(std::make_unique<juce::AudioParameterChoice>(
+        PARAM_MOD_ROUTE4_DEST, "Mod Route 4 Destination",
+        juce::StringArray { "Off", "Gate", "Pitch", "CC", "Bend" }, 0));
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(
+        PARAM_MOD_ROUTE4_AMOUNT, "Mod Route 4 Amount", 0.0f, 1.0f, 0.0f));
+
+    params.push_back(std::make_unique<juce::AudioParameterBool>(
+        PARAM_PIANO_ENABLE, "Piano", false));
 
     return {params.begin(), params.end()};
 }
@@ -209,6 +278,9 @@ bool GenerativeMIDIProcessor::producesMidi() const
 
 bool GenerativeMIDIProcessor::isMidiEffect() const
 {
+    if (wrapperType == wrapperType_Standalone)
+        return false;
+
 #if JucePlugin_IsMidiEffect
     return true;
 #else
@@ -249,6 +321,16 @@ void GenerativeMIDIProcessor::prepareToPlay(double sampleRate, int samplesPerBlo
 {
     clockManager.setSampleRate(sampleRate);
     modLfo.reset();
+    modSampleHold.reset();
+    pianoSynth.reset();
+    for (auto& voice : melodyVoices)
+        voice = {};
+    currentTriad = {};
+    harmonyFromMelody = false;
+    expressionHoldUntil = 0;
+    lastHeldCcNumber = -1;
+    lastHeldCcValue = -1;
+    lastHeldPitchBend = -1;
 
     // Update parameters from value tree
     auto tempo = parameters.getRawParameterValue(PARAM_TEMPO)->load();
@@ -334,14 +416,33 @@ bool GenerativeMIDIProcessor::isBusesLayoutSupported(const BusesLayout& layouts)
 }
 #endif
 
+bool GenerativeMIDIProcessor::canAddBus(bool isInput) const
+{
+    return !isInput
+        && wrapperType == wrapperType_Standalone
+        && getBusCount(false) == 0;
+}
+
+bool GenerativeMIDIProcessor::canApplyBusCountChange(bool isInput, bool isAddingBuses, BusProperties& outNewBusProperties)
+{
+    if (isInput || !isAddingBuses || wrapperType != wrapperType_Standalone)
+        return false;
+
+    outNewBusProperties.busName = "Output";
+    outNewBusProperties.defaultLayout = juce::AudioChannelSet::stereo();
+    outNewBusProperties.isActivatedByDefault = true;
+    return true;
+}
+
 void GenerativeMIDIProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
 {
     juce::ScopedNoDenormals noDenormals;
-    auto totalNumInputChannels = getTotalNumInputChannels();
-    auto totalNumOutputChannels = getTotalNumOutputChannels();
+    const int bufferChannels = buffer.getNumChannels();
+    const int totalNumInputChannels = juce::jmin(getTotalNumInputChannels(), bufferChannels);
+    const int totalNumOutputChannels = juce::jmin(getTotalNumOutputChannels(), bufferChannels);
+    currentBlockSamples = buffer.getNumSamples();
 
-    // Clear any output channels that don't have input
-    for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
+    for (int i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
         buffer.clear(i, 0, buffer.getNumSamples());
 
     // Update engines from parameters (live parameter updates)
@@ -387,13 +488,20 @@ void GenerativeMIDIProcessor::processBlock(juce::AudioBuffer<float>& buffer, juc
         clockManager.advance(buffer.getNumSamples());
 
         // Modulation v2: advance LFO in wall-clock time (RT-safe)
-        const double sr = getSampleRate();
+        const double sr = clockManager.getSampleRate();
         if (sr > 0.0)
         {
             const float rate = parameters.getRawParameterValue(PARAM_MOD_LFO_RATE)->load();
             modLfo.setRateHz(rate);
             modLfo.advance(static_cast<double>(buffer.getNumSamples()) / sr);
+            modSampleHold.setRateHz(parameters.getRawParameterValue(PARAM_MOD_SH_RATE)->load());
+            modSampleHold.advance(static_cast<double>(buffer.getNumSamples()) / sr);
         }
+
+        // Notes that started on an earlier block are still held: one CC / pitch-bend
+        // update at this block, using the LFO position at the block start.
+        if (expressionHoldUntil > currentSamplePosition)
+            emitContinuousExpression(currentSamplePosition);
     }
 
     // Generate MIDI events
@@ -403,6 +511,11 @@ void GenerativeMIDIProcessor::processBlock(juce::AudioBuffer<float>& buffer, juc
     eventScheduler.processEvents(currentSamplePosition, midiMessages, buffer.getNumSamples(),
                                  &midiActivityLog);
 
+    if (bufferChannels > 0 && parameters.getRawParameterValue(PARAM_PIANO_ENABLE)->load() > 0.5f)
+        pianoSynth.render(buffer, midiMessages, clockManager.getSampleRate());
+    else
+        pianoSynth.reset();
+
     currentSamplePosition += buffer.getNumSamples();
 }
 
@@ -410,6 +523,114 @@ void GenerativeMIDIProcessor::processGenerativeOutput(juce::MidiBuffer& midiMess
 {
     // This method is called to generate MIDI events based on current settings
     // Events are generated in onSubdivisionHit callback
+}
+
+ModulationRouter::Frame GenerativeMIDIProcessor::readModFrame(float lfo, float sampleHold) const
+{
+    const auto slot = [this](const char* sourceId, const char* destId, const char* amountId)
+    {
+        ModulationRouter::Slot route;
+        route.source = juce::roundToInt(parameters.getRawParameterValue(sourceId)->load());
+        route.dest = juce::roundToInt(parameters.getRawParameterValue(destId)->load());
+        route.amount = parameters.getRawParameterValue(amountId)->load();
+        return route;
+    };
+
+    ModulationRouter::Frame frame;
+    frame.lfoEnabled = parameters.getRawParameterValue(PARAM_MOD_LFO_ENABLE)->load() > 0.5f;
+    frame.lfo = lfo;
+    frame.sampleHold = sampleHold;
+    frame.velocityAmount = parameters.getRawParameterValue(PARAM_MOD_LFO_DEPTH)->load();
+    frame.densityAmount = parameters.getRawParameterValue(PARAM_MOD_LFO_DENSITY_DEPTH)->load();
+    frame.extras[0] = slot(PARAM_MOD_ROUTE3_SOURCE, PARAM_MOD_ROUTE3_DEST, PARAM_MOD_ROUTE3_AMOUNT);
+    frame.extras[1] = slot(PARAM_MOD_ROUTE4_SOURCE, PARAM_MOD_ROUTE4_DEST, PARAM_MOD_ROUTE4_AMOUNT);
+    return frame;
+}
+
+bool GenerativeMIDIProcessor::continuousExpressionActive() const
+{
+    const auto mix = ModulationRouter::evaluate(readModFrame(modLfo.getBipolar(), modSampleHold.getBipolar()));
+    const bool lfoEnabled = parameters.getRawParameterValue(PARAM_MOD_LFO_ENABLE)->load() > 0.5f;
+    const float depth = parameters.getRawParameterValue(PARAM_MOD_LFO_DEPTH)->load();
+    const bool legacy = lfoEnabled && depth > 0.0f;
+    if (!legacy && !mix.ccRouted && !mix.bendRouted)
+        return false;
+
+    const bool ccEnabled = parameters.getRawParameterValue(PARAM_CC_ENABLE)->load() > 0.5f;
+    const bool pitchbendEnabled = parameters.getRawParameterValue(PARAM_PITCHBEND_ENABLE)->load() > 0.5f;
+    return ccEnabled || pitchbendEnabled;
+}
+
+void GenerativeMIDIProcessor::emitContinuousExpression(int64_t sampleTime)
+{
+    if (!continuousExpressionActive())
+    {
+        lastHeldCcNumber = -1;
+        lastHeldCcValue = -1;
+        lastHeldPitchBend = -1;
+        return;
+    }
+
+    const double sampleRate = clockManager.getSampleRate();
+    if (sampleRate <= 0.0 || currentBlockSamples <= 0)
+        return;
+
+    const int64_t phaseSample = currentSamplePosition + static_cast<int64_t>(currentBlockSamples);
+    const double deltaSeconds = static_cast<double>(sampleTime - phaseSample) / sampleRate;
+    const float lfo = modLfo.peekBipolar(deltaSeconds);
+    const auto mix = ModulationRouter::evaluate(readModFrame(lfo, modSampleHold.peekBipolar(deltaSeconds)));
+    const bool lfoEnabled = parameters.getRawParameterValue(PARAM_MOD_LFO_ENABLE)->load() > 0.5f;
+    const float depth = parameters.getRawParameterValue(PARAM_MOD_LFO_DEPTH)->load();
+    const int channel = static_cast<int>(parameters.getRawParameterValue(PARAM_MIDI_CHANNEL)->load());
+
+    if (parameters.getRawParameterValue(PARAM_CC_ENABLE)->load() > 0.5f)
+    {
+        const int ccNumber = static_cast<int>(parameters.getRawParameterValue(PARAM_CC_NUMBER)->load());
+        const float ccAmount = parameters.getRawParameterValue(PARAM_CC_AMOUNT)->load();
+        const float delta = mix.ccRouted ? mix.ccDelta : (lfoEnabled ? lfo * depth : 0.0f);
+        const float value = ModulationRouter::applyAdditive(ccAmount, delta, 0.0f, 1.0f);
+        const int midiValue = quantizeCc(value);
+        if (midiValue != lastHeldCcValue || ccNumber != lastHeldCcNumber)
+        {
+            eventScheduler.scheduleCC(ccNumber, value, channel, sampleTime);
+            lastHeldCcValue = midiValue;
+            lastHeldCcNumber = ccNumber;
+        }
+    }
+
+    if (parameters.getRawParameterValue(PARAM_PITCHBEND_ENABLE)->load() > 0.5f)
+    {
+        const float range = parameters.getRawParameterValue(PARAM_PITCHBEND_RANGE)->load();
+        float bendNorm = juce::jlimit(0.0f, 1.0f, range / 24.0f);
+        const float delta = mix.bendRouted ? mix.bendDelta : (lfoEnabled ? lfo * depth : 0.0f);
+        bendNorm = ModulationRouter::applyAdditive(bendNorm, delta, 0.0f, 1.0f);
+        const int midiValue = quantizePitchWheel(bendNorm);
+        if (midiValue != lastHeldPitchBend)
+        {
+            eventScheduler.schedulePitchBend(bendNorm, channel, sampleTime);
+            lastHeldPitchBend = midiValue;
+        }
+    }
+}
+
+void GenerativeMIDIProcessor::scheduleExpressionSweep(int64_t noteOn, int64_t noteOff)
+{
+    if (noteOff <= noteOn || currentBlockSamples <= 0 || !continuousExpressionActive())
+        return;
+
+    const int64_t blockEnd = currentSamplePosition + static_cast<int64_t>(currentBlockSamples);
+    int64_t sample = noteOn + 1;
+    if (sample < currentSamplePosition)
+        sample = currentSamplePosition;
+
+    const int64_t end = noteOff < blockEnd ? noteOff : blockEnd;
+    int emitted = 0;
+    while (sample < end && emitted < 8)
+    {
+        emitContinuousExpression(sample);
+        sample += 128;
+        ++emitted;
+    }
 }
 
 void GenerativeMIDIProcessor::onSubdivisionHit(int subdivision)
@@ -422,6 +643,17 @@ void GenerativeMIDIProcessor::onSubdivisionHit(int subdivision)
     scaleQuantizer.setRootNote(scaleRoot);
     scaleQuantizer.setScale(static_cast<ScaleQuantizer::Scale>(scaleType));
 
+    const bool chromaticScale = scaleType == static_cast<int>(ScaleQuantizer::Scale::Chromatic);
+    int scaleIntervals[12];
+    int scaleIntervalCount = 0;
+    if (!chromaticScale)
+    {
+        const auto& intervals = scaleQuantizer.getScaleIntervals();
+        scaleIntervalCount = juce::jmin(12, static_cast<int>(intervals.size()));
+        for (int i = 0; i < scaleIntervalCount; ++i)
+            scaleIntervals[i] = intervals[static_cast<size_t>(i)];
+    }
+
     // Update swing engine from parameters
     auto swingAmount = parameters.getRawParameterValue(PARAM_SWING_AMOUNT)->load();
     auto timingHumanize = parameters.getRawParameterValue(PARAM_TIMING_HUMANIZE)->load();
@@ -430,8 +662,12 @@ void GenerativeMIDIProcessor::onSubdivisionHit(int subdivision)
     swingEngine.setTimingRandomness(timingHumanize);
     swingEngine.setVelocityRandomness(velocityHumanize);
 
+    const auto modMix = ModulationRouter::evaluate(
+        readModFrame(modLfo.getBipolar(), modSampleHold.getBipolar()));
+
     // Update gate length controller from parameters
     auto gateLength = parameters.getRawParameterValue(PARAM_GATE_LENGTH)->load();
+    gateLength = ModulationRouter::applyAdditive(gateLength, modMix.gateDelta, 0.01f, 2.0f);
     auto legatoMode = parameters.getRawParameterValue(PARAM_LEGATO_MODE)->load() > 0.5f;
     gateLengthController.setGateLength(gateLength);
     gateLengthController.setLegatoMode(legatoMode);
@@ -452,6 +688,8 @@ void GenerativeMIDIProcessor::onSubdivisionHit(int subdivision)
     const int pitchMin = static_cast<int>(parameters.getRawParameterValue(PARAM_PITCH_MIN)->load());
     const int pitchMax = static_cast<int>(parameters.getRawParameterValue(PARAM_PITCH_MAX)->load());
     const int midiChannel = static_cast<int>(parameters.getRawParameterValue(PARAM_MIDI_CHANNEL)->load());
+    const bool monoVoice = juce::roundToInt(parameters.getRawParameterValue(PARAM_VOICE_MODE)->load()) == 1;
+    const int harmonyStep = lastSubdivisionStep;
     const float density = parameters.getRawParameterValue(PARAM_NOTE_DENSITY)->load();
     const int samplesPerStep = static_cast<int>(clockManager.getSamplesPerSubdivision(16));
 
@@ -463,44 +701,86 @@ void GenerativeMIDIProcessor::onSubdivisionHit(int subdivision)
     const int ccNumber = static_cast<int>(parameters.getRawParameterValue(PARAM_CC_NUMBER)->load());
     const float ccAmount = parameters.getRawParameterValue(PARAM_CC_AMOUNT)->load();
 
-    const bool modLfoEnable = parameters.getRawParameterValue(PARAM_MOD_LFO_ENABLE)->load() > 0.5f;
-    const float modLfoDepth = parameters.getRawParameterValue(PARAM_MOD_LFO_DEPTH)->load();
-    const float modLfoDensityDepth = parameters.getRawParameterValue(PARAM_MOD_LFO_DENSITY_DEPTH)->load();
-    const float modLfoValue = modLfo.getBipolar();
+    const float effectiveDensity = ModulationRouter::applyAdditive(density, modMix.densityDelta, 0.0f, 1.0f);
 
-    float effectiveDensity = density;
-    if (modLfoEnable && modLfoDensityDepth > 0.0f)
-        effectiveDensity = ModLfo::applyToUnipolar(density, modLfoValue, modLfoDensityDepth);
+    auto modulatePitch = [&](int rawPitch)
+    {
+        const int shifted = juce::jlimit(0, 127, rawPitch + juce::roundToInt(modMix.pitchSemitones));
+        return juce::jlimit(0, 127, scaleQuantizer.quantize(shifted));
+    };
 
     auto scheduleNote = [&](int pitch, float velocity, int stepForSwing)
     {
         velocity = swingEngine.humanizeVelocity(velocity);
-        if (modLfoEnable && modLfoDepth > 0.0f)
-            velocity = ModLfo::applyToUnipolar(velocity, modLfoValue, modLfoDepth);
+        velocity = ModulationRouter::applyAdditive(velocity, modMix.velocityDelta, 0.0f, 1.0f);
 
-        const int timingOffset = swingEngine.calculateTotalTimingOffset(
-            stepForSwing, samplesPerStep, getSampleRate());
+        int timingOffset = swingEngine.calculateTotalTimingOffset(
+            stepForSwing, samplesPerStep, clockManager.getSampleRate());
         const bool useRatcheting = ratchetEngine.shouldRatchet();
-        const int64_t noteOnSample = currentSamplePosition + timingOffset;
 
-        NoteSchedulerHelpers::scheduleGeneratedNote(
+        if (monoVoice)
+        {
+            const int slotIndex = juce::jlimit(0, 15, midiChannel - 1);
+            auto& slot = melodyVoices[slotIndex];
+            int64_t start = currentSamplePosition + static_cast<int64_t>(timingOffset);
+            if (slot.active && slot.offSample > start)
+            {
+                int64_t offAt = start - 1;
+                if (offAt < currentSamplePosition)
+                {
+                    // The previous sample already played. Park the note-off on the
+                    // first sample of this block and let the new note follow it.
+                    offAt = currentSamplePosition;
+                    ++timingOffset;
+                }
+                eventScheduler.scheduleNoteOff(slot.pitch, midiChannel, offAt);
+            }
+        }
+
+        const int64_t noteOnSample = currentSamplePosition + static_cast<int64_t>(timingOffset);
+
+        const int64_t noteOffSample = NoteSchedulerHelpers::scheduleGeneratedNote(
             eventScheduler, ratchetEngine, gateLengthController,
             pitch, velocity, midiChannel, currentSamplePosition,
             timingOffset, samplesPerStep, useRatcheting);
 
-        // Minimal MIDI expression emit (RT-safe via existing EventScheduler path)
+        if (monoVoice)
+        {
+            const int slotIndex = juce::jlimit(0, 15, midiChannel - 1);
+            auto& slot = melodyVoices[slotIndex];
+            slot.pitch = pitch;
+            slot.active = true;
+            slot.offSample = noteOffSample;
+        }
+
+        currentTriad = HarmonyParts::triadForMelody(
+            pitch, scaleRoot, scaleIntervals, scaleIntervalCount, chromaticScale);
+        harmonyFromMelody = true;
+
+        if (noteOffSample > expressionHoldUntil)
+            expressionHoldUntil = noteOffSample;
+
+        // Note-on expression stays a single static emit. Held-note updates below
+        // move CC amount and pitch-bend range with the velocity LFO.
         if (aftertouchEnable)
             eventScheduler.scheduleAftertouch(pitch, aftertouchAmount, midiChannel, noteOnSample);
 
         if (ccEnable)
+        {
             eventScheduler.scheduleCC(ccNumber, ccAmount, midiChannel, noteOnSample);
+            lastHeldCcNumber = ccNumber;
+            lastHeldCcValue = quantizeCc(ccAmount);
+        }
 
         if (pitchbendEnable)
         {
             // Map PB range (1–24 semitones) to a fraction of full MIDI bend wheel
             const float bendNorm = juce::jlimit(0.0f, 1.0f, pitchbendRange / 24.0f);
             eventScheduler.schedulePitchBend(bendNorm, midiChannel, noteOnSample);
+            lastHeldPitchBend = quantizePitchWheel(bendNorm);
         }
+
+        scheduleExpressionSweep(noteOnSample, noteOffSample);
 
         noteActivityCounter.fetch_add(1, std::memory_order_relaxed);
     };
@@ -517,7 +797,7 @@ void GenerativeMIDIProcessor::onSubdivisionHit(int subdivision)
                 const float velocity = velocityMin + (rawVelocity * (velocityMax - velocityMin));
                 const int pitchRange = pitchMax - pitchMin;
                 const int rawPitch = pitchMin + (step % (pitchRange + 1));
-                const int pitch = scaleQuantizer.quantize(rawPitch);
+                const int pitch = modulatePitch(rawPitch);
                 scheduleNote(pitch, velocity, step);
             }
             lastSubdivisionStep++;
@@ -547,7 +827,7 @@ void GenerativeMIDIProcessor::onSubdivisionHit(int subdivision)
                     const int rawPitch = juce::jlimit(
                         pitchMin, pitchMax,
                         layer->pitches[static_cast<size_t>(step)] + layer->pitchOffset);
-                    const int pitch = scaleQuantizer.quantize(rawPitch);
+                    const int pitch = modulatePitch(rawPitch);
                     const float rawVelocity = juce::jlimit(
                         0.0f, 1.0f,
                         layer->velocities[static_cast<size_t>(step)] * layer->velocityMultiplier);
@@ -568,17 +848,44 @@ void GenerativeMIDIProcessor::onSubdivisionHit(int subdivision)
         {
             const auto algoType = GeneratorTypeMapping::toAlgorithmic(generatorType);
             algorithmicEngine.setGeneratorType(algoType);
+            algorithmicEngine.setPitchRange(pitchMin, pitchMax);
+            algorithmicEngine.setVelocityRange(velocityMin, velocityMax);
 
-            if (rtRandom.nextFloat() < effectiveDensity)
+            if (generatorType == GeneratorTypeMapping::kMarkov)
             {
-                algorithmicEngine.setPitchRange(pitchMin, pitchMax);
-                algorithmicEngine.setVelocityRange(velocityMin, velocityMax);
+                const int order = static_cast<int>(parameters.getRawParameterValue(PARAM_MARKOV_ORDER)->load());
+                const int step = static_cast<int>(parameters.getRawParameterValue(PARAM_MARKOV_STEP)->load());
+                const float surprise = parameters.getRawParameterValue(PARAM_MARKOV_SURPRISE)->load();
+                algorithmicEngine.setMarkovControls(order, step, surprise);
+            }
+            else if (generatorType == GeneratorTypeMapping::kLSystem)
+            {
+                const int grammar = static_cast<int>(parameters.getRawParameterValue(PARAM_LSYSTEM_GRAMMAR)->load());
+                const int generation = static_cast<int>(parameters.getRawParameterValue(PARAM_LSYSTEM_GENERATION)->load());
+                const int interval = static_cast<int>(parameters.getRawParameterValue(PARAM_LSYSTEM_INTERVAL)->load());
+                algorithmicEngine.setLSystemControls(grammar, generation, interval);
+            }
+            else if (generatorType == GeneratorTypeMapping::kCellular)
+            {
+                const int rule = static_cast<int>(parameters.getRawParameterValue(PARAM_CELLULAR_RULE)->load());
+                const int seed = static_cast<int>(parameters.getRawParameterValue(PARAM_CELLULAR_SEED)->load());
+                const int listen = static_cast<int>(parameters.getRawParameterValue(PARAM_CELLULAR_LISTEN)->load());
+                algorithmicEngine.setCellularControls(rule, seed, listen);
+            }
 
+            // Markov, L-System, and Cellular advance every tick. Density only gates the note.
+            const bool gated = generatorType == GeneratorTypeMapping::kProbabilistic
+                                   ? rtRandom.nextFloat() < effectiveDensity
+                                   : true;
+            if (gated)
+            {
                 const int rawNote = algorithmicEngine.generateNextNote();
-                if (rawNote >= 0)
+                const bool emit = generatorType == GeneratorTypeMapping::kProbabilistic
+                                      || rtRandom.nextFloat() < effectiveDensity;
+                if (emit && rawNote >= 0)
                 {
                     const int rawPitch = juce::jlimit(pitchMin, pitchMax, rawNote);
-                    const int pitch = scaleQuantizer.quantize(rawPitch);
+                    const int pitch = modulatePitch(rawPitch);
                     const float rawVelocity = algorithmicEngine.generateNextVelocity();
                     const float velocity = velocityMin + (rawVelocity * (velocityMax - velocityMin));
                     scheduleNote(pitch, velocity, lastSubdivisionStep);
@@ -612,8 +919,7 @@ void GenerativeMIDIProcessor::onSubdivisionHit(int subdivision)
 
             if (stochasticEngine.shouldTriggerNote())
             {
-                int pitch = stochasticEngine.getCurrentPitch(pitchMin, pitchMax);
-                pitch = scaleQuantizer.quantize(pitch);
+                const int pitch = modulatePitch(stochasticEngine.getCurrentPitch(pitchMin, pitchMax));
                 float velocity = stochasticEngine.getCurrentVelocity(velocityMin, velocityMax);
                 scheduleNote(pitch, velocity, lastSubdivisionStep);
             }
@@ -625,6 +931,79 @@ void GenerativeMIDIProcessor::onSubdivisionHit(int subdivision)
             lastSubdivisionStep++;
             break;
     }
+
+    scheduleRoleParts(harmonyStep, midiChannel, samplesPerStep, velocityMin, velocityMax);
+}
+
+void GenerativeMIDIProcessor::scheduleRoleParts(int step, int melodyChannel, int samplesPerStep,
+                                                float velocityMin, float velocityMax)
+{
+    const int partCount = juce::jlimit(
+        1, 4, juce::roundToInt(parameters.getRawParameterValue(PARAM_PART_COUNT)->load()) + 1);
+    if (partCount < 2 || samplesPerStep <= 0)
+        return;
+
+    const int scaleRoot = static_cast<int>(parameters.getRawParameterValue(PARAM_SCALE_ROOT)->load());
+    const int scaleType = static_cast<int>(parameters.getRawParameterValue(PARAM_SCALE_TYPE)->load());
+    const bool chromatic = scaleType == static_cast<int>(ScaleQuantizer::Scale::Chromatic);
+
+    int intervals[12];
+    int intervalCount = 0;
+    if (!chromatic)
+    {
+        const auto& src = scaleQuantizer.getScaleIntervals();
+        intervalCount = juce::jmin(12, static_cast<int>(src.size()));
+        for (int i = 0; i < intervalCount; ++i)
+            intervals[i] = src[static_cast<size_t>(i)];
+    }
+
+    if (!harmonyFromMelody)
+    {
+        currentTriad = HarmonyParts::triadForMelody(
+            60 + scaleRoot, scaleRoot, intervals, intervalCount, chromatic);
+    }
+
+    const int timeNum = juce::jmax(1, static_cast<int>(parameters.getRawParameterValue(PARAM_TIME_SIG_NUM)->load()));
+    const int timeDen = juce::jmax(1, static_cast<int>(parameters.getRawParameterValue(PARAM_TIME_SIG_DENOM)->load()));
+    const int sixteenthsPerBar = juce::jmax(1, timeNum * 16 / timeDen);
+
+    const float span = velocityMax - velocityMin;
+    const int timingOffset = swingEngine.calculateTotalTimingOffset(
+        step, samplesPerStep, clockManager.getSampleRate());
+    const int64_t noteOnSample = currentSamplePosition + static_cast<int64_t>(timingOffset);
+    const int duration = juce::jmax(1, gateLengthController.calculateGateLengthSamples(samplesPerStep));
+
+    auto play = [&](int pitch, float velocity, int channel)
+    {
+        eventScheduler.scheduleNote(pitch, velocity, channel, noteOnSample, duration);
+        noteActivityCounter.fetch_add(1, std::memory_order_relaxed);
+    };
+
+    if (partCount >= 2 && (step % 4) == 0)
+        play(currentTriad.root, velocityMin + span * 0.70f, HarmonyParts::roleChannel(melodyChannel, 1));
+
+    if (partCount >= 3 && (step % sixteenthsPerBar) == 0)
+    {
+        const int chordChannel = HarmonyParts::roleChannel(melodyChannel, 2);
+        const int tones[3] = { currentTriad.root, currentTriad.third, currentTriad.fifth };
+        int played[3] = { -1, -1, -1 };
+        int playedCount = 0;
+        for (int tone : tones)
+        {
+            bool duplicate = false;
+            for (int i = 0; i < playedCount; ++i)
+                if (played[i] == tone)
+                    duplicate = true;
+            if (duplicate)
+                continue;
+            played[playedCount++] = tone;
+            play(tone, velocityMin + span * 0.55f, chordChannel);
+        }
+    }
+
+    if (partCount >= 4 && (step % 2) == 0)
+        play(currentTriad.tone((step / 2) % 3), velocityMin + span * 0.45f,
+             HarmonyParts::roleChannel(melodyChannel, 3));
 }
 
 //==============================================================================

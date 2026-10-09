@@ -53,6 +53,7 @@ public:
     // State access
     float getCurrentValue() const { return currentValue; }
     float getSecondaryValue() const { return secondaryValue; }
+    float getTertiaryValue() const { return tertiaryValue; }
 
 private:
     // Generator implementations

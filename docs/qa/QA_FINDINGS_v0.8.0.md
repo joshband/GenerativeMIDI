@@ -48,7 +48,7 @@ Rebuild log (earlier): [`logs/rebuild_debug_standalone.txt`](logs/rebuild_debug_
 ## 3. Broken / blocked / regressions
 
 - **Earlier false negative (resolved)** — Generator menu without Polyrhythm was a **stale Debug binary**, not missing source. Source already had 10 gens; auval already listed Polyrhythm.
-- **AX popup menus still fragile for `menu item` clicks** — Opening a JUCE combo by **named** `AXPopUpButton` works; enumerating/`click menu item "Polyrhythm"` often returns **-1719 Invalid index**. Prefer: click named combo → OCR/screencapture row → `cliclick`, or load factory preset. Named titles remove the “unnamed popup” discovery problem; they do not fully fix JUCE menu AX trees.
+- **AX popup menus still fragile for `menu item` clicks** — Opening a JUCE combo by **named** `AXPopUpButton` works; enumerating/`click menu item "Polyrhythm"` often returns **-1719 Invalid index**. Generator, Preset, MIDI channel, Scale Root, and Scale Type checks set the named popup value instead (`set value of pop up button "Preset" of window "Generative MIDI" to "Markov Melody"`). Do not click menu rows or use `window 1`. The Presets button still opens the manager.
 - **No live MIDI note stream via MCP** — Phase C / ear-check assert FX chain + transport play/stop; ear/MIDI-monitor confirmation of “no new note-ons while stopped” remains a short human glance (**PASS with residual human glance**, [`logs/reaper_earcheck_mcp.txt`](logs/reaper_earcheck_mcp.txt)). **Mitigated in CI/local:** headless `GenerativeMIDIHostSmokeTests` assert note-ons while playing and zero new note-ons when stopped. Polyrhythm UI confirm did **not** attach a MIDI monitor (Standalone free-runs; DSP already covered by host smoke).
 - **No expression MIDI monitor capture** — AT/PB/CC and per-generator audibility not instrumented this run.
 - **Preset Manager dialog AX shallow** — Native `DialogWindow` tree often omits nested control titles under System Events (`entire contents` ~window chrome only); main editor AX titles are reliable.
@@ -129,4 +129,4 @@ Filled agent results: [`logs/SMOKE_CHECKLIST_RESULTS.md`](logs/SMOKE_CHECKLIST_R
 1. `cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug && cmake --build build --target GenerativeMIDI_Standalone`
 2. Launch Debug Standalone; grant Accessibility if needed.
 3. System Events: confirm UI elements named `Generator Type`, `Presets`, `Probability`, `LFO Enable`, `LFO Velocity`, and (after selecting Polyrhythm) `Add Layer` / `Layer 1 Division`.
-4. Expect: named `AXPopUpButton`/`AXButton` discovery works; `menu item` clicks may still -1719 — use screencapture/OCR/`cliclick` for menu rows.
+4. Expect: named `AXPopUpButton`/`AXButton` discovery works. Select Generator Type, Preset, MIDI Channel, Scale Root, or Scale Type with `set value of pop up button "<title>" of window "Generative MIDI"`, then read the value back. Do not click `menu item` rows.
