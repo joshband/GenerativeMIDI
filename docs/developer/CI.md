@@ -22,7 +22,7 @@ Pinned toolchain:
 - **Validated:** built **VST3** (`Generative MIDI.vst3`) at strictness **5**, `--validate-in-process`, `--skip-gui-tests` (headless runners).
 - **Not validated in CI (AU):**
   - AU needs host registration / `auval` and is Apple-only.
-  - pluginval’s AU path is useful locally after install (`auval -v aumi Osrc Gmid`); CI sticks to VST3 so Linux/Windows stay comparable.
+  - pluginval’s AU path is useful locally after install (`auval -v aumi Gmid Osrc`); CI sticks to VST3 so Linux/Windows stay comparable.
   - AUv3 (iOS) is build-only here — not store-ready and not pluginval-covered.
 
 Logs upload as `pluginval-logs-{macOS,Windows,Linux}` (warn if empty so a failed download still surfaces the primary pluginval step).

@@ -147,7 +147,7 @@ cmake --build . --config Release
 
 ### Polyrhythmic Layers
 
-> **Deferred in v0.8.0:** Polyrhythm is not in the generator dropdown (engine retained for a later branch). Use Euclidean or algorithmic generators instead.
+> **Experimental in v0.8.0:** Polyrhythm is in the generator dropdown (APVTS index 1) with a minimal layer editor; step-grid polish is deferred. Euclidean or algorithmic generators are the more mature choices.
 
 ---
 
