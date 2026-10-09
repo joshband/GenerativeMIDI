@@ -135,7 +135,7 @@
         </figure>
         <figure class="diagram">
           <img src="assets/editor-chrome.svg" width="920" height="420" alt="Illustrative Generative MIDI editor chrome showing pattern display, generator controls, and expression panel">
-          <figcaption>Editor chrome illustration (v0.8.0 surface) — a labeled drawing, not a screenshot. The real screenshot is above.</figcaption>
+          <figcaption>Editor chrome illustration (STATUS.md v0.8.0 snapshot) — a labeled drawing, not a screenshot. The real screenshot is above.</figcaption>
         </figure>
       </div>
     </section>
@@ -144,12 +144,12 @@
       <div class="section__inner">
         <p class="section__label">Honesty</p>
         <h2 class="section__title" id="boundary-title">Boundary — shipped vs deferred</h2>
-        <p class="section__lead">Grounded in STATUS.md (v0.8.0) and BUILD_VERIFICATION.md. Development status — not finished product polish. <span class="plain">Plain version first, technical wording second.</span></p>
+        <p class="section__lead">Grounded in STATUS.md (feature snapshot labeled v0.8.0) and BUILD_VERIFICATION.md. Development status — not finished product polish. <span class="plain">Plain version first, technical wording second.</span></p>
         <div class="boundary">
           <div class="boundary--shipped">
             <h3>Shipped / verified</h3>
             <ul>
-              <li><strong class="plain">Version 0.8.0, with 38 adjustable settings (37 can be automated).</strong> <span class="tech"><strong>v0.8.0</strong> per STATUS — <strong>38</strong> registered parameters (<strong>37</strong> automatable; one legacy slot is kept only so old sessions load), incl. expression + LFO; MIDI channel; stochastic UI.</span></li>
+              <li><strong class="plain">Version 1.0.0, with 38 adjustable settings (37 can be automated).</strong> <span class="tech"><strong>v1.0.0</strong> per <code>CMakeLists.txt</code> and the GitHub release (STATUS.md labels its feature snapshot v0.8.0) — <strong>38</strong> registered parameters (<strong>37</strong> automatable; one legacy slot is kept only so old sessions load), incl. expression + LFO; MIDI channel; stochastic UI.</span></li>
               <li><strong class="plain">Checked on my Mac at an earlier build as a plugin and a standalone app. Automatic builds also run for Mac, iPhone/iPad, Windows and Linux.</strong> <span class="tech">macOS <strong>AU / VST3 / Standalone</strong> (historical local); <a class="term" href="#g-ci">CI</a> builds on macOS, iOS (AUv3), Windows, and Linux via <code>.github/workflows/ci.yml</code>, with <a class="term" href="#g-pluginval">pluginval</a> on the VST3 build for macOS, Windows, and Linux.</span></li>
               <li><strong class="plain">Ten ways to generate music in the editor. One of them, Polyrhythm, is marked experimental.</strong> <span class="tech"><strong>10 generators</strong> in the editor (Euclidean, <em>experimental Polyrhythm</em>, <a class="term" href="#g-markov">Markov</a>, <a class="term" href="#g-lsystem">L-System</a>, <a class="term" href="#g-cellular">Cellular</a>, Probabilistic, Brownian, Perlin, Drunk Walk, <a class="term" href="#g-lorenz">Lorenz</a>).</span></li>
               <li><strong class="plain">Eleven ready-made starting settings (presets), including one for Polyrhythm.</strong> <span class="tech"><strong>Factory presets</strong> live (11 including Polyrhythm Layers).</span></li>
