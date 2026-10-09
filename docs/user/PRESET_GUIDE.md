@@ -4,7 +4,7 @@
 
 The preset system allows you to save, load, and share your favorite configurations.
 
-> **10 factory presets** ship with the plugin (Euclidean, Brownian, Markov, L-System, Cellular, Probabilistic, ratchet, ambient, percussive). They use the live **9-generator** APVTS indices. Polyrhythm is not a selectable category in the current editor.
+> **11 factory presets** ship with the plugin (Euclidean, Polyrhythm Layers, Brownian, Markov, L-System, Cellular, Probabilistic, ratchet, ambient, percussive). They use the live **10-generator** APVTS indices (Polyrhythm is index 1 and is experimental).
 
 ---
 

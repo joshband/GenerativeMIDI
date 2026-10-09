@@ -175,7 +175,7 @@ After building:
 2. **Validate AU plugin**
 
    ```bash
-   auval -v aumi Osrc Gmid
+   auval -v aumi Gmid Osrc
    ```
 
 3. **Test in your DAW**
