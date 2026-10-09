@@ -71,7 +71,7 @@
         <ul>
           <li><strong>Core engines</strong> — <a class="term" href="index.html#g-euclidean">Euclidean</a>, Algorithmic (<a class="term" href="index.html#g-markov">Markov</a>, <a class="term" href="index.html#g-lsystem">L-System</a>, <a class="term" href="index.html#g-cellular">Cellular</a>, Probabilistic), Stochastic (Brownian, Perlin, Drunk Walk, <a class="term" href="index.html#g-lorenz">Lorenz</a>); Polyrhythm retained in core.</li>
           <li><strong>MIDI path</strong> — MIDIGenerator, clock/event scheduling, gate and ratchet controllers.</li>
-          <li><strong>PluginProcessor</strong> — parameters (38 registered, 37 automatable), generator dispatch, host callbacks.</li>
+          <li><strong>PluginProcessor</strong> — parameters (57 registered, 56 automatable), generator dispatch, host callbacks.</li>
           <li><strong>Formats</strong> — <a class="term" href="index.html#g-au">AU</a>, <a class="term" href="index.html#g-vst3">VST3</a>, <a class="term" href="index.html#g-standalone">Standalone</a> verified locally historically; <a class="term" href="index.html#g-auv3">AUv3</a> configured in CMake with iOS docs (not store-ready). CI (<code>.github/workflows/ci.yml</code>) builds on macOS, iOS (AUv3), Windows, and Linux; pluginval runs on the VST3 build for macOS, Windows, and Linux.</li>
           <li><strong>Editor</strong> — LookAndFeel / steampunk craft; bitmap UI path documented; Polyrhythm (experimental) is selectable in the generator dropdown and APVTS; 11 factory presets; MIDI expression (AT/PB/CC note-on emit).</li>
         </ul>
@@ -113,7 +113,7 @@
             <p class="plain">Music software has a hard deadline: if a plugin is a few milliseconds late, you hear a glitch. So the note-making code avoids anything that could cause a delay.</p>
             <details>
               <summary>Engineering detail</summary>
-              <p>Note generation must respect <a class="term" href="index.html#g-daw">host</a> block timing. Gate length and ratchet features are described in STATUS with sample-accurate intent. Steady-state hot path is <a class="term" href="index.html#g-alloc">allocation</a>-hardened (Euclidean regen, ratchet offsets, algorithmic single-note, EventScheduler pre-reserved queue; over-capacity schedules dropped). Residual risk called out in STATUS: trained Markov map-key vector on lookup. Engine behavior is covered by Catch2 / <code>ctest</code> in <a class="term" href="index.html#g-ci">CI</a> (<strong>29</strong> test cases, incl. headless host playhead smoke + polyrhythm layer persistence); host transport gating is also exercised via REAPER + TwelveTake MCP and the manual <a href="https://github.com/joshband/GenerativeMIDI/blob/master/docs/user/SMOKE_CHECKLIST.md" rel="noopener noreferrer">smoke checklist</a> — not a published latency bench suite.</p>
+              <p>Note generation must respect <a class="term" href="index.html#g-daw">host</a> block timing. Gate length and ratchet features are described in STATUS with sample-accurate intent. Steady-state hot path is <a class="term" href="index.html#g-alloc">allocation</a>-hardened (Euclidean regen, ratchet offsets, algorithmic single-note, EventScheduler pre-reserved queue; over-capacity schedules dropped). Residual risk called out in STATUS: trained Markov map-key vector on lookup. Engine behavior is covered by Catch2 / <code>ctest</code> in <a class="term" href="index.html#g-ci">CI</a> (<strong>43</strong> test cases, incl. headless host playhead smoke + polyrhythm layer persistence); host transport gating is also exercised via REAPER + TwelveTake MCP and the manual <a href="https://github.com/joshband/GenerativeMIDI/blob/master/docs/user/SMOKE_CHECKLIST.md" rel="noopener noreferrer">smoke checklist</a> — not a published latency bench suite.</p>
             </details>
           </li>
           <li>
@@ -166,15 +166,15 @@
               </tr>
               <tr>
                 <td><a href="https://github.com/joshband/GenerativeMIDI/blob/master/.github/workflows/ci.yml" rel="noopener noreferrer">.github/workflows/ci.yml<span class="visually-hidden"> on GitHub</span></a></td>
-                <td><strong class="plain">The recipe for the automatic build-and-test robot.</strong> Canonical CI: four jobs — macOS plugin build + <code>ctest</code> (29) + pluginval VST3; iOS AUv3 build; Windows VST3 build + <code>ctest</code> + pluginval; Linux VST3 build + <code>ctest</code> + pluginval</td>
+                <td><strong class="plain">The recipe for the automatic build-and-test robot.</strong> Canonical CI: four jobs — macOS plugin build + <code>ctest</code> (43) + pluginval VST3; iOS AUv3 build; Windows VST3 build + <code>ctest</code> + pluginval; Linux VST3 build + <code>ctest</code> + pluginval</td>
               </tr>
               <tr>
                 <td><a href="https://github.com/joshband/GenerativeMIDI/blob/master/Tests/EngineTests.cpp" rel="noopener noreferrer">Tests/EngineTests.cpp<span class="visually-hidden"> on GitHub</span></a></td>
-                <td><strong class="plain">Automated checks of the note-making logic.</strong> Catch2 suite (26 cases): engines, mapping, migration, clock, factory round-trip, import hardening, ModLfo, polyrhythm rate/persistence, Markov trained lookup, MIDI activity log</td>
+                <td><strong class="plain">Automated checks of the note-making logic.</strong> Catch2 suite (35 cases): engines, mapping, migration, clock, factory round-trip, import hardening, ModLfo and modulation router, Markov / L-System / cellular controls, polyrhythm rate and persistence, piano synth, harmony parts, MIDI activity log</td>
               </tr>
               <tr>
                 <td><a href="https://github.com/joshband/GenerativeMIDI/blob/master/Tests/HostSmokeTests.cpp" rel="noopener noreferrer">Tests/HostSmokeTests.cpp<span class="visually-hidden"> on GitHub</span></a></td>
-                <td><strong class="plain">Automated checks that the plugin makes notes while a music app is playing, and stays quiet when stopped.</strong> Catch2 suite (3 cases): headless host playhead smoke (playing emits note-ons, stopped emits none) + polyrhythm layer persistence through get/setStateInformation</td>
+                <td><strong class="plain">Automated checks that the plugin makes notes while a music app is playing, and stays quiet when stopped.</strong> Catch2 suite (8 cases): headless host playhead smoke (playing emits note-ons, stopped emits none), polyrhythm layer persistence through get/setStateInformation, held-note CC and pitch bend with the LFO off and on, standalone piano, mono/poly voice, and part routing</td>
               </tr>
               <tr>
                 <td><a href="https://github.com/joshband/GenerativeMIDI/blob/master/docs/user/SMOKE_CHECKLIST.md" rel="noopener noreferrer">docs/user/SMOKE_CHECKLIST.md<span class="visually-hidden"> on GitHub</span></a></td>

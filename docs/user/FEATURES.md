@@ -2,7 +2,7 @@
 
 Complete feature documentation for the GenerativeMIDI plugin - a cross-platform generative MIDI processor with advanced algorithmic composition capabilities.
 
-> **Honesty note:** Development status is **v0.8.0**. The live UI exposes **10 generators** (Polyrhythm experimental). Touch/iOS/App Store claims below that conflict with [STATUS.md](../../STATUS.md) should be treated as aspirational or outdated — use the [showcase](https://joshband.github.io/GenerativeMIDI/) for employer-facing boundaries.
+> **Honesty note:** Current version is **v1.0.0** (feature snapshot in STATUS.md is labeled v0.8.0). The live UI exposes **10 generators** (Polyrhythm experimental). Touch/iOS/App Store claims below that conflict with [STATUS.md](../../STATUS.md) should be treated as aspirational or outdated — use the [showcase](https://joshband.github.io/GenerativeMIDI/) for employer-facing boundaries.
 
 ---
 
@@ -909,9 +909,9 @@ Result: Complex West African polyrhythm
 
 ## Version History
 
-Product status is tracked as **v0.8.0** in [STATUS.md](../../STATUS.md) (not a silent 1.x claim).
+The product version is **v1.0.0** (`CMakeLists.txt` and the GitHub release). [STATUS.md](../../STATUS.md) is the source for current capabilities; milestone labels such as v0.8.0 below are feature-history tags.
 
-### Current (v0.8.0)
+### Current
 - ✅ 9 UI generators (Euclidean, algorithmic ×4, stochastic ×4)
 - ✅ Polyrhythm experimental in UI (step rows, click to toggle, polymeter lengths)
 - ✅ Scale quantization, swing, humanization, gate, ratchet
@@ -923,7 +923,7 @@ Product status is tracked as **v0.8.0** in [STATUS.md](../../STATUS.md) (not a s
 - Stochastic/chaos generators and dynamic UI enablement
 - Preset XML format and browser
 
-*Last Updated: 2026-09-22 (v0.8.0 honesty pass)*
+*Last Updated: 2026-10-09 (version and counts refresh)*
 
 ---
 
