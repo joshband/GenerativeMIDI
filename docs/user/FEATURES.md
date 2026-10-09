@@ -586,7 +586,7 @@ Result: Loose, sloppy, experimental jazz
 - **Resizable**: 1200x500 to 2000x1000 pixels
 - **30Hz refresh**: Editor timer drives Euclidean playhead visualization
 - **Real-time feedback**: Immediate parameter response
-- **38 registered parameters (37 automatable)**: Full automation support; one legacy slot (`stochasticType`) is non-automatable and kept only for session load
+- **57 registered parameters (56 automatable)**: Full automation support; one legacy slot (`stochasticType`) is non-automatable and kept only for session load
 - **Touch / iPad**: AUv3 builds exist (iOS CMake target, deployment 15+); scrollable editor + larger hit targets — not App Store–ready / not a mobile-first redesign
 - **Editor sizes**: Desktop default 1280×760 (min 960×560); short host frames scroll vertically so Advanced stays reachable
 
