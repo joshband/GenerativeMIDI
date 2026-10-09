@@ -1010,3 +1010,14 @@ details > :not(summary),
 .gallery figcaption strong {
   color: var(--brass-soft);
 }
+
+.method-steps .plain,
+.method-steps .tech {
+  display: block;
+}
+
+.method-steps .plain {
+  color: var(--text);
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
