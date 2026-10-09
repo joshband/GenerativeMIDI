@@ -971,3 +971,42 @@ details > :not(summary),
     break-inside: avoid-page;
   }
 }
+
+/* ——— Generator gallery ——— */
+
+.gallery-title {
+  margin: 2rem 0 0.4rem;
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  font-weight: 500;
+  color: var(--brass);
+}
+
+.gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
+  gap: 1.25rem;
+  margin: 1rem 0;
+  padding: 0;
+  list-style: none;
+}
+
+.gallery figure {
+  margin: 0;
+  background: var(--bg-panel);
+  border: 1px solid var(--rule);
+}
+
+.gallery img {
+  width: 100%;
+}
+
+.gallery figcaption {
+  padding: 0.6rem 0.75rem 0.75rem;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.gallery figcaption strong {
+  color: var(--brass-soft);
+}

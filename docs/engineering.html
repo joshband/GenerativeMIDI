@@ -75,6 +75,10 @@
           <li><strong>Formats</strong> — <a class="term" href="index.html#g-au">AU</a>, <a class="term" href="index.html#g-vst3">VST3</a>, <a class="term" href="index.html#g-standalone">Standalone</a> verified locally historically; <a class="term" href="index.html#g-auv3">AUv3</a> configured in CMake with iOS docs (not store-ready). CI (<code>.github/workflows/ci.yml</code>) builds on macOS, iOS (AUv3), Windows, and Linux; pluginval runs on the VST3 build for macOS, Windows, and Linux.</li>
           <li><strong>Editor</strong> — LookAndFeel / steampunk craft; bitmap UI path documented; Polyrhythm (experimental) is selectable in the generator dropdown and APVTS; 11 factory presets; MIDI expression (AT/PB/CC note-on emit).</li>
         </ul>
+        <figure class="diagram diagram--shot">
+          <img src="assets/standalone-screenshot.jpg" width="1400" height="831" alt="Screenshot of the Generative MIDI Standalone app in a dark steel and cyan theme. A Pattern panel shows the Euclidean generator as a ring of 16 steps, with Performance knobs (tempo, steps, pulses, rotation, probability), Musical controls (velocity and pitch ranges, scale, swing, timing, gate) and a Shape panel with expression, ratchet and LFO controls.">
+          <figcaption><strong class="plain">This is the real app.</strong> Screenshot of the Standalone app from the repo’s QA evidence (<code>docs/qa/logs/ui_polish_1280.png</code>, captured 24 Sep 2026). The Euclidean generator is selected and the app is free-running with no music app attached. The interface may have changed in later commits.</figcaption>
+        </figure>
         <figure class="diagram">
           <picture>
             <source media="(max-width: 720px)" srcset="assets/signal-path-narrow.svg" width="320" height="480">
@@ -94,7 +98,7 @@
         </figure>
         <figure class="diagram">
           <img src="assets/editor-chrome.svg" width="920" height="420" alt="Illustrative Generative MIDI editor chrome showing pattern display, generator controls, and expression panel">
-          <figcaption>Editor chrome illustration (STATUS.md v0.8.0 snapshot) — not a live Standalone screenshot.</figcaption>
+          <figcaption>Editor chrome illustration (STATUS.md v0.8.0 snapshot) — a labeled drawing of the earlier layout, not a screenshot. The real screenshot is above.</figcaption>
         </figure>
       </div>
     </section>

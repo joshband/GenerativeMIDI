@@ -113,9 +113,50 @@
         <h2 class="section__title" id="system-title">System at a glance</h2>
         <p class="section__lead"><strong class="plain">The path a note takes: from your music app, through the plugin, to an instrument.</strong> <span class="tech">What exists now: <a class="term" href="#g-daw">host</a> → format wrapper → processor/params → engines → MIDI out.</span></p>
         <figure class="diagram diagram--shot">
-          <img src="assets/standalone-screenshot.jpg" width="1600" height="979" alt="Screenshot of the Generative MIDI Standalone app: a dark blue and brass window with a pattern display, a Generator panel set to Drunk Walk with tempo and density knobs, an Expression panel, and an Advanced panel with ratchet, stochastic and LFO knobs.">
-          <figcaption><strong class="plain">This is the real app.</strong> Screenshot of the Standalone app, cropped to the plugin window from the repo’s QA evidence (<code>docs/qa/logs/ui_overhaul_overview.png</code>, captured 22 Sep 2026). The generator is Drunk Walk and playback is stopped, so the pattern display is empty. The interface may have changed in later commits.</figcaption>
+          <img src="assets/standalone-screenshot.jpg" width="1400" height="831" alt="Screenshot of the Generative MIDI Standalone app in a dark steel and cyan theme. A Pattern panel shows the Euclidean generator as a ring of 16 steps, with Performance knobs (tempo, steps, pulses, rotation, probability), Musical controls (velocity and pitch ranges, scale, swing, timing, gate) and a Shape panel with expression, ratchet and LFO controls.">
+          <figcaption><strong class="plain">This is the real app.</strong> Screenshot of the Standalone app from the repo’s QA evidence (<code>docs/qa/logs/ui_polish_1280.png</code>, captured 24 Sep 2026). The Euclidean generator is selected and the app is free-running with no music app attached. The interface may have changed in later commits.</figcaption>
         </figure>
+        <h3 class="gallery-title" id="gallery-title">What six of the generators draw</h3>
+        <p class="plain">Each generator shows its own picture of the music it is making.</p>
+        <ul class="gallery" aria-labelledby="gallery-title">
+          <li>
+            <figure>
+              <img src="assets/pattern-euclidean.jpg" width="1100" height="196" alt="Euclidean pattern display: a ring of 16 steps with 4 lit." loading="lazy">
+              <figcaption><strong>Euclidean.</strong> Hits spaced evenly around a ring (here 4 of 16 steps).</figcaption>
+            </figure>
+          </li>
+          <li>
+            <figure>
+              <img src="assets/pattern-markov.jpg" width="1100" height="196" alt="Markov pattern display: a row of six note markers on a line, the last one highlighted." loading="lazy">
+              <figcaption><strong>Markov.</strong> A row of notes, each picked based on the note before it.</figcaption>
+            </figure>
+          </li>
+          <li>
+            <figure>
+              <img src="assets/pattern-probabilistic.jpg" width="1100" height="196" alt="Probabilistic pattern display: a short row of note markers with a highlighted last note." loading="lazy">
+              <figcaption><strong>Probabilistic.</strong> Notes land by chance; the density knob sets how often.</figcaption>
+            </figure>
+          </li>
+          <li>
+            <figure>
+              <img src="assets/pattern-brownian.jpg" width="1100" height="196" alt="Brownian pattern display: a nearly flat pitch line ending in a bright dot." loading="lazy">
+              <figcaption><strong>Brownian.</strong> A pitch line that drifts in small random steps.</figcaption>
+            </figure>
+          </li>
+          <li>
+            <figure>
+              <img src="assets/pattern-drunk-walk.jpg" width="1100" height="196" alt="Drunk Walk pattern display: a stepped pitch line rising from left to right." loading="lazy">
+              <figcaption><strong>Drunk Walk.</strong> Pitch stumbles up and down one step at a time.</figcaption>
+            </figure>
+          </li>
+          <li>
+            <figure>
+              <img src="assets/pattern-lorenz.jpg" width="1100" height="196" alt="Lorenz pattern display: a looping line path with a bright dot at the current point." loading="lazy">
+              <figcaption><strong>Lorenz.</strong> A path traced by chaotic equations; the bright dot is the current point.</figcaption>
+            </figure>
+          </li>
+        </ul>
+        <p class="tech">Pattern panels cropped from real Standalone captures (<code>docs/qa/logs/viz_*.png</code>, 24 Sep 2026). Perlin, Cellular, L-System and Polyrhythm are not shown here.</p>
         <figure class="diagram">
           <picture>
             <source media="(max-width: 720px)" srcset="assets/signal-path-narrow.svg" width="320" height="480">
@@ -135,7 +176,7 @@
         </figure>
         <figure class="diagram">
           <img src="assets/editor-chrome.svg" width="920" height="420" alt="Illustrative Generative MIDI editor chrome showing pattern display, generator controls, and expression panel">
-          <figcaption>Editor chrome illustration (STATUS.md v0.8.0 snapshot) — a labeled drawing, not a screenshot. The real screenshot is above.</figcaption>
+          <figcaption>Editor chrome illustration (STATUS.md v0.8.0 snapshot) — a labeled drawing of the earlier layout, not a screenshot. The real screenshot is above.</figcaption>
         </figure>
       </div>
     </section>
