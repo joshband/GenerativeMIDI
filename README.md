@@ -1,288 +1,100 @@
 # Generative MIDI
 
-Open-source generative MIDI processor for macOS (AU / VST3 / Standalone). Development status tracked in [STATUS.md](STATUS.md) (currently **v0.8.0**). **Ten** generators are exposed in the editor (including experimental Polyrhythm); ADVANCED includes a velocity/density LFO MVP. See the showcase for an honest ownership and evidence summary.
+**A plugin that invents melodies and rhythms for you. Pick a style, and it writes the notes and sends them to the instrument you choose.**
 
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20iOS%20%7C%20iPadOS-lightgrey.svg)](https://github.com/joshband/GenerativeMIDI/releases)
-[![Release](https://img.shields.io/github/v/release/joshband/GenerativeMIDI)](https://github.com/joshband/GenerativeMIDI/releases/latest)
+Music software talks to instruments using **MIDI**: messages that say which note to play, how hard, and for how long. Generative MIDI is a *MIDI effect*. It makes no sound itself. It creates the notes and passes them on, so any synthesizer or sampler in your music app can play them.
 
-## Showcase
+It is an open-source development project (**v1.0.0** per `CMakeLists.txt` and the GitHub release; [STATUS.md](STATUS.md) labels its feature snapshot v0.8.0), written in C++/[JUCE](https://juce.com). It is not a finished or store-ready product.
 
-Hiring-facing project site (architecture, ownership, and on-disk evidence):
-**https://joshband.github.io/GenerativeMIDI/**
+**Live site:** [Overview](https://joshband.github.io/GenerativeMIDI/index.html) · [Engineering case study](https://joshband.github.io/GenerativeMIDI/engineering.html)
 
-### GitHub Pages setup
+[![CI](https://github.com/joshband/GenerativeMIDI/actions/workflows/ci.yml/badge.svg)](https://github.com/joshband/GenerativeMIDI/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-Repository → **Settings** → **Pages** → Build and deployment → Source: **Deploy from a branch** → Branch: `master` → Folder: `/docs` → Save.
+![Screenshot of the Standalone app: pattern display, Generator panel set to Drunk Walk, Expression panel, and Advanced panel with ratchet, stochastic, and LFO knobs.](docs/assets/standalone-screenshot.jpg)
 
----
-
-## 🎵 Quick Start
-
-### Installation (macOS)
-
-1. **Prefer building from source** (product status is **v0.8.0**; packaged DMGs may lag — see [STATUS.md](STATUS.md)):
-   - Follow [docs/developer/BUILD.md](docs/developer/BUILD.md)
-   - Or grab whatever assets appear on [Releases](https://github.com/joshband/GenerativeMIDI/releases) and copy:
-     - `Generative MIDI.component` → `~/Library/Audio/Plug-Ins/Components/`
-     - `Generative MIDI.vst3` → `~/Library/Audio/Plug-Ins/VST3/`
-
-2. **Run standalone (after a local build):**
-   - Open the Standalone target under `build/GenerativeMIDI_artefacts/`
-
-3. **Verify installation (AU only):**
-   ```bash
-   auval -v aumi Gmid Osrc
-   ```
-
-### System Requirements
-
-- macOS 10.15 (Catalina) or later
-- 64-bit Intel or Apple Silicon (M1/M2/M3)
-- Compatible DAW (Logic Pro, Ableton Live, Reaper, GarageBand, etc.)
+*Real screenshot of the Standalone app, cropped from the repo's QA captures (22 Sep 2026). Playback is stopped, so the pattern display is empty. The interface may have changed since.*
 
 ---
 
-## ✨ Features
+## What it does today
 
-### Generative Engines
+| Generators (10) | Formats | Also included |
+|-----------------|---------|---------------|
+| Euclidean, Polyrhythm (experimental) | AU, VST3, Standalone on macOS | Scale quantization, swing, gate, ratchet |
+| Markov, L-System, Cellular, Probabilistic | VST3 + Standalone also build in CI on Windows and Linux | Note-on expression: aftertouch, pitch bend, CC (fixed amounts, not MPE) |
+| Brownian, Perlin, Drunk Walk, Lorenz | AUv3 (iPhone/iPad): builds in CI, **not store-ready** | 11 factory presets; 38 registered parameters (37 automatable) |
 
-#### Rhythmic Generators
-- **Euclidean Rhythm** - Björklund's algorithm for perfectly distributed rhythmic patterns
-- **Polyrhythm** - Multi-layer polyrhythmic sequencer (engine retained; not in current editor dropdown)
+Terms such as *Euclidean rhythm* or *ratchet* are explained in the site's [glossary](https://joshband.github.io/GenerativeMIDI/index.html#glossary).
 
-#### Algorithmic Generators
-- **Markov Chain** - Melodic generation based on probability matrices
-- **L-System** - Fractal pattern evolution using Lindenmayer systems
-- **Cellular Automata** - Pattern generation using Wolfram rules
-- **Probabilistic** - Stochastic note generation with density control
+```mermaid
+flowchart LR
+    A[DAW host] --> B[Format wrapper]
+    B --> C[PluginProcessor + parameters]
+    C --> D[Core engines]
+    D --> E[MIDI out]
+```
 
-#### Stochastic/Chaos Generators
-- **Brownian Motion** - Random walk with momentum and inertia
-- **Perlin Noise** - Smooth, natural randomness
-- **Drunk Walk** - Discrete random steps
-- **Lorenz Attractor** - Deterministic chaos systems
+The host loads the plugin through a format wrapper. The processor reads the parameters, one of the core engines generates notes, and the notes leave as MIDI.
 
-### Musical Features
+## Try it
 
-- **16 Scale Types** - Major, Minor, Modes, Pentatonic, Blues, Whole Tone, Chromatic
-- **MIDI Channel Routing** - Route to any MIDI channel (1-16)
-- **Swing & Humanization** - 6 swing groove templates, timing & velocity humanization
-- **MIDI Expression** - Velocity always; aftertouch / CC / pitch bend via EXPRESSION UI (per-note emit; not MPE)
-- **Gate & Ratcheting** - Gate length control with legato mode, note retriggering
-- **Real-time Visualization** - Live playback position and pattern display
-- **31 Parameters** - Full DAW automation support
+1. Build it (below) or take a package from [Releases](https://github.com/joshband/GenerativeMIDI/releases). Releases may lag [STATUS.md](STATUS.md).
+2. Run the **Standalone** app to explore, or copy the plugin into your DAW:
+   - `Generative MIDI.component` → `~/Library/Audio/Plug-Ins/Components/`
+   - `Generative MIDI.vst3` → `~/Library/Audio/Plug-Ins/VST3/`
+3. In your DAW, put it on a track as a **MIDI effect**, choose a generator, and route its output to an instrument.
+4. Press play in the DAW: notes are generated while the host transport is playing (the host smoke test checks that a stopped transport emits none).
 
-### User Interface
+Walkthroughs: [Getting Started](docs/user/GETTING_STARTED.md) · [REAPER quick start](docs/user/REAPER_QUICK_START.md) · [all controls](docs/user/FEATURES.md).
 
-- **Gilded Steampunk Victorian Theme** - Brass, gold, and copper aesthetic
-- **Color-Coded Generators** - Visual feedback by engine type
-- **Context-Aware Controls** - Relevant controls auto-enable/disable
-- **Resizable Window** - 1200x500 to 2000x1000 pixels
-- **iOS / AUv3** - Configured build target with docs; not store-ready
+## Build from source
 
----
-
-## 🎹 Usage
-
-### Basic Workflow
-
-1. **Load the plugin** in your DAW as a MIDI effect
-2. **Select a generator** from the dropdown menu
-3. **Adjust parameters:**
-   - **Tempo** - Set BPM (20-400)
-   - **Steps/Pulses** - Configure pattern length and density
-   - **Scale/Root** - Choose musical scale and key
-   - **Velocity/Pitch** - Set output ranges
-4. **Route to a synth** - Connect MIDI output to any instrument
-5. **Play!** - Press play in your DAW
-
-### Generator-Specific Controls
-
-**Euclidean Mode:**
-- **Steps** (1-64) - Total pattern length
-- **Pulses** (0-64) - Number of active beats
-- **Rotation** (0-64) - Pattern offset
-
-**Algorithmic Modes:**
-- **Density** (0.0-1.0) - Note generation probability
-
-**Stochastic Modes:**
-- **Step Size** (0.01-1.0) - Randomness magnitude
-- **Momentum** (0.0-1.0) - Inertia/friction
-- **Time Scale** (0.01-10.0) - Evolution speed
-
-### Quick Tips
-
-- Use **Euclidean** for tight, rhythmic patterns
-- Use **Markov Chain** for melodic sequences that evolve
-- Use **Lorenz Attractor** for unpredictable, chaotic melodies
-- Combine multiple instances on different MIDI channels for layered complexity
-- Automate parameters in your DAW for evolving patterns
-
----
-
-## 🛠️ Building from Source
-
-### Prerequisites
-
-- macOS 10.15 or later
-- [CMake](https://cmake.org) 3.15+
-- [JUCE Framework](https://juce.com) 7.0+
-- Xcode Command Line Tools: `xcode-select --install`
-
-### Build Steps
+Requires macOS, CMake 3.15+, Xcode Command Line Tools, and a JUCE checkout (CI uses 8.0.15).
 
 ```bash
-# Clone the repository (include UI art submodule)
 git clone --recurse-submodules https://github.com/joshband/GenerativeMIDI.git
 cd GenerativeMIDI
-# If you already cloned without submodules:
-# git submodule update --init --recursive
-
-# Link JUCE (adjust path to your JUCE installation)
-ln -s ~/JUCE JUCE
-
-# Create build directory
-mkdir build && cd build
-
-# Configure
-cmake .. -DCMAKE_BUILD_TYPE=Release
-
-# Build (use -j8 for parallel build)
-cmake --build . --config Release -j8
-
-# Unit tests
-ctest --output-on-failure
-
-# Plugins are built to:
-# - build/GenerativeMIDI_artefacts/Release/AU/Generative MIDI.component
-# - build/GenerativeMIDI_artefacts/Release/VST3/Generative MIDI.vst3
-# - build/GenerativeMIDI_artefacts/Release/Standalone/Generative MIDI.app
+ln -s ~/JUCE JUCE                        # point JUCE/ at your JUCE checkout
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+cmake --build build --config Release -j8
+(cd build && ctest --output-on-failure)
 ```
 
-### iOS/iPadOS Build
+Artifacts appear in `build/GenerativeMIDI_artefacts/Release/` under `AU/`, `VST3/`, and `Standalone/`. Details and troubleshooting: [BUILD.md](docs/developer/BUILD.md). iOS/iPadOS: [BUILDING-iOS.md](docs/developer/BUILDING-iOS.md).
 
-See [docs/developer/BUILDING-iOS.md](docs/developer/BUILDING-iOS.md) for detailed iOS build instructions.
+## What the checks prove
 
-```bash
-./build_ios.sh
-open build_ios/GenerativeMIDI.xcodeproj
-# Configure code signing in Xcode and build to your device
-```
+| Check | Proves | Does not prove |
+|-------|--------|----------------|
+| `ctest` (29 Catch2 cases: 26 in `Tests/EngineTests.cpp`, 3 in `Tests/HostSmokeTests.cpp`) | Engine logic, preset round-trips, and a headless host smoke test behave as written | Real-DAW behavior, UI behavior, audio quality |
+| CI ([`ci.yml`](.github/workflows/ci.yml)): macOS, iOS, Windows, Linux builds; `ctest` on macOS, Windows, Linux; pluginval on the VST3 build | The code compiles on four platforms and the VST3 passes pluginval (strictness 5, GUI tests skipped) | AU validation (not run in CI), running on a real iOS device |
+| Manual [smoke checklist](docs/user/SMOKE_CHECKLIST.md) and [QA findings](docs/qa/QA_FINDINGS_v0.8.0.md) | A person exercised the Standalone app and REAPER transport on recorded dates | Every DAW, every host version |
 
----
+To validate the AU locally after installing it: `auval -v aumi Gmid Osrc`. The codes come from `CMakeLists.txt`, and a recorded run is in [`docs/qa/logs/auval.txt`](docs/qa/logs/auval.txt).
 
-## 📖 Documentation
+## Status and boundary
 
-Complete documentation is available in the [docs/](docs/) directory:
+Not claimed: App Store readiness, MPE, continuous CC/pitch-bend modulation, a full modulation matrix, or test-coverage percentages. The Polyrhythm generator is experimental. Next steps are in the [roadmap](docs/developer/ENHANCEMENTS.md).
 
-### User Documentation
-- **[Getting Started Guide](docs/user/GETTING_STARTED.md)** - Quick start tutorial
-- **[Features Guide](docs/user/FEATURES.md)** - Complete feature reference
-- **[Preset Guide](docs/user/PRESET_GUIDE.md)** - Creating and managing presets
-- **[Smoke Checklist](docs/user/SMOKE_CHECKLIST.md)** - Manual Standalone/DAW smoke (v0.8.0)
-- **[REAPER Quick Start](docs/user/REAPER_QUICK_START.md)** - REAPER-specific setup
-- **[QA Findings v0.8.0](docs/qa/QA_FINDINGS_v0.8.0.md)** - Host/UI verification scorecard
-- **[REAPER MCP setup](docs/qa/reaper/MCP_SETUP.md)** - TwelveTake MCP for agent transport-gate QA
+## For developers and AI agents
 
-### Developer Documentation
-- **[Build Instructions](docs/developer/BUILD.md)** - Detailed build guide
-- **[Enhancement Roadmap](docs/developer/ENHANCEMENTS.md)** - Planned features
-- **[Changelog](CHANGELOG.md)** - Version history
+- Layers, from the host inward: format wrappers → `Source/PluginProcessor.*` (parameters via APVTS, generator dispatch) → `Source/Core/` (engines) → `Source/UI/` (editor).
+- Generator choice is the `generatorType` parameter: index 0 Euclidean, 1 Polyrhythm, 2-5 algorithmic, 6-9 stochastic.
+- Realtime rule: avoid allocation in the audio path. A known exception is the trained Markov lookup (see [STATUS.md](STATUS.md)).
+- Start with [engineering case study](https://joshband.github.io/GenerativeMIDI/engineering.html), [CI](docs/developer/CI.md), and [CHANGELOG](CHANGELOG.md).
 
-### Design Documentation
-- **[UI Specification](docs/design/SYNAPTIK_UI_SPEC.md)** - Interface design
-- **[Color Palette](docs/design/COLOR_PALETTE.md)** - Visual design system
-- **[Component Specs](docs/design/COMPONENT_SPECS.md)** - UI components
+## Documentation
 
----
+| Audience | Start here |
+|----------|------------|
+| Users | [Getting Started](docs/user/GETTING_STARTED.md) · [Features](docs/user/FEATURES.md) · [Presets](docs/user/PRESET_GUIDE.md) |
+| Developers | [Build](docs/developer/BUILD.md) · [CI](docs/developer/CI.md) · [Roadmap](docs/developer/ENHANCEMENTS.md) |
+| QA | [QA findings](docs/qa/QA_FINDINGS_v0.8.0.md) · [REAPER MCP setup](docs/qa/reaper/MCP_SETUP.md) |
+| Design | [UI spec](docs/design/SYNAPTIK_UI_SPEC.md) · [Palette](docs/design/COLOR_PALETTE.md) · [Components](docs/design/COMPONENT_SPECS.md) |
 
-## 🏗️ Architecture
+## Contributing and license
 
-### Core Components
+Fork, branch, build, run `ctest`, and open a pull request against `master`. Keep changes focused and match the existing style. Report bugs in [Issues](https://github.com/joshband/GenerativeMIDI/issues).
 
-**Engines:**
-- `EuclideanEngine` - Björklund algorithm implementation
-- `PolyrhythmEngine` - Multi-layer rhythm sequencer
-- `AlgorithmicEngine` - Markov, L-System, Cellular, Probabilistic
-- `StochasticEngine` - Brownian, Perlin, Drunk Walk, Lorenz
-- `MIDIGenerator` - MIDI message creation with full expression
-
-**DSP:**
-- `ClockManager` - Tempo control and external MIDI sync
-- `EventScheduler` - Sample-accurate event scheduling
-
-**UI:**
-- `CustomLookAndFeel` - Victorian steampunk theme rendering
-- `PatternVisualizer` - Real-time pattern display
-- `PluginEditor` - Main interface with parameter controls
-
-### Technical Specifications
-
-- **Sample Rates:** 44.1, 48, 88.2, 96 kHz
-- **MIDI Channels:** 1-16
-- **Buffer Size:** Adaptive (32-2048 samples)
-- **Latency:** < 5ms typical
-- **CPU Usage:** < 5% on modern hardware
-- **Memory:** ~10MB RAM
-
----
-
-## Contributing
-
-Contributions are welcome (bug fixes, features, docs).
-
-1. Fork and create a feature branch
-2. Build with CMake (see [docs/developer/BUILD.md](docs/developer/BUILD.md))
-3. Run unit tests: `cd build && ctest --output-on-failure`
-4. Open a pull request against `master`
-
-There is no required `pre-commit` hook or separate `CONTRIBUTING.md` yet — keep PRs focused and match existing code style.
-
----
-
-## 🗺️ Roadmap
-
-- [ ] Windows VST3 build
-- [ ] Linux builds (VST3, LV2)
-- [ ] Additional algorithmic generators (Fibonacci, Conway's Game of Life)
-- [ ] MIDI input processing and transformation
-- [ ] MPE (MIDI Polyphonic Expression) support
-- [ ] Expanded preset library
-- [ ] Standalone app with internal synth
-
----
-
-## 📜 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-Free to use, modify, and distribute for personal and commercial projects.
-
----
-
-## 🙏 Credits
-
-### Algorithm References
-- **Euclidean Rhythms:** Godfried Toussaint (2005)
-- **Björklund's Algorithm:** E. Björklund (2003)
-- **L-Systems:** Aristid Lindenmayer (1968)
-- **Cellular Automata:** Stephen Wolfram (1983)
-
-### Built With
-- [JUCE Framework](https://juce.com) - Cross-platform audio framework
-- [CMake](https://cmake.org) - Build system
-
----
-
-## 💬 Support
-
-- 📖 **Documentation:** [docs/](docs/)
-- 🐛 **Bug Reports:** [GitHub Issues](https://github.com/joshband/GenerativeMIDI/issues)
-- 💡 **Feature Requests:** [GitHub Discussions](https://github.com/joshband/GenerativeMIDI/discussions)
-- 📥 **Latest Release:** [Download here](https://github.com/joshband/GenerativeMIDI/releases/latest)
-
----
-
-**Made with ❤️ for the open-source music community**
+[MIT](LICENSE). Algorithm references are credited in the [Features guide](docs/user/FEATURES.md).
