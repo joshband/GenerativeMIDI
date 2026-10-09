@@ -1,6 +1,6 @@
 # Standalone / DAW Smoke Checklist
 
-**Product:** GenerativeMIDI **v0.8.0**  
+**Product:** GenerativeMIDI **v1.0.0**  
 **Kind:** Manual smoke only — not automated UI tests  
 **Baseline:** current `master` (10 generators + LFO MVP)
 

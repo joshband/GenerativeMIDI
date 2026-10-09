@@ -1,6 +1,6 @@
 # Preset System Guide
 
-**GenerativeMIDI v0.8.0**
+**GenerativeMIDI v1.0.0**
 
 The preset system allows you to save, load, and share your favorite configurations.
 
@@ -205,4 +205,4 @@ For development questions, see [docs/developer/](../developer/).
 ---
 
 **Last Updated**: 2026-09-22
-**Version**: v0.8.0
+**Version**: v1.0.0
