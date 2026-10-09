@@ -4,7 +4,7 @@
 
 Music software talks to instruments using **MIDI**: messages that say which note to play, how hard, and for how long. Generative MIDI is a *MIDI effect*. It makes no sound itself. It creates the notes and passes them on, so any synthesizer or sampler in your music app can play them.
 
-It is an open-source development project (**v0.8.0**, see [STATUS.md](STATUS.md)), written in C++/[JUCE](https://juce.com). It is not a finished or store-ready product.
+It is an open-source development project (**v1.0.0** per `CMakeLists.txt` and the GitHub release; [STATUS.md](STATUS.md) labels its feature snapshot v0.8.0), written in C++/[JUCE](https://juce.com). It is not a finished or store-ready product.
 
 **Live site:** [Overview](https://joshband.github.io/GenerativeMIDI/index.html) · [Engineering case study](https://joshband.github.io/GenerativeMIDI/engineering.html)
 
