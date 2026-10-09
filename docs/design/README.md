@@ -1,13 +1,14 @@
 # Design Documentation
 
-Complete design specifications and visual references for the GenerativeMIDI Victorian steampunk UI.
+Current look is the machined editor in [MACHINED_UI.md](MACHINED_UI.md). The Victorian and Synaptik specs below are historical.
 
 ---
 
 ## 📐 Design Specifications
 
 ### UI Design
-- **[UI_UX_REVIEW_2026-09.md](UI_UX_REVIEW_2026-09.md)** - Post-overhaul visual review and remaining layout fixes
+- **[MACHINED_UI.md](MACHINED_UI.md)** - Current editor: cavity, performance row, musical row, Shape, pinned log
+- **[UI_UX_REVIEW_2026-09.md](UI_UX_REVIEW_2026-09.md)** - Earlier review (historical brass pass)
 - **[SYNAPTIK_UI_SPEC.md](SYNAPTIK_UI_SPEC.md)** - Complete UI specification and design system
 - **[COMPONENT_SPECS.md](COMPONENT_SPECS.md)** - Individual component specifications
 - **[GILDED_COMPONENTS.md](GILDED_COMPONENTS.md)** - Gilded steampunk component details

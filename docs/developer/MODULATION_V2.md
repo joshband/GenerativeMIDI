@@ -1,6 +1,6 @@
 # Modulation v2
 
-**Status:** MVP on **master** — LFO → velocity shipped; LFO → density depth follows. Full matrix / multi-destination panel deferred.  
+**Status:** Fixed-slot router is live. LFO → velocity and LFO → density stay on the original parameters. Two extra slots route the LFO or a sample-and-hold to gate, pitch, CC, or pitch bend. Envelope and tempo-sync are still deferred.  
 **Archive reference:** `archive/modulation_v1/` (do not half-wire those includes into the live tree).
 
 ## Why not restore v1?
@@ -54,22 +54,10 @@ v2 keeps the *ideas* (sources → depth → destinations) and rebuilds a compili
 
 ## UI surface
 
-**MVP:** three controls in ADVANCED — Enable, Rate (Hz), Depth — labeled as velocity LFO.  
-**Later:** dedicated Modulation panel, source meters, drag-route or matrix rows, per-destination indicators (inspired by archive `ModulationPanel` / `ModulatedSlider`, rebuilt against current LookAndFeel).
-
-## MVP this pass
-
-- `Source/Modulation/ModLfo.h` — RT-safe sine LFO  
-- `Source/Modulation/ModulationDestination.h` — destination enum stub  
-- APVTS: `modLfoEnable`, `modLfoRate`, `modLfoDepth`  
-- Apply LFO → velocity in `onSubdivisionHit` / `scheduleNote`  
-- Tiny editor controls + Catch2 smoke tests  
-- **Not in MVP:** matrix, multiple sources, density modulation, drag-drop, XML matrix serialization
+The editor has a full-width modulation bar under the faceplate: LFO enable, LFO rate, sample-and-hold rate, and four route cells. Routes 1 and 2 are the original `modLfoDepth` and `modLfoDensityDepth` parameters. Routes 3 and 4 are `modRoute3*` and `modRoute4*` (source, destination, amount), defaulting to Off and amount 0 so older sessions stay put. Schema stays 1.2.
 
 ## Next steps
 
-1. Optional second destination: density (same LFO or dedicated depth).  
-2. Fixed-slot `ModulationRouter` (compile-time max connections).  
-3. Tempo-sync LFO phases via `ClockManager`.  
-4. Rebuild a lean Modulation panel (no archive include graft).  
-5. Preset migration notes when adding more mod params.
+1. Tempo-sync LFO and sample-and-hold from `ClockManager`.
+2. Note-triggered envelope source.
+3. Source meters on the modulation bar.

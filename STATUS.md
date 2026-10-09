@@ -10,13 +10,15 @@
 | Claim | Reality |
 |-------|---------|
 | Generators in editor UI | **10** (Euclidean + Polyrhythm + 4 algorithmic + 4 stochastic) |
-| Polyrhythm | **Experimental shipped** — selectable (APVTS index 1), DSP wired, minimal layer editor |
-| Velocity / density LFO | ADVANCED controls (`modLfoEnable` / rate / depth / density depth); matrix UI still archived |
+| Polyrhythm | **Experimental shipped** — selectable (APVTS index 1), DSP wired, step-row editor (polymeter lengths) |
+| Velocity / density LFO | Modulation bar. Routes 1–2 are LFO → velocity and LFO → density. Routes 3–4 add sample-and-hold to gate, pitch, CC, or bend |
 | `stochasticType` APVTS param | **Legacy** — kept for session load; non-automatable; **unused by DSP** |
-| Modulation matrix | Archived under `archive/modulation_v1/` — not live |
+| Modulation matrix | Fixed four-slot bar is live. Envelope and tempo-sync remain deferred |
+| Standalone piano | Piano switch plays generated notes in the app and starts off. AU/VST3 remain MIDI effects with no audio output |
+| Voice and parts | Poly or Mono on the melody channel. Parts 1–4 add root, chord, and arp on the next MIDI channels |
 | AUv3 / iOS | CMake iOS target (`GenerativeMIDI_AUv3`) + docs; **not App Store–ready**; macOS desktop build has `JucePlugin_Build_AUv3=0` |
 | Touch / a11y | iOS larger hit targets + scrollable editor; key controls have AX `setTitle` names; MIDI Log toggle/Clear titled |
-| Tests | Catch2 + `ctest` (**29**, incl. host playhead smoke + polyrhythm layer persistence + Markov trained lookup + MIDI activity FIFO) in CMake / CI |
+| Tests | Catch2 + `ctest` (**32**, incl. host playhead smoke + polyrhythm layer persistence + Markov trained lookup + Markov/L-System/Cellular controls + MIDI activity FIFO) in CMake / CI |
 | CI matrix | macOS plugins + iOS AUv3 + Windows/Linux VST3 + pluginval (VST3) |
 | Canonical build | **CMake** (`GenerativeMIDI.jucer` deprecated) |
 
@@ -26,9 +28,9 @@ Showcase: https://joshband.github.io/GenerativeMIDI/
 
 ### v0.8.0 — Expression, LFO MVP, Polyrhythm experimental
 - MIDI channel routing (1–16)
-- MIDI expression UI (AT / PB / CC) with note-on emit
+- MIDI expression UI (AT / PB / CC) with note-on emit, plus held-note CC and pitch-bend from the velocity LFO
 - Velocity LFO (+ density destination)
-- Experimental Polyrhythm generator + layer editor
+- Experimental Polyrhythm generator with per-layer step rows (click to toggle, polymeter lengths)
 - Stochastic UI knobs; Euclidean playhead; factory presets
 
 ### v0.7.x — Stochastic / chaos + dynamic UI
@@ -43,6 +45,9 @@ Showcase: https://joshband.github.io/GenerativeMIDI/
 
 None for the post-merge polish wave — see Planned for remaining MVP gaps.
 
+### Look (2026-09-23)
+Cavity-first editor: header identity, pattern hero, performance knobs, musical row, collapsed Shape disclosure, MIDI log pinned under the viewport. Spec: [`docs/design/MACHINED_UI.md`](docs/design/MACHINED_UI.md). Proof: [`docs/qa/logs/ui_overhaul_default.png`](docs/qa/logs/ui_overhaul_default.png), [`docs/qa/logs/ui_overhaul_euclidean.png`](docs/qa/logs/ui_overhaul_euclidean.png), [`docs/qa/logs/ui_overhaul_narrow_shape.png`](docs/qa/logs/ui_overhaul_narrow_shape.png).
+
 ### UI review (2026-09-23)
 Post-overhaul critique and width/pattern/disabled-knob fixes: [`docs/design/UI_UX_REVIEW_2026-09.md`](docs/design/UI_UX_REVIEW_2026-09.md). Desktop minimum editor size is **720×520**; content width tracks the window.
 
@@ -54,15 +59,11 @@ Deferred polish items shipped on `master`: branded combo popups, full Preset Man
 
 ## Planned (explicitly deferred)
 
-### Polyrhythm polish
-- Pattern step editing / polymeter visualization
-- Continuous polish beyond pitch/vel transforms, division rate scaling, and layer XML persistence
-
 ### MIDI expression depth
-Continuous CC/PB modulation and MPE (note-on emit shipped).
+MPE (per-note channels and zone config).
 
 ### Modulation matrix
-Full router / multi-source panel — not part of current LFO MVP.
+Envelope follower and tempo-synced LFO. The fixed-slot router (LFO, sample-and-hold, four routes) is in the editor.
 
 ### Remaining UI / shipping
 Physical-device AUv3 touch QA; App Store packaging.

@@ -13,6 +13,8 @@
 #include <juce_audio_processors/juce_audio_processors.h>
 #include <vector>
 #include <map>
+#include <atomic>
+#include <cstdint>
 
 // ============================================================================
 // Markov Chain Generator
@@ -59,6 +61,7 @@ public:
     void clearRules();
     juce::String iterate(int generations);
     std::vector<int> toMidiNotes(const juce::String& sequence, int baseNote = 60);
+    juce::String getAxiom() const { return axiom; }
 
 private:
     juce::String axiom;
@@ -75,6 +78,8 @@ public:
     CellularAutomaton(int size = 32);
 
     void setRule(int ruleNumber); // Wolfram rule (0-255)
+    /** One cell on, the rest off. Does not allocate when the row size is unchanged. */
+    void seedCell(int index);
     void setState(const std::vector<bool>& initialState);
     void randomizeState(float density = 0.5f);
     std::vector<bool> step();
@@ -82,15 +87,29 @@ public:
     void stepInPlace();
     bool getCell(int index) const;
     int getSize() const { return static_cast<int>(cells.size()); }
+    int getRule() const { return rule; }
     std::vector<bool> getState() const { return cells; }
     void reset();
 
+    /**
+        Lock-free snapshot of the published row (up to 64 cells).
+        Returns the generation number that matches this snapshot.
+    */
+    int copyCells(bool* dest, int destCap, int& countOut) const;
+
 private:
+    void publish();
+
     std::vector<bool> cells;
     std::vector<bool> scratch; // same size as cells — used by stepInPlace
     int rule = 30; // Default to Rule 30
     std::vector<bool> initialState;
     juce::Random random;
+
+    // Written on the audio thread, read on the message thread.
+    std::atomic<uint64_t> bits { 0 };
+    std::atomic<int> sizeBits { 0 };
+    std::atomic<int> generation { 0 };
 
     bool applyRule(bool left, bool center, bool right);
 };
@@ -158,14 +177,29 @@ public:
     int generateNextNote();
     float generateNextVelocity();
 
+    int getHistoryCount() const { return historyCount; }
+    /** Notes pushed into the ring. Keeps climbing after the ring is full. */
+    uint32_t getHistorySerial() const { return historySerial.load(std::memory_order_acquire); }
+    int getHistoryNoteFromNewest(int age) const;
+    int getLastProbNote() const { return lastProbNote; }
+
     // Set parameter ranges
     void setPitchRange(int minPitch, int maxPitch);
     void setVelocityRange(float minVel, float maxVel);
+
+    /** Untrained contour walk. Order is how long a direction holds, step is the interval, surprise is a jump. */
+    void setMarkovControls(int order, int stepSemitones, float surprise);
+    /** Grammar, rewrite depth, and semitone gap between symbols. Rebuilds a fixed note tape. */
+    void setLSystemControls(int grammar, int generation, int interval);
+    /** Wolfram rule, which cell starts on, and which cell gates the note. */
+    void setCellularControls(int rule, int seed, int listen);
 
 private:
     static constexpr int kHistoryCap = 128;
 
     void pushHistory(int note);
+    void rebuildLSystemNotes();
+    int nextUntrainedMarkovNote();
 
     GeneratorType currentType = Probabilistic;
 
@@ -177,6 +211,7 @@ private:
     int noteHistory[kHistoryCap] {};
     int historyCount = 0;
     int historyWrite = 0;
+    std::atomic<uint32_t> historySerial { 0 };
     int lastProbNote = 60;
 
     // Parameter ranges
@@ -185,5 +220,35 @@ private:
     float velocityMean = 0.7f;
     float velocityVariance = 0.2f;
 
+    juce::Random random;
+
+    int markovStep = 2;
+    float markovSurprise = 0.0f;
+    int markovDirection = 1;
+    int markovRun = 0;
+
+    int lsystemGrammar = 0;
+    int lsystemGeneration = 4;
+    int lsystemInterval = 2;
+    int lsystemBuiltMin = -1;
+    int lsystemBuiltMax = -1;
+    int lsystemNoteCount = 0;
+    int lsystemCursor = 0;
+    static constexpr int kLSystemNotes = 96;
+    int lsystemNotes[kLSystemNotes] {};
+
+    int cellularSeed = -1;
+    int cellularListen = 16;
+
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(AlgorithmicEngine)
 };
+
+/** Fixed grammars shared by the audio tape and the pattern view. */
+namespace LSystemCatalog
+{
+    constexpr int kCount = 4;
+    constexpr int kMaxSymbols = 96;
+
+    const char* name(int grammarIndex);
+    void expand(int grammarIndex, int generations, char* dest, int capacity, int& outLength);
+}

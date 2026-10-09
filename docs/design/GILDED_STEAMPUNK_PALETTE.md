@@ -1,5 +1,7 @@
 # SYNAPTIK - Gilded Steampunk Palette
 
+> Historical. The shipping editor follows [MACHINED_UI.md](MACHINED_UI.md).
+
 **"Where Victorian brass meets quantum circuitry, and steam carries data"**
 
 ---

@@ -26,10 +26,10 @@ public:
         setTitle ("MIDI Activity Log");
 
         addAndMakeVisible (toggleButton);
-        toggleButton.setButtonText ("MIDI Log v");
+        toggleButton.setButtonText ("MIDI Log >");
         toggleButton.setName ("MIDI Log");
         toggleButton.setClickingTogglesState (true);
-        toggleButton.setToggleState (true, juce::dontSendNotification);
+        toggleButton.setToggleState (false, juce::dontSendNotification);
         toggleButton.setTitle ("Toggle MIDI Activity Log");
         toggleButton.setAccessible (true);
         toggleButton.onClick = [this]
@@ -112,9 +112,9 @@ public:
         auto bounds = getLocalBounds().toFloat();
 
         g.setColour (juce::Colour (CustomLookAndFeel::STEEL_OBSIDIAN));
-        g.fillRoundedRectangle (bounds, 6.0f);
-        g.setColour (juce::Colour (CustomLookAndFeel::BRASS_AGED).withAlpha (0.85f));
-        g.drawRoundedRectangle (bounds.reduced (0.5f), 6.0f, 1.25f);
+        g.fillRoundedRectangle (bounds, 10.0f);
+        g.setColour (juce::Colours::white.withAlpha (0.10f));
+        g.drawRoundedRectangle (bounds.reduced (0.5f), 10.0f, 1.0f);
 
         if (! expanded)
             return;
@@ -172,7 +172,7 @@ private:
     juce::TextButton clearButton;
     juce::Label hintLabel;
     std::deque<juce::String> lines;
-    bool expanded = true;
+    bool expanded = false;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MidiActivityPane)
 };

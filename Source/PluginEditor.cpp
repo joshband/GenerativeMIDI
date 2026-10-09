@@ -10,6 +10,40 @@
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 #include "Core/GeneratorTypeMapping.h"
+#include <algorithm>
+
+namespace
+{
+// Pattern is the top band, about two-fifths of the window. On a wide editor the
+// Performance, Musical, and Shape panels share one row beneath it.
+constexpr int kEditorHeaderH = 44;
+constexpr int kBottomPad = 8;
+constexpr int kSectionGap = 8;
+constexpr int kPanelHeaderH = 28;
+constexpr int kCollapsedPanelH = 32;
+constexpr int kPerformanceBody = 96;
+constexpr int kMusicalBody = 96;
+constexpr int kPatternBodyMin = 64;
+constexpr int kPatternBodyComfort = 140;
+constexpr int kShapeBodyMin = 132;
+constexpr int kShapeBodyMax = 200;
+constexpr int kReadoutW = 56;
+constexpr int kReadoutH = 16;
+
+template <size_t N>
+void setShown(juce::Component* (&widgets)[N], bool show)
+{
+    for (auto* widget : widgets)
+        if (widget != nullptr)
+            widget->setVisible(show);
+}
+
+void placeDisclosure(juce::Rectangle<int> panel, juce::TextButton& button)
+{
+    const int hostH = panel.getHeight() <= kCollapsedPanelH ? panel.getHeight() : kPanelHeaderH;
+    button.setBounds(panel.getX(), panel.getY(), panel.getWidth(), hostH);
+}
+}
 
 //==============================================================================
 GenerativeMIDIEditor::GenerativeMIDIEditor(GenerativeMIDIProcessor& p)
@@ -64,13 +98,28 @@ GenerativeMIDIEditor::GenerativeMIDIEditor(GenerativeMIDIProcessor& p)
     // Pattern display + polyrhythm layer editor (swapped by generator type)
     contentPanel.addAndMakeVisible(patternDisplay);
     polyLayerEditor = std::make_unique<PolyrhythmLayerEditor>(audioProcessor.getPolyrhythmEngine());
+    polyLayerEditor->onLayersChanged = [this]() { resized(); };
     contentPanel.addChildComponent(polyLayerEditor.get());
 
-    contentPanel.addAndMakeVisible(midiActivityPane);
+    addAndMakeVisible(midiActivityPane);
     midiActivityPane.onExpandedChanged = [this]
     {
         resized();
     };
+
+    configureDisclosure(patternButton, "Pattern", patternExpanded);
+    configureDisclosure(performanceButton, "Performance", performanceExpanded);
+    configureDisclosure(musicalButton, "Musical", musicalExpanded);
+    configureDisclosure(shapeButton, "Shape", shapeExpanded);
+
+    contentPanel.addAndMakeVisible(pianoButton);
+    pianoButton.setButtonText("Piano");
+    pianoButton.setClickingTogglesState(true);
+    pianoButton.setTitle("Piano");
+    pianoButton.setName("Piano");
+    pianoButton.setVisible(audioProcessor.wrapperType == juce::AudioProcessor::wrapperType_Standalone);
+    pianoAttachment.reset(new juce::AudioProcessorValueTreeState::ButtonAttachment(
+        audioProcessor.getValueTreeState(), "pianoEnable", pianoButton));
 
     // Generator type selector
     contentPanel.addAndMakeVisible(generatorLabel);
@@ -86,11 +135,12 @@ GenerativeMIDIEditor::GenerativeMIDIEditor(GenerativeMIDIProcessor& p)
     // Listen for generator type changes to update UI
     generatorTypeCombo.onChange = [this]() {
         updateControlsForGeneratorType(generatorTypeCombo.getSelectedId() - 1);
+        notePresetDivergence();
     };
 
     // MIDI Channel selector
     contentPanel.addAndMakeVisible(midiChannelLabel);
-    midiChannelLabel.setText("MIDI Ch", juce::dontSendNotification);
+    midiChannelLabel.setText("Ch", juce::dontSendNotification);
     midiChannelLabel.setJustificationType(juce::Justification::centred);
 
     contentPanel.addAndMakeVisible(midiChannelCombo);
@@ -98,6 +148,20 @@ GenerativeMIDIEditor::GenerativeMIDIEditor(GenerativeMIDIProcessor& p)
         midiChannelCombo.addItem(juce::String(i), i);
     midiChannelAttachment.reset(new juce::AudioProcessorValueTreeState::ComboBoxAttachment(
         audioProcessor.getValueTreeState(), "midiChannel", midiChannelCombo));
+
+    contentPanel.addAndMakeVisible(partCountLabel);
+    partCountLabel.setText("Parts", juce::dontSendNotification);
+    partCountLabel.setJustificationType(juce::Justification::centred);
+
+    contentPanel.addAndMakeVisible(partCountCombo);
+    partCountCombo.addItemList(juce::StringArray { "1", "2", "3", "4" }, 1);
+    partCountAttachment.reset(new juce::AudioProcessorValueTreeState::ComboBoxAttachment(
+        audioProcessor.getValueTreeState(), "partCount", partCountCombo));
+
+    contentPanel.addAndMakeVisible(voiceModeCombo);
+    voiceModeCombo.addItemList(juce::StringArray { "Poly", "Mono" }, 1);
+    voiceModeAttachment.reset(new juce::AudioProcessorValueTreeState::ComboBoxAttachment(
+        audioProcessor.getValueTreeState(), "voiceMode", voiceModeCombo));
 
     // Tempo knob
     contentPanel.addAndMakeVisible(tempoSlider);
@@ -151,36 +215,53 @@ GenerativeMIDIEditor::GenerativeMIDIEditor(GenerativeMIDIProcessor& p)
     // Velocity range sliders
     contentPanel.addAndMakeVisible(velocityMinSlider);
     velocityMinSlider.setSliderStyle(juce::Slider::LinearVertical);
-    velocityMinSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 50, 20);
+    velocityMinSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 44, 16);
     velocityMinAttachment.reset(new juce::AudioProcessorValueTreeState::SliderAttachment(
         audioProcessor.getValueTreeState(), "velocityMin", velocityMinSlider));
 
     contentPanel.addAndMakeVisible(velocityMaxSlider);
     velocityMaxSlider.setSliderStyle(juce::Slider::LinearVertical);
-    velocityMaxSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 50, 20);
+    velocityMaxSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 44, 16);
     velocityMaxAttachment.reset(new juce::AudioProcessorValueTreeState::SliderAttachment(
         audioProcessor.getValueTreeState(), "velocityMax", velocityMaxSlider));
 
     contentPanel.addAndMakeVisible(velocityLabel);
-    velocityLabel.setText("Velocity Range", juce::dontSendNotification);
+    velocityLabel.setText("Velocity", juce::dontSendNotification);
     velocityLabel.setJustificationType(juce::Justification::centred);
+    velocityMinSlider.setTitle("Velocity Min");
+    velocityMaxSlider.setTitle("Velocity Max");
 
     // Pitch range sliders
     contentPanel.addAndMakeVisible(pitchMinSlider);
     pitchMinSlider.setSliderStyle(juce::Slider::LinearVertical);
-    pitchMinSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 50, 20);
+    pitchMinSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 44, 16);
     pitchMinAttachment.reset(new juce::AudioProcessorValueTreeState::SliderAttachment(
         audioProcessor.getValueTreeState(), "pitchMin", pitchMinSlider));
 
     contentPanel.addAndMakeVisible(pitchMaxSlider);
     pitchMaxSlider.setSliderStyle(juce::Slider::LinearVertical);
-    pitchMaxSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 50, 20);
+    pitchMaxSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 44, 16);
     pitchMaxAttachment.reset(new juce::AudioProcessorValueTreeState::SliderAttachment(
         audioProcessor.getValueTreeState(), "pitchMax", pitchMaxSlider));
 
     contentPanel.addAndMakeVisible(pitchLabel);
-    pitchLabel.setText("Pitch Range", juce::dontSendNotification);
+    pitchLabel.setText("Pitch", juce::dontSendNotification);
     pitchLabel.setJustificationType(juce::Justification::centred);
+    pitchMinSlider.setTitle("Pitch Min");
+    pitchMaxSlider.setTitle("Pitch Max");
+
+    auto styleRangeCaption = [this](juce::Label& label, const char* text)
+    {
+        contentPanel.addAndMakeVisible(label);
+        label.setText(text, juce::dontSendNotification);
+        label.setJustificationType(juce::Justification::centred);
+        label.setFont(juce::FontOptions(10.0f));
+        label.setColour(juce::Label::textColourId, juce::Colour(CustomLookAndFeel::COPPER_STEAM));
+    };
+    styleRangeCaption(velocityMinCaption, "Min");
+    styleRangeCaption(velocityMaxCaption, "Max");
+    styleRangeCaption(pitchMinCaption, "Min");
+    styleRangeCaption(pitchMaxCaption, "Max");
 
     // Scale controls
     contentPanel.addAndMakeVisible(scaleLabel);
@@ -239,6 +320,9 @@ GenerativeMIDIEditor::GenerativeMIDIEditor(GenerativeMIDIProcessor& p)
     gateLengthLabel.setText("Gate", juce::dontSendNotification);
     gateLengthLabel.setJustificationType(juce::Justification::centred);
 
+    contentPanel.addAndMakeVisible(legatoLabel);
+    legatoLabel.setText("Legato", juce::dontSendNotification);
+    legatoLabel.setJustificationType(juce::Justification::centred);
     contentPanel.addAndMakeVisible(legatoButton);
     legatoButton.setButtonText("Legato");
     legatoButton.setClickingTogglesState(true);
@@ -323,7 +407,7 @@ GenerativeMIDIEditor::GenerativeMIDIEditor(GenerativeMIDIProcessor& p)
     modLfoDepthAttachment.reset(new juce::AudioProcessorValueTreeState::SliderAttachment(
         audioProcessor.getValueTreeState(), "modLfoDepth", modLfoDepthSlider));
     contentPanel.addAndMakeVisible(modLfoDepthLabel);
-    modLfoDepthLabel.setText("LFO Vel", juce::dontSendNotification);
+    modLfoDepthLabel.setText("LFO → Velocity", juce::dontSendNotification);
     modLfoDepthLabel.setJustificationType(juce::Justification::centred);
 
     contentPanel.addAndMakeVisible(modLfoDensityDepthSlider);
@@ -332,8 +416,55 @@ GenerativeMIDIEditor::GenerativeMIDIEditor(GenerativeMIDIProcessor& p)
     modLfoDensityDepthAttachment.reset(new juce::AudioProcessorValueTreeState::SliderAttachment(
         audioProcessor.getValueTreeState(), "modLfoDensityDepth", modLfoDensityDepthSlider));
     contentPanel.addAndMakeVisible(modLfoDensityDepthLabel);
-    modLfoDensityDepthLabel.setText("LFO Dens", juce::dontSendNotification);
+    modLfoDensityDepthLabel.setText("LFO → Density", juce::dontSendNotification);
     modLfoDensityDepthLabel.setJustificationType(juce::Justification::centred);
+
+    contentPanel.addAndMakeVisible(modShRateSlider);
+    modShRateSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
+    modShRateSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 50, 18);
+    modShRateAttachment.reset(new juce::AudioProcessorValueTreeState::SliderAttachment(
+        audioProcessor.getValueTreeState(), "modShRate", modShRateSlider));
+    contentPanel.addAndMakeVisible(modShRateLabel);
+    modShRateLabel.setText("S&H Hz", juce::dontSendNotification);
+    modShRateLabel.setJustificationType(juce::Justification::centred);
+
+    auto addRoute = [this](AccessibleComboBox& source, AccessibleComboBox& dest, juce::Slider& amount,
+                           juce::Label& amountLabel, const char* sourceId, const char* destId,
+                           const char* amountId,
+                           std::unique_ptr<juce::AudioProcessorValueTreeState::ComboBoxAttachment>& sourceAttachment,
+                           std::unique_ptr<juce::AudioProcessorValueTreeState::ComboBoxAttachment>& destAttachment,
+                           std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment>& amountAttachment)
+    {
+        contentPanel.addAndMakeVisible(source);
+        source.addItem("LFO", 1);
+        source.addItem("S&H", 2);
+        sourceAttachment.reset(new juce::AudioProcessorValueTreeState::ComboBoxAttachment(
+            audioProcessor.getValueTreeState(), sourceId, source));
+
+        contentPanel.addAndMakeVisible(dest);
+        dest.addItem("Off", 1);
+        dest.addItem("Gate", 2);
+        dest.addItem("Pitch", 3);
+        dest.addItem("CC", 4);
+        dest.addItem("Bend", 5);
+        destAttachment.reset(new juce::AudioProcessorValueTreeState::ComboBoxAttachment(
+            audioProcessor.getValueTreeState(), destId, dest));
+
+        contentPanel.addAndMakeVisible(amount);
+        amount.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
+        amount.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 50, 18);
+        amountAttachment.reset(new juce::AudioProcessorValueTreeState::SliderAttachment(
+            audioProcessor.getValueTreeState(), amountId, amount));
+        contentPanel.addAndMakeVisible(amountLabel);
+        amountLabel.setText("Amount", juce::dontSendNotification);
+        amountLabel.setJustificationType(juce::Justification::centred);
+    };
+    addRoute(modRoute3SourceCombo, modRoute3DestCombo, modRoute3AmountSlider, modRoute3AmountLabel,
+             "modRoute3Source", "modRoute3Dest", "modRoute3Amount",
+             modRoute3SourceAttachment, modRoute3DestAttachment, modRoute3AmountAttachment);
+    addRoute(modRoute4SourceCombo, modRoute4DestCombo, modRoute4AmountSlider, modRoute4AmountLabel,
+             "modRoute4Source", "modRoute4Dest", "modRoute4Amount",
+             modRoute4SourceAttachment, modRoute4DestAttachment, modRoute4AmountAttachment);
 
     // Ratchet controls
     contentPanel.addAndMakeVisible(ratchetCountSlider);
@@ -395,18 +526,57 @@ GenerativeMIDIEditor::GenerativeMIDIEditor(GenerativeMIDIProcessor& p)
     timeScaleLabel.setJustificationType(juce::Justification::centred);
     timeScaleLabel.setMinimumHorizontalScale(0.65f);
 
+    auto addPerfKnob = [this](juce::Slider& slider, juce::Label& label,
+                              const char* paramId, const char* title,
+                              std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment>& attachment)
+    {
+        contentPanel.addAndMakeVisible(slider);
+        slider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
+        slider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 64, 20);
+        slider.setTitle(title);
+        attachment.reset(new juce::AudioProcessorValueTreeState::SliderAttachment(
+            audioProcessor.getValueTreeState(), paramId, slider));
+        contentPanel.addAndMakeVisible(label);
+        label.setText(title, juce::dontSendNotification);
+        label.setJustificationType(juce::Justification::centred);
+        label.setMinimumHorizontalScale(0.65f);
+    };
+
+    addPerfKnob(markovOrderSlider, markovOrderLabel, "markovOrder", "Order", markovOrderAttachment);
+    addPerfKnob(markovStepSlider, markovStepLabel, "markovStep", "Step", markovStepAttachment);
+    addPerfKnob(markovSurpriseSlider, markovSurpriseLabel, "markovSurprise", "Surprise", markovSurpriseAttachment);
+    addPerfKnob(lsystemGrammarSlider, lsystemGrammarLabel, "lsystemGrammar", "Grammar", lsystemGrammarAttachment);
+    addPerfKnob(lsystemGenerationSlider, lsystemGenerationLabel, "lsystemGeneration", "Generation", lsystemGenerationAttachment);
+    addPerfKnob(lsystemIntervalSlider, lsystemIntervalLabel, "lsystemInterval", "Interval", lsystemIntervalAttachment);
+    addPerfKnob(cellularRuleSlider, cellularRuleLabel, "cellularRule", "Rule", cellularRuleAttachment);
+    addPerfKnob(cellularSeedSlider, cellularSeedLabel, "cellularSeed", "Seed", cellularSeedAttachment);
+    addPerfKnob(cellularListenSlider, cellularListenLabel, "cellularListen", "Listen", cellularListenAttachment);
+
+    lsystemGrammarSlider.textFromValueFunction = [](double value)
+    {
+        return juce::String(LSystemCatalog::name(static_cast<int>(value)));
+    };
+    lsystemGrammarSlider.valueFromTextFunction = [](const juce::String& text)
+    {
+        for (int i = 0; i < LSystemCatalog::kCount; ++i)
+            if (text.equalsIgnoreCase(LSystemCatalog::name(i)))
+                return static_cast<double>(i);
+        return text.getDoubleValue();
+    };
+    lsystemGrammarSlider.updateText();
+
     // Advanced group sublabels (Ratchet | Stochastic | LFO)
     auto styleGroupLabel = [](juce::Label& label, const juce::String& text)
     {
         label.setText(text, juce::dontSendNotification);
-        label.setFont(juce::FontOptions(10.0f).withStyle("Bold"));
-        label.setJustificationType(juce::Justification::centred);
-        label.setColour(juce::Label::textColourId, juce::Colour(CustomLookAndFeel::GOLD_TEMPLE).withAlpha(0.75f));
+        label.setFont(juce::Font(juce::FontOptions(10.0f)).withExtraKerningFactor(0.14f));
+        label.setJustificationType(juce::Justification::centredLeft);
+        label.setColour(juce::Label::textColourId, juce::Colour(CustomLookAndFeel::BRASS_AGED));
     };
-    contentPanel.addAndMakeVisible(advancedRatchetGroupLabel);
-    styleGroupLabel(advancedRatchetGroupLabel, "RATCHET");
     contentPanel.addAndMakeVisible(advancedStochasticGroupLabel);
-    styleGroupLabel(advancedStochasticGroupLabel, "STOCHASTIC");
+    styleGroupLabel(advancedStochasticGroupLabel, "Expression");
+    contentPanel.addAndMakeVisible(advancedRatchetGroupLabel);
+    styleGroupLabel(advancedRatchetGroupLabel, "Ratchet");
     contentPanel.addAndMakeVisible(advancedLfoGroupLabel);
     styleGroupLabel(advancedLfoGroupLabel, "LFO");
 
@@ -434,12 +604,25 @@ GenerativeMIDIEditor::GenerativeMIDIEditor(GenerativeMIDIProcessor& p)
         options.launchAsync();
     };
 
+    contentPanel.addAndMakeVisible(presetCombo);
+    presetCombo.setTitle("Preset");
+    presetCombo.onChange = [this]()
+    {
+        if (updatingPresetCombo)
+            return;
+        const auto name = presetCombo.getText();
+        if (name.isEmpty() || name == audioProcessor.getPresetManager().getCurrentPresetName())
+            return;
+        audioProcessor.getPresetManager().loadPresetByName(name);
+    };
+    refreshPresetCombo();
+
     // Current preset label
     contentPanel.addAndMakeVisible(currentPresetLabel);
     syncPresetLabel(audioProcessor.getPresetManager().getCurrentPresetName());
     currentPresetLabel.setFont(juce::FontOptions(12.0f));
     currentPresetLabel.setJustificationType(juce::Justification::centred);
-    currentPresetLabel.setColour(juce::Label::textColourId, juce::Colour(CustomLookAndFeel::GREEN_VERDIGRIS));
+    currentPresetLabel.setColour(juce::Label::textColourId, juce::Colour(CustomLookAndFeel::COPPER_STEAM));
     currentPresetLabel.setMinimumHorizontalScale(0.7f);
 
     audioProcessor.getPresetManager().addListener(this);
@@ -448,7 +631,10 @@ GenerativeMIDIEditor::GenerativeMIDIEditor(GenerativeMIDIProcessor& p)
     setTitle("Generative MIDI");
     generatorTypeCombo.setTitle("Generator Type");
     midiChannelCombo.setTitle("MIDI Channel");
+    partCountCombo.setTitle("Parts");
+    voiceModeCombo.setTitle("Voice");
     presetBrowserButton.setTitle("Presets");
+    presetCombo.setTitle("Preset");
     currentPresetLabel.setTitle("Current Preset");
     densitySlider.setTitle("Probability");
     tempoSlider.setTitle("Tempo");
@@ -461,6 +647,13 @@ GenerativeMIDIEditor::GenerativeMIDIEditor(GenerativeMIDIProcessor& p)
     modLfoRateSlider.setTitle("LFO Rate");
     modLfoDepthSlider.setTitle("LFO Velocity");
     modLfoDensityDepthSlider.setTitle("LFO Density");
+    modShRateSlider.setTitle("S&H Rate");
+    modRoute3SourceCombo.setTitle("Mod Route 3 Source");
+    modRoute3DestCombo.setTitle("Mod Route 3 Destination");
+    modRoute3AmountSlider.setTitle("Mod Route 3 Amount");
+    modRoute4SourceCombo.setTitle("Mod Route 4 Source");
+    modRoute4DestCombo.setTitle("Mod Route 4 Destination");
+    modRoute4AmountSlider.setTitle("Mod Route 4 Amount");
     ratchetCountSlider.setTitle("Ratchet Count");
     ratchetProbabilitySlider.setTitle("Ratchet Probability");
     ratchetDecaySlider.setTitle("Ratchet Decay");
@@ -477,7 +670,7 @@ GenerativeMIDIEditor::GenerativeMIDIEditor(GenerativeMIDIProcessor& p)
     // Initialize UI for current generator type
     updateControlsForGeneratorType(generatorTypeCombo.getSelectedId() - 1);
 
-    // Modulation matrix UI is archived under archive/modulation_v1/ (not live).
+    // Fixed-slot modulation lives in the editor bar (see Source/Modulation/ModulationRouter.h).
 
     // Start timer for pattern updates
     startTimerHz(30);
@@ -501,210 +694,260 @@ void GenerativeMIDIEditor::paintContent(juce::Graphics& g)
 {
     auto bounds = contentPanel.getLocalBounds().toFloat();
 
-    // SYNAPTIK: Aged brass panel background texture
-    g.fillAll(juce::Colour(CustomLookAndFeel::ABYSS_NAVY));
+    juce::ColourGradient ground(
+        juce::Colour(0xff1A1F27), bounds.getCentreX(), bounds.getY(),
+        juce::Colour(CustomLookAndFeel::ABYSS_NAVY), bounds.getCentreX(), bounds.getBottom(),
+        false);
+    g.setGradientFill(ground);
+    g.fillAll();
 
-    // Draw Victorian brass panel texture as tiled background
-    const auto& panelTexture = customLookAndFeel.getPanelVerdigris();
-    if (panelTexture.isValid())
+    auto drawPatternWell = [&g](juce::Rectangle<float> area)
     {
-        // Tile the aged brass texture
-        int tileWidth = 512;
-        int tileHeight = 512;
+        g.setColour(juce::Colours::black.withAlpha(0.4f));
+        g.fillRoundedRectangle(area.translated(0.0f, 1.5f), 10.0f);
 
-        for (int x = 0; x < contentPanel.getWidth(); x += tileWidth)
+        g.setColour(juce::Colour(CustomLookAndFeel::ABYSS_NAVY));
+        g.fillRoundedRectangle(area, 10.0f);
+
+        g.setColour(juce::Colours::black.withAlpha(0.55f));
+        g.drawRoundedRectangle(area.reduced(1.5f), 8.5f, 3.0f);
+
+        g.setColour(juce::Colour(CustomLookAndFeel::BRASS_AGED).withAlpha(0.75f));
+        g.drawRoundedRectangle(area.reduced(0.5f), 10.0f, 1.0f);
+    };
+
+    auto drawPlate = [&g](juce::Rectangle<float> area)
+    {
+        g.setColour(juce::Colour(CustomLookAndFeel::STEEL_OBSIDIAN));
+        g.fillRoundedRectangle(area, 8.0f);
+
+        g.setColour(juce::Colours::white.withAlpha(0.08f));
+        g.drawLine(area.getX() + 10.0f, area.getY() + 1.0f, area.getRight() - 10.0f, area.getY() + 1.0f, 1.0f);
+
+        g.setColour(juce::Colour(CustomLookAndFeel::BRASS_AGED).withAlpha(0.35f));
+        g.drawRoundedRectangle(area.reduced(0.5f), 8.0f, 1.0f);
+    };
+
+    if (!patternPanelBounds.isEmpty())
+        drawPatternWell(patternPanelBounds);
+
+    juce::Rectangle<float> deckPanels[3] = { generatorPanelBounds, expressionPanelBounds, advancedPanelBounds };
+    int deckCount = 0;
+    juce::Rectangle<float> deck[3];
+    for (const auto& panel : deckPanels)
+        if (!panel.isEmpty() && panel.getHeight() > 48.0f)
+            deck[deckCount++] = panel;
+
+    const bool oneFace = deckCount >= 2
+                         && std::abs(deck[0].getY() - deck[1].getY()) < 4.0f
+                         && (deckCount < 3 || std::abs(deck[1].getY() - deck[2].getY()) < 4.0f);
+
+    if (oneFace)
+    {
+        auto plate = deck[0];
+        for (int i = 1; i < deckCount; ++i)
+            plate = plate.getUnion(deck[i]);
+        drawPlate(plate);
+
+        std::sort(deck, deck + deckCount, [](const juce::Rectangle<float>& a, const juce::Rectangle<float>& b)
         {
-            for (int y = 0; y < contentPanel.getHeight(); y += tileHeight)
-            {
-                g.setOpacity(0.25f);
-                g.drawImage(panelTexture,
-                           x, y, tileWidth, tileHeight,
-                           0, 0, panelTexture.getWidth(), panelTexture.getHeight());
-            }
+            return a.getX() < b.getX();
+        });
+        g.setColour(juce::Colour(CustomLookAndFeel::BRASS_AGED).withAlpha(0.35f));
+        const float ruleTop = plate.getY() + 28.0f;
+        const float ruleBottom = plate.getBottom() - 10.0f;
+        for (int i = 0; i < deckCount - 1; ++i)
+        {
+            const float x = (deck[i].getRight() + deck[i + 1].getX()) * 0.5f;
+            g.drawLine(x, ruleTop, x, ruleBottom, 1.0f);
         }
-        g.setOpacity(1.0f);
-
-        // Dark overlay for depth and legibility
-        g.setColour(juce::Colour(CustomLookAndFeel::ABYSS_NAVY).withAlpha(0.6f));
-        g.fillAll();
     }
     else
     {
-        // Fallback: procedural brass texture
-        juce::Random r(42);
-
-        g.setColour(juce::Colour(CustomLookAndFeel::BRONZE_GOTHIC).withAlpha(0.2f));
-        for (int i = 0; i < 80; ++i)
-        {
-            float x = r.nextFloat() * bounds.getWidth();
-            float y = r.nextFloat() * bounds.getHeight();
-            float size = r.nextFloat() * 1.5f + 0.8f;
-            g.fillEllipse(x, y, size, size);
-            g.setColour(juce::Colour(CustomLookAndFeel::BRASS_AGED).withAlpha(0.1f));
-            g.fillEllipse(x + size * 0.2f, y + size * 0.2f, size * 0.5f, size * 0.5f);
-            g.setColour(juce::Colour(CustomLookAndFeel::BRONZE_GOTHIC).withAlpha(0.2f));
-        }
-
-        g.setColour(juce::Colour(CustomLookAndFeel::BRASS_AGED).withAlpha(0.12f));
-        for (int i = 0; i < 30; ++i)
-        {
-            float x1 = r.nextFloat() * bounds.getWidth();
-            float y1 = r.nextFloat() * bounds.getHeight();
-            float x2 = x1 + r.nextFloat() * 60.0f - 30.0f;
-            float y2 = y1 + r.nextFloat() * 60.0f - 30.0f;
-            g.drawLine(x1, y1, x2, y2, 0.8f);
-        }
+        if (!generatorPanelBounds.isEmpty())
+            drawPlate(generatorPanelBounds);
+        if (!expressionPanelBounds.isEmpty())
+            drawPlate(expressionPanelBounds);
+        if (!advancedPanelBounds.isEmpty())
+            drawPlate(advancedPanelBounds);
     }
 
-    // Aether glow particles (always visible)
-    juce::Random r(42);
-    g.setColour(juce::Colour(CustomLookAndFeel::AETHER_CYAN).withAlpha(0.08f));
-    for (int i = 0; i < 25; ++i)
+    if (!modulationPanelBounds.isEmpty())
+        drawPlate(modulationPanelBounds);
+
+    if (shapeExpanded && advancedDividerX1 > 0.0f)
     {
-        float x = r.nextFloat() * bounds.getWidth();
-        float y = r.nextFloat() * bounds.getHeight();
-        float glowSize = r.nextFloat() * 8.0f + 4.0f;
-        g.fillEllipse(x - glowSize * 0.5f, y - glowSize * 0.5f, glowSize, glowSize);
-    }
-
-    // Corner brass ornaments (Victorian corner brackets)
-    auto drawBrassOrnament = [&g](float x, float y, bool flipX, bool flipY)
-    {
-        float xDir = flipX ? -1.0f : 1.0f;
-        float yDir = flipY ? -1.0f : 1.0f;
-
-        // Aether glow
-        juce::ColourGradient aetherGlow(
-            juce::Colour(CustomLookAndFeel::AETHER_CYAN).withAlpha(0.25f),
-            x, y,
-            juce::Colour(CustomLookAndFeel::AMBER_TESLA).withAlpha(0.0f),
-            x + xDir * 25, y + yDir * 25,
-            false);
-        g.setGradientFill(aetherGlow);
-        g.fillEllipse(x - 12, y - 12, 24, 24);
-
-        // Brass outer ring
-        g.setColour(juce::Colour(CustomLookAndFeel::BRASS_AGED).withAlpha(0.8f));
-        g.drawEllipse(x - 6, y - 6, 12, 12, 2.0f);
-
-        // Golden highlight
-        g.setColour(juce::Colour(CustomLookAndFeel::GOLD_TEMPLE).withAlpha(0.6f));
-        g.drawEllipse(x - 5, y - 5, 10, 10, 1.0f);
-
-        // Bronze core
-        g.setColour(juce::Colour(CustomLookAndFeel::BRONZE_GOTHIC));
-        g.fillEllipse(x - 3, y - 3, 6, 6);
-
-        // Aether crystal center
-        g.setColour(juce::Colour(CustomLookAndFeel::AETHER_CYAN).withAlpha(0.7f));
-        g.fillEllipse(x - 1.5f, y - 1.5f, 3, 3);
-    };
-
-    drawBrassOrnament(20, 20, false, false);
-    drawBrassOrnament(contentPanel.getWidth() - 20, 20, true, false);
-    drawBrassOrnament(20, contentPanel.getHeight() - 20, false, true);
-    drawBrassOrnament(contentPanel.getWidth() - 20, contentPanel.getHeight() - 20, true, true);
-
-    // Gothic brass panels (Art Deco section frames)
-    auto drawBrassPanel = [&g](juce::Rectangle<float> area, juce::String label)
-    {
-        // Aether energy field glow
-        juce::ColourGradient energyGlow(
-            juce::Colour(CustomLookAndFeel::AETHER_CYAN).withAlpha(0.08f),
-            area.getCentreX(), area.getY(),
-            juce::Colour(CustomLookAndFeel::AMBER_TESLA).withAlpha(0.0f),
-            area.getCentreX(), area.getBottom(),
-            false);
-        g.setGradientFill(energyGlow);
-        g.fillRoundedRectangle(area.expanded(3), 8.0f);
-
-        // Obsidian steel panel background
-        juce::ColourGradient panelGrad(
-            juce::Colour(CustomLookAndFeel::STEEL_OBSIDIAN).brighter(0.08f),
-            area.getX(), area.getCentreY(),
-            juce::Colour(CustomLookAndFeel::STEEL_OBSIDIAN).darker(0.15f),
-            area.getRight(), area.getCentreY(),
-            false);
-        g.setGradientFill(panelGrad);
-        g.fillRoundedRectangle(area, 6.0f);
-
-        // Polished brass bezel (outer border)
-        g.setColour(juce::Colour(CustomLookAndFeel::BRASS_AGED).withAlpha(0.7f));
-        g.drawRoundedRectangle(area, 6.0f, 2.5f);
-
-        // Golden accent line
-        g.setColour(juce::Colour(CustomLookAndFeel::GOLD_TEMPLE).withAlpha(0.4f));
-        g.drawRoundedRectangle(area.reduced(2.5f), 5.0f, 1.0f);
-
-        // Bronze inner shadow (depth)
-        g.setColour(juce::Colour(CustomLookAndFeel::BRONZE_GOTHIC).withAlpha(0.3f));
-        g.drawRoundedRectangle(area.reduced(5.0f), 4.0f, 0.8f);
-
-        // Ornate brass label plate
-        if (label.isNotEmpty())
-        {
-            auto labelArea = juce::Rectangle<float>(area.getX() + 12, area.getY() + 5, area.getWidth() - 24, 24);
-
-            // Label plate background (raised brass)
-            juce::ColourGradient labelGrad(
-                juce::Colour(CustomLookAndFeel::BRASS_AGED).brighter(0.15f),
-                labelArea.getCentreX(), labelArea.getY(),
-                juce::Colour(CustomLookAndFeel::BRASS_AGED).darker(0.1f),
-                labelArea.getCentreX(), labelArea.getBottom(),
-                false);
-            g.setGradientFill(labelGrad);
-            g.fillRoundedRectangle(labelArea, 3.0f);
-
-            // Label engraved text
-            g.setColour(juce::Colour(CustomLookAndFeel::GOLD_TEMPLE));
-            g.setFont(juce::Font(14.0f, juce::Font::bold));
-            g.drawText(label, labelArea, juce::Justification::centred);
-        }
-    };
-
-    drawBrassPanel(patternPanelBounds,
-                   GeneratorTypeMapping::isPolyrhythm(generatorTypeCombo.getSelectedId() - 1)
-                       ? "POLYRHYTHM LAYERS" : "PATTERN DISPLAY");
-    drawBrassPanel(generatorPanelBounds, "GENERATOR");
-    drawBrassPanel(expressionPanelBounds, "EXPRESSION");
-    drawBrassPanel(advancedPanelBounds, "ADVANCED");
-
-    // Subtle Advanced group dividers (Ratchet | Stochastic | LFO)
-    if (advancedDividerX1 > 0.0f && advancedDividerX2 > 0.0f)
-    {
-        const float top = advancedPanelBounds.getY() + 26.0f;
-        const float bottom = advancedPanelBounds.getBottom() - 6.0f;
-        g.setColour(juce::Colour(CustomLookAndFeel::BRASS_AGED).withAlpha(0.55f));
-        g.drawLine(advancedDividerX1, top, advancedDividerX1, bottom, 1.25f);
-        g.drawLine(advancedDividerX2, top, advancedDividerX2, bottom, 1.25f);
-        g.setColour(juce::Colour(CustomLookAndFeel::AETHER_CYAN).withAlpha(0.18f));
-        g.drawLine(advancedDividerX1 + 1.0f, top, advancedDividerX1 + 1.0f, bottom, 1.0f);
-        g.drawLine(advancedDividerX2 + 1.0f, top, advancedDividerX2 + 1.0f, bottom, 1.0f);
+        const float bottom = advancedPanelBounds.getBottom() - 10.0f;
+        const float top = juce::jmax(advancedPanelBounds.getY() + 28.0f, bottom - 108.0f);
+        g.setColour(juce::Colours::white.withAlpha(0.08f));
+        g.drawLine(advancedDividerX1, top, advancedDividerX1, bottom, 1.0f);
     }
 }
 
 void GenerativeMIDIEditor::resized()
 {
-    editorViewport.setBounds(getLocalBounds());
+    auto bounds = getLocalBounds();
+    const int logH = midiActivityPane.getPreferredHeight();
+    midiActivityPane.setBounds(bounds.removeFromBottom(logH).reduced(8, 4));
+    editorViewport.setBounds(bounds);
 
     const bool isPolyrhythm = GeneratorTypeMapping::isPolyrhythm(generatorTypeCombo.getSelectedId() - 1);
-    const int contentW = juce::jmax(getWidth(), 1);
-    const int contentH = preferredContentHeight(isPolyrhythm);
+    const int viewH = juce::jmax(1, editorViewport.getHeight());
+    const auto fitted = planSections(viewH, isPolyrhythm, editorViewport.getWidth());
+    const int contentH = juce::jmax(viewH, fitted.used);
+    const int scrollbarW = contentH > viewH ? editorViewport.getScrollBarThickness() : 0;
+    const int contentW = juce::jmax(1, editorViewport.getWidth() - scrollbarW);
     contentPanel.setSize(contentW, contentH);
     // setSize no-ops when dimensions are unchanged (generator switch), so lay out explicitly.
     contentPanel.resized();
+    contentPanel.repaint();
 }
 
-int GenerativeMIDIEditor::preferredContentHeight(bool isPolyrhythm) const
+void GenerativeMIDIEditor::configureDisclosure(juce::TextButton& button, const juce::String& title, bool& expanded)
 {
-    const int header = 48;
-    const int pattern = isPolyrhythm ? 200 : 96;
-    const int generator = 168;
-    const int expression = 228;
-    const int advanced = 132;
-    const int midiLog = midiActivityPane.getPreferredHeight() + 8;
-    const int bottomPad = 8;
-    return header + pattern + generator + expression + advanced + midiLog + bottomPad;
+    contentPanel.addAndMakeVisible(button);
+    button.setClickingTogglesState(true);
+    button.setToggleState(expanded, juce::dontSendNotification);
+    button.setTitle(title);
+    button.setName(title);
+    button.setComponentID("section-header");
+    button.setButtonText(title);
+    button.setColour(juce::TextButton::buttonColourId, juce::Colours::transparentBlack);
+    button.setColour(juce::TextButton::buttonOnColourId, juce::Colours::transparentBlack);
+    button.onClick = [this, &button, &expanded]
+    {
+        expanded = button.getToggleState();
+        resized();
+    };
+}
+
+GenerativeMIDIEditor::SectionPlan GenerativeMIDIEditor::planSections(int availableHeight, bool isPolyrhythm, int width) const
+{
+    juce::ignoreUnused(isPolyrhythm);
+    const bool narrow = width > 0 && width < 900;
+    const bool wrapMusical = musicalExpanded && narrow;
+    const int performanceBody = narrow ? 100 : kPerformanceBody;
+    const int musicalRow = narrow ? 96 : kMusicalBody;
+    const int shapeBodyMin = narrow ? 168 : kShapeBodyMin;
+
+    const auto panelHeight = [](bool open, int body)
+    {
+        return open ? (kPanelHeaderH + body) : kCollapsedPanelH;
+    };
+
+    const int openControls = (performanceExpanded ? 1 : 0) + (musicalExpanded ? 1 : 0) + (shapeExpanded ? 1 : 0);
+    const bool sideBySide = width >= 1100 && openControls >= 2;
+
+    SectionPlan plan;
+    plan.header = kEditorHeaderH;
+    plan.gap = narrow ? 6 : kSectionGap;
+    plan.bottomPad = narrow ? 0 : kBottomPad;
+    plan.sideBySide = sideBySide;
+    plan.mod = narrow ? 156 : 84;
+
+    if (sideBySide)
+    {
+        const int collapsedCount = 3 - openControls;
+        const int gapCount = 1 + collapsedCount + (openControls > 0 ? 1 : 0);
+        const int chrome = plan.header + plan.bottomPad + plan.gap * gapCount + plan.gap + plan.mod;
+        const int deckFloor = openControls > 0 ? (kPanelHeaderH + 168) : 0;
+        const int patternFloor = patternExpanded ? (kPanelHeaderH + 48) : kCollapsedPanelH;
+
+        auto finish = [&](int patternH, int deckH)
+        {
+            plan.pattern = patternH;
+            plan.deck = deckH;
+            plan.performance = performanceExpanded ? deckH : kCollapsedPanelH;
+            plan.musical = musicalExpanded ? deckH : kCollapsedPanelH;
+            plan.shape = shapeExpanded ? deckH : kCollapsedPanelH;
+            plan.used = chrome + patternH + collapsedCount * kCollapsedPanelH + deckH;
+            plan.minimum = plan.used;
+            return plan;
+        };
+
+        if (availableHeight <= 0)
+            return finish(juce::jmax(patternFloor, panelHeight(true, 180)), deckFloor);
+
+        const int flex = juce::jmax(0, availableHeight - chrome - collapsedCount * kCollapsedPanelH);
+        int patternH = availableHeight * 42 / 100;
+        patternH = juce::jlimit(patternFloor, juce::jmax(patternFloor, flex - deckFloor), patternH);
+        const int half = juce::jmax(patternFloor, availableHeight / 2);
+        if (patternH > half && flex - half >= deckFloor)
+            patternH = half;
+        return finish(patternH, flex - patternH);
+    }
+
+    plan.performance = panelHeight(performanceExpanded, performanceBody);
+    const int musicalBody = wrapMusical ? (musicalRow * 2) : musicalRow;
+    plan.musical = panelHeight(musicalExpanded, musicalBody);
+
+    const int patternMin = patternExpanded
+                               ? panelHeight(true, kPatternBodyMin)
+                               : kCollapsedPanelH;
+    const int shapeMin = panelHeight(shapeExpanded, shapeBodyMin);
+    const int shapeMax = panelHeight(shapeExpanded, kShapeBodyMax);
+
+    plan.minimum = plan.header + plan.bottomPad + plan.gap * 5
+                   + patternMin + plan.performance + plan.musical + shapeMin + plan.mod;
+
+    int surplus = juce::jmax(availableHeight, plan.minimum) - plan.minimum;
+    int patternH = patternMin;
+    int shapeH = shapeMin;
+    const bool patternCanGrow = patternExpanded;
+
+    if (patternCanGrow && shapeExpanded)
+    {
+        const int comfort = panelHeight(true, kPatternBodyComfort);
+        const int toPattern = juce::jmin(surplus, juce::jmax(0, comfort - patternMin));
+        patternH += toPattern;
+        surplus -= toPattern;
+
+        const int toShape = juce::jmin(surplus, juce::jmax(0, shapeMax - shapeMin));
+        shapeH += toShape;
+        surplus -= toShape;
+
+        patternH += surplus;
+    }
+    else if (patternCanGrow)
+    {
+        patternH += surplus;
+    }
+    else if (shapeExpanded)
+    {
+        shapeH += juce::jmin(surplus, juce::jmax(0, shapeMax - shapeMin));
+    }
+
+    if (availableHeight > 0)
+    {
+        const auto usedNow = [&]()
+        {
+            return plan.header + plan.bottomPad + plan.gap * 5
+                   + patternH + plan.performance + plan.musical + shapeH + plan.mod;
+        };
+        int overflow = usedNow() - availableHeight;
+        if (overflow > 0)
+        {
+            const int patternFloor = patternExpanded ? (kPanelHeaderH + 40) : kCollapsedPanelH;
+            const int patternCut = juce::jmin(overflow, juce::jmax(0, patternH - patternFloor));
+            patternH -= patternCut;
+            overflow -= patternCut;
+
+            const int shapeFloor = shapeExpanded ? shapeMin : kCollapsedPanelH;
+            const int shapeCut = juce::jmin(overflow, juce::jmax(0, shapeH - shapeFloor));
+            shapeH -= shapeCut;
+        }
+    }
+
+    plan.pattern = patternH;
+    plan.shape = shapeH;
+    plan.used = plan.header + plan.bottomPad + plan.gap * 5
+                + plan.pattern + plan.performance + plan.musical + plan.shape + plan.mod;
+    return plan;
+}
+
+int GenerativeMIDIEditor::preferredContentHeight(bool isPolyrhythm, int width) const
+{
+    return planSections(0, isPolyrhythm, width).minimum;
 }
 
 void GenerativeMIDIEditor::layoutContent(juce::Rectangle<int> area)
@@ -714,335 +957,741 @@ void GenerativeMIDIEditor::layoutContent(juce::Rectangle<int> area)
     const int genIndex = generatorTypeCombo.getSelectedId() - 1;
     const bool showEuclideanKnobs = (genIndex == GeneratorTypeMapping::kEuclidean);
     const bool showStochasticKnobs = GeneratorTypeMapping::isStochastic(genIndex);
-
-    // Compact header: brand left, product + status, presets right
-    auto titleArea = area.removeFromTop(48).reduced(inset, 4);
-    auto presetArea = titleArea.removeFromRight(juce::jmin(170, contentW / 5));
-    presetBrowserButton.setBounds(presetArea.removeFromTop(26).reduced(4, 0));
-    currentPresetLabel.setBounds(presetArea.reduced(4, 0));
-
-    auto brandCol = titleArea.removeFromLeft(78);
-    titleLabel.setBounds(brandCol.removeFromTop(18));
-    titleArea.removeFromLeft(10);
-    auto productCol = titleArea.removeFromLeft(280);
-    productLabel.setBounds(productCol.removeFromTop(24));
-    statusChipLabel.setBounds(productCol);
-
-    // Pattern display / polyrhythm layers section
+    const bool showMarkovKnobs = (genIndex == GeneratorTypeMapping::kMarkov);
+    const bool showLSystemKnobs = (genIndex == GeneratorTypeMapping::kLSystem);
+    const bool showCellularKnobs = (genIndex == GeneratorTypeMapping::kCellular);
     const bool isPolyrhythm = GeneratorTypeMapping::isPolyrhythm(genIndex);
-    const int patternHeight = isPolyrhythm ? 200 : 96;
-    auto patternOuter = area.removeFromTop(patternHeight);
-    auto patternSection = patternOuter.reduced(inset, isPolyrhythm ? 12 : 6);
+
+    auto placeKnob = [](juce::Rectangle<int> col, juce::Slider& slider, juce::Label& label, int maxW = 84)
+    {
+        if (slider.getSliderStyle() == juce::Slider::RotaryHorizontalVerticalDrag)
+            slider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, kReadoutW, kReadoutH);
+        const int blockW = juce::jmin(col.getWidth(), maxW);
+        const int blockH = juce::jmin(col.getHeight(), 96);
+        auto block = col.withSizeKeepingCentre(blockW, blockH);
+        label.setBounds(block.removeFromBottom(16));
+        slider.setBounds(block.reduced(2, 0));
+    };
+
+    // Toggle sits in the dial band of a knob cell, so it lines up with neighbouring knobs.
+    auto placeToggleInKnobBand = [](juce::Rectangle<int> col, juce::Button& button, int btnW, int btnH)
+    {
+        auto dial = col;
+        if (dial.getHeight() > 36)
+            dial.removeFromBottom(juce::jmin(32, dial.getHeight() / 3));
+        const int w = juce::jmin(btnW, juce::jmax(40, dial.getWidth() - 4));
+        const int h = juce::jmin(btnH, juce::jmax(22, juce::jmin(28, dial.getHeight() - 4)));
+        button.setBounds(dial.withSizeKeepingCentre(w, h));
+    };
+
+    const auto plan = planSections(area.getHeight(), isPolyrhythm, contentW);
+    auto insetX = [inset](juce::Rectangle<int> row)
+    {
+        return row.withTrimmedLeft(inset).withTrimmedRight(inset);
+    };
+
+    auto setShapeFamilyVisible = [this](bool show)
+    {
+        aftertouchEnableButton.setVisible(show);
+        aftertouchAmountSlider.setVisible(show);
+        aftertouchAmountLabel.setVisible(show);
+        pitchbendEnableButton.setVisible(show);
+        pitchbendRangeSlider.setVisible(show);
+        pitchbendRangeLabel.setVisible(show);
+        ccEnableButton.setVisible(show);
+        ccNumberSlider.setVisible(show);
+        ccNumberLabel.setVisible(show);
+        ccAmountSlider.setVisible(show);
+        ccAmountLabel.setVisible(show);
+        ratchetCountSlider.setVisible(show);
+        ratchetProbabilitySlider.setVisible(show);
+        ratchetDecaySlider.setVisible(show);
+        ratchetCountLabel.setVisible(show);
+        ratchetProbabilityLabel.setVisible(show);
+        ratchetDecayLabel.setVisible(show);
+        advancedRatchetGroupLabel.setVisible(show);
+        advancedStochasticGroupLabel.setVisible(show);
+        advancedLfoGroupLabel.setVisible(false);
+    };
+
+    // Header: one row. Product and transport on the left. Generator, channel, and preset on the right.
+    titleLabel.setVisible(false);
+    auto header = area.removeFromTop(plan.header).reduced(inset, 8);
+    const int controlH = juce::jmin(26, header.getHeight());
+    auto presetComboW = juce::jlimit(120, 200, contentW / 6);
+    auto presetCol = header.removeFromRight(72 + 8 + presetComboW + (currentPresetLabel.getText() == "Edited" ? 56 : 0));
+    if (currentPresetLabel.getText() == "Edited")
+        currentPresetLabel.setBounds(presetCol.removeFromLeft(52).withSizeKeepingCentre(52, controlH));
+    else
+        currentPresetLabel.setBounds(0, 0, 0, 0);
+    presetBrowserButton.setBounds(presetCol.removeFromLeft(72).withSizeKeepingCentre(70, controlH));
+    presetCol.removeFromLeft(6);
+    presetCombo.setBounds(presetCol.withSizeKeepingCentre(presetCol.getWidth(), controlH));
+
+    header.removeFromRight(8);
+    const int chW = contentW < 900 ? 52 : 64;
+    auto chCol = header.removeFromRight(36 + chW);
+    midiChannelLabel.setBounds(chCol.removeFromLeft(36).withSizeKeepingCentre(34, controlH));
+    midiChannelCombo.setBounds(chCol.withSizeKeepingCentre(chCol.getWidth(), controlH));
+
+    header.removeFromRight(8);
+    const int partsW = contentW < 900 ? 40 : 48;
+    auto partsCol = header.removeFromRight(44 + partsW);
+    partCountLabel.setBounds(partsCol.removeFromLeft(44).withSizeKeepingCentre(42, controlH));
+    partCountCombo.setBounds(partsCol.withSizeKeepingCentre(partsCol.getWidth(), controlH));
+
+    header.removeFromRight(8);
+    const int genW = contentW < 900 ? 112 : 156;
+    auto genCol = header.removeFromRight(72 + genW);
+    generatorLabel.setBounds(genCol.removeFromLeft(72).withSizeKeepingCentre(70, controlH));
+    generatorTypeCombo.setBounds(genCol.withSizeKeepingCentre(genCol.getWidth(), controlH));
+
+    auto brand = header.withSizeKeepingCentre(header.getWidth(), controlH);
+    productLabel.setBounds(brand.removeFromLeft(juce::jmin(150, brand.getWidth() / 2)));
+    if (pianoButton.isVisible())
+    {
+        pianoButton.setBounds(brand.removeFromLeft(64).withSizeKeepingCentre(60, controlH));
+        brand.removeFromLeft(6);
+    }
+    else
+    {
+        pianoButton.setBounds(0, 0, 0, 0);
+    }
+    statusChipLabel.setBounds(brand);
+
+    area.removeFromTop(plan.gap);
+
+    auto patternSection = insetX(area.removeFromTop(plan.pattern));
     patternPanelBounds = patternSection.toFloat();
-    patternSection.removeFromTop(20); // Section label
-    patternDisplay.setBounds(patternSection);
-    if (polyLayerEditor)
-        polyLayerEditor->setBounds(patternSection);
+    placeDisclosure(patternSection, patternButton);
+    if (patternExpanded)
+    {
+        patternSection.removeFromTop(kPanelHeaderH);
+        patternSection = patternSection.reduced(8, 0);
+        patternDisplay.setBounds(patternSection);
+        patternDisplay.setVisible(!isPolyrhythm);
+        if (polyLayerEditor)
+        {
+            polyLayerEditor->setBounds(patternSection);
+            polyLayerEditor->setVisible(isPolyrhythm);
+        }
+    }
+    else
+    {
+        patternDisplay.setVisible(false);
+        if (polyLayerEditor)
+            polyLayerEditor->setVisible(false);
+    }
 
-    // Generator controls section
-    auto generatorOuter = area.removeFromTop(168);
-    auto controlsSection = generatorOuter.reduced(inset, 8);
-    generatorPanelBounds = controlsSection.toFloat();
-    controlsSection.removeFromTop(18); // Section label
+    juce::Rectangle<int> perfSlot;
+    juce::Rectangle<int> musicalSlot;
+    juce::Rectangle<int> shapeSlot;
+    if (plan.sideBySide)
+    {
+        auto takeBar = [&](bool open, juce::Rectangle<int>& slot)
+        {
+            if (open)
+                return;
+            area.removeFromTop(plan.gap);
+            slot = insetX(area.removeFromTop(kCollapsedPanelH));
+        };
+        takeBar(performanceExpanded, perfSlot);
+        takeBar(musicalExpanded, musicalSlot);
+        takeBar(shapeExpanded, shapeSlot);
 
-    const int genSlots = showEuclideanKnobs ? 5 : 2;
-#if JUCE_IOS
-    int spacing = 10;
-    const int comboCol = juce::jmin(150, controlsSection.getWidth() / 5);
-    int knobSize = juce::jlimit(56, 96, (controlsSection.getWidth() - comboCol - spacing * (genSlots + 1)) / genSlots);
-#else
-    int spacing = contentW < 900 ? 6 : 10;
-    const int comboCol = juce::jmin(140, juce::jmax(110, controlsSection.getWidth() / 6));
-    int knobSize = juce::jlimit(48, 88, (controlsSection.getWidth() - comboCol - spacing * (genSlots + 1)) / juce::jmax(1, genSlots));
-#endif
+        if ((performanceExpanded ? 1 : 0) + (musicalExpanded ? 1 : 0) + (shapeExpanded ? 1 : 0) > 0)
+        {
+            area.removeFromTop(plan.gap);
+            auto row = insetX(area.removeFromTop(plan.deck));
+            const int gutter = 8;
+            int weightLeft = (performanceExpanded ? 22 : 0) + (musicalExpanded ? 34 : 0) + (shapeExpanded ? 44 : 0);
+            int columnsLeft = (performanceExpanded ? 1 : 0) + (musicalExpanded ? 1 : 0) + (shapeExpanded ? 1 : 0);
+            auto takeCol = [&](int weight)
+            {
+                const int guttersAfter = juce::jmax(0, columnsLeft - 1) * gutter;
+                const int width = (row.getWidth() - guttersAfter) * weight / juce::jmax(1, weightLeft);
+                weightLeft -= weight;
+                --columnsLeft;
+                auto col = row.removeFromLeft(width);
+                if (columnsLeft > 0)
+                    row.removeFromLeft(gutter);
+                return col;
+            };
+            if (performanceExpanded)
+                perfSlot = takeCol(22);
+            if (musicalExpanded)
+                musicalSlot = takeCol(34);
+            if (shapeExpanded)
+                shapeSlot = takeCol(44);
+        }
+    }
 
-    auto generatorArea = controlsSection.removeFromLeft(comboCol);
-    generatorLabel.setBounds(generatorArea.removeFromTop(20));
-    generatorTypeCombo.setBounds(generatorArea.removeFromTop(30).reduced(10, 0));
-    generatorArea.removeFromTop(5);
-    midiChannelLabel.setBounds(generatorArea.removeFromTop(20));
-    midiChannelCombo.setBounds(generatorArea.removeFromTop(30).reduced(10, 0));
+    if (!plan.sideBySide)
+        area.removeFromTop(plan.gap);
 
-    controlsSection.removeFromLeft(spacing);
+    auto primary = plan.sideBySide ? perfSlot : insetX(area.removeFromTop(plan.performance));
+    generatorPanelBounds = primary.toFloat();
+    placeDisclosure(primary, performanceButton);
 
-    auto tempoArea = controlsSection.removeFromLeft(knobSize);
-    tempoLabel.setBounds(tempoArea.removeFromBottom(18));
-    tempoSlider.setBounds(tempoArea);
+    juce::Component* perfWidgets[] = {
+        &tempoSlider, &tempoLabel, &stepsSlider, &stepsLabel, &pulsesSlider, &pulsesLabel,
+        &rotationSlider, &rotationLabel, &densitySlider, &densityLabel,
+        &stepSizeSlider, &stepSizeLabel, &momentumSlider, &momentumLabel, &timeScaleSlider, &timeScaleLabel,
+        &markovOrderSlider, &markovOrderLabel, &markovStepSlider, &markovStepLabel,
+        &markovSurpriseSlider, &markovSurpriseLabel,
+        &lsystemGrammarSlider, &lsystemGrammarLabel, &lsystemGenerationSlider, &lsystemGenerationLabel,
+        &lsystemIntervalSlider, &lsystemIntervalLabel,
+        &cellularRuleSlider, &cellularRuleLabel, &cellularSeedSlider, &cellularSeedLabel,
+        &cellularListenSlider, &cellularListenLabel
+    };
 
+    if (!performanceExpanded)
+    {
+        setShown(perfWidgets, false);
+    }
+    else
+    {
+    primary.removeFromTop(kPanelHeaderH);
+    primary = primary.reduced(8, 0);
+
+    tempoSlider.setVisible(true);
+    tempoLabel.setVisible(true);
+    densitySlider.setVisible(true);
+    densityLabel.setVisible(true);
     stepsSlider.setVisible(showEuclideanKnobs);
     pulsesSlider.setVisible(showEuclideanKnobs);
     rotationSlider.setVisible(showEuclideanKnobs);
     stepsLabel.setVisible(showEuclideanKnobs);
     pulsesLabel.setVisible(showEuclideanKnobs);
     rotationLabel.setVisible(showEuclideanKnobs);
-
-    if (showEuclideanKnobs)
-    {
-        controlsSection.removeFromLeft(spacing);
-
-        auto stepsArea = controlsSection.removeFromLeft(knobSize);
-        stepsLabel.setBounds(stepsArea.removeFromBottom(18));
-        stepsSlider.setBounds(stepsArea);
-
-        controlsSection.removeFromLeft(spacing);
-
-        auto pulsesArea = controlsSection.removeFromLeft(knobSize);
-        pulsesLabel.setBounds(pulsesArea.removeFromBottom(18));
-        pulsesSlider.setBounds(pulsesArea);
-
-        controlsSection.removeFromLeft(spacing);
-
-        auto rotationArea = controlsSection.removeFromLeft(knobSize);
-        rotationLabel.setBounds(rotationArea.removeFromBottom(18));
-        rotationSlider.setBounds(rotationArea);
-    }
-
-    controlsSection.removeFromLeft(spacing);
-
-    auto densityArea = controlsSection.removeFromLeft(knobSize);
-    densityLabel.setBounds(densityArea.removeFromBottom(18));
-    densitySlider.setBounds(densityArea);
-
-    // Expression & range section (row 1: ranges/humanize; row 2: MIDI expression)
-    auto expressionOuter = area.removeFromTop(228);
-    auto rangeSection = expressionOuter.reduced(inset, 8);
-    expressionPanelBounds = rangeSection.toFloat();
-    rangeSection.removeFromTop(20); // Section label
-
-    auto expressionTop = rangeSection.removeFromTop(contentW < 900 ? 100 : 108);
-    auto expressionMidi = rangeSection; // remaining height for AT/PB/CC row
-
-    const int rangeCol = contentW < 900 ? 92 : 112;
-    auto velocityArea = expressionTop.removeFromLeft(rangeCol);
-    velocityLabel.setBounds(velocityArea.removeFromTop(20));
-    auto vSliders = velocityArea.reduced(10, 0);
-    velocityMinSlider.setBounds(vSliders.removeFromLeft(50));
-    vSliders.removeFromLeft(10);
-    velocityMaxSlider.setBounds(vSliders);
-
-    expressionTop.removeFromLeft(contentW < 900 ? 8 : 16);
-
-    auto pitchArea = expressionTop.removeFromLeft(rangeCol);
-    pitchLabel.setBounds(pitchArea.removeFromTop(20));
-    auto pSliders = pitchArea.reduced(10, 0);
-    pitchMinSlider.setBounds(pSliders.removeFromLeft(50));
-    pSliders.removeFromLeft(10);
-    pitchMaxSlider.setBounds(pSliders);
-
-    expressionTop.removeFromLeft(contentW < 900 ? 8 : 16);
-
-    // Scale controls
-    auto scaleArea = expressionTop.removeFromLeft(contentW < 900 ? 108 : 140);
-    scaleLabel.setBounds(scaleArea.removeFromTop(20));
-    scaleRootCombo.setBounds(scaleArea.removeFromTop(25).reduced(5, 0));
-    scaleArea.removeFromTop(5);
-    scaleTypeCombo.setBounds(scaleArea.removeFromTop(25).reduced(5, 0));
-
-    expressionTop.removeFromLeft(spacing);
-
-    // Humanization knobs
-    auto swingArea = expressionTop.removeFromLeft(knobSize);
-    swingLabel.setBounds(swingArea.removeFromBottom(16));
-    swingSlider.setBounds(swingArea);
-
-    expressionTop.removeFromLeft(spacing);
-
-    auto timingArea = expressionTop.removeFromLeft(knobSize);
-    timingHumanizeLabel.setBounds(timingArea.removeFromBottom(16));
-    timingHumanizeSlider.setBounds(timingArea);
-
-    expressionTop.removeFromLeft(spacing);
-
-    auto velVarArea = expressionTop.removeFromLeft(knobSize);
-    velocityHumanizeLabel.setBounds(velVarArea.removeFromBottom(16));
-    velocityHumanizeSlider.setBounds(velVarArea);
-
-    expressionTop.removeFromLeft(spacing);
-
-    auto gateArea = expressionTop.removeFromLeft(knobSize);
-    gateLengthLabel.setBounds(gateArea.removeFromBottom(16));
-    gateLengthSlider.setBounds(gateArea);
-
-    expressionTop.removeFromLeft(spacing);
-
-    auto legatoArea = expressionTop.removeFromLeft(knobSize);
-    legatoButton.setBounds(legatoArea.removeFromTop(50).reduced(5));
-
-    // Compact MIDI expression row (aftertouch / pitch bend / CC)
-#if JUCE_IOS
-    const int midiKnob = 76;
-    const int midiBtnW = 64;
-    const int midiBtnH = 40;
-#else
-    const int midiKnob = 70;
-    const int midiBtnW = 56;
-    const int midiBtnH = 36;
-#endif
-    expressionMidi.removeFromTop(4);
-
-    auto atBtnArea = expressionMidi.removeFromLeft(midiBtnW);
-    aftertouchEnableButton.setBounds(atBtnArea.removeFromTop(midiBtnH).reduced(2, 4));
-    expressionMidi.removeFromLeft(6);
-
-    auto atAmtArea = expressionMidi.removeFromLeft(midiKnob);
-    aftertouchAmountLabel.setBounds(atAmtArea.removeFromBottom(18));
-    aftertouchAmountSlider.setBounds(atAmtArea);
-
-    expressionMidi.removeFromLeft(spacing);
-
-    auto pbBtnArea = expressionMidi.removeFromLeft(midiBtnW);
-    pitchbendEnableButton.setBounds(pbBtnArea.removeFromTop(midiBtnH).reduced(2, 4));
-    expressionMidi.removeFromLeft(6);
-
-    auto pbRangeArea = expressionMidi.removeFromLeft(midiKnob);
-    pitchbendRangeLabel.setBounds(pbRangeArea.removeFromBottom(18));
-    pitchbendRangeSlider.setBounds(pbRangeArea);
-
-    expressionMidi.removeFromLeft(spacing);
-
-    auto ccBtnArea = expressionMidi.removeFromLeft(midiBtnW);
-    ccEnableButton.setBounds(ccBtnArea.removeFromTop(midiBtnH).reduced(2, 4));
-    expressionMidi.removeFromLeft(6);
-
-    auto ccNumArea = expressionMidi.removeFromLeft(midiKnob);
-    ccNumberLabel.setBounds(ccNumArea.removeFromBottom(18));
-    ccNumberSlider.setBounds(ccNumArea);
-
-    expressionMidi.removeFromLeft(spacing);
-
-    auto ccAmtArea = expressionMidi.removeFromLeft(midiKnob);
-    ccAmountLabel.setBounds(ccAmtArea.removeFromBottom(18));
-    ccAmountSlider.setBounds(ccAmtArea);
-
-    // Advanced section: Ratchet | Stochastic | LFO
-    auto advancedOuter = area.removeFromTop(132);
-    auto advancedSection = advancedOuter.reduced(inset, 6);
-    advancedPanelBounds = advancedSection.toFloat();
-    advancedSection.removeFromTop(22); // Section label
-
-    auto groupRow = advancedSection.removeFromTop(14);
-    const int groupGap = spacing * 2;
-    const int ratchetGroupW = knobSize * 3 + spacing * 2;
-    const int stochGroupW = showStochasticKnobs ? (knobSize * 3 + spacing * 2) : 0;
-    advancedRatchetGroupLabel.setBounds(groupRow.removeFromLeft(ratchetGroupW));
-    if (showStochasticKnobs)
-    {
-        groupRow.removeFromLeft(groupGap);
-        advancedStochasticGroupLabel.setBounds(groupRow.removeFromLeft(stochGroupW));
-    }
-    groupRow.removeFromLeft(groupGap);
-    advancedLfoGroupLabel.setBounds(groupRow.removeFromLeft(knobSize * 3 + 48 + spacing * 2));
-    advancedStochasticGroupLabel.setVisible(showStochasticKnobs);
-
-    auto ratchetCountArea = advancedSection.removeFromLeft(knobSize);
-    ratchetCountLabel.setBounds(ratchetCountArea.removeFromBottom(20));
-    ratchetCountSlider.setBounds(ratchetCountArea);
-
-    advancedSection.removeFromLeft(spacing);
-
-    auto ratchetProbArea = advancedSection.removeFromLeft(knobSize);
-    ratchetProbabilityLabel.setBounds(ratchetProbArea.removeFromBottom(20));
-    ratchetProbabilitySlider.setBounds(ratchetProbArea);
-
-    advancedSection.removeFromLeft(spacing);
-
-    auto ratchetDecayArea = advancedSection.removeFromLeft(knobSize);
-    ratchetDecayLabel.setBounds(ratchetDecayArea.removeFromBottom(20));
-    ratchetDecaySlider.setBounds(ratchetDecayArea);
-
     stepSizeSlider.setVisible(showStochasticKnobs);
     momentumSlider.setVisible(showStochasticKnobs);
     timeScaleSlider.setVisible(showStochasticKnobs);
     stepSizeLabel.setVisible(showStochasticKnobs);
     momentumLabel.setVisible(showStochasticKnobs);
     timeScaleLabel.setVisible(showStochasticKnobs);
+    markovOrderSlider.setVisible(showMarkovKnobs);
+    markovStepSlider.setVisible(showMarkovKnobs);
+    markovSurpriseSlider.setVisible(showMarkovKnobs);
+    markovOrderLabel.setVisible(showMarkovKnobs);
+    markovStepLabel.setVisible(showMarkovKnobs);
+    markovSurpriseLabel.setVisible(showMarkovKnobs);
+    lsystemGrammarSlider.setVisible(showLSystemKnobs);
+    lsystemGenerationSlider.setVisible(showLSystemKnobs);
+    lsystemIntervalSlider.setVisible(showLSystemKnobs);
+    lsystemGrammarLabel.setVisible(showLSystemKnobs);
+    lsystemGenerationLabel.setVisible(showLSystemKnobs);
+    lsystemIntervalLabel.setVisible(showLSystemKnobs);
+    cellularRuleSlider.setVisible(showCellularKnobs);
+    cellularSeedSlider.setVisible(showCellularKnobs);
+    cellularListenSlider.setVisible(showCellularKnobs);
+    cellularRuleLabel.setVisible(showCellularKnobs);
+    cellularSeedLabel.setVisible(showCellularKnobs);
+    cellularListenLabel.setVisible(showCellularKnobs);
 
-    advancedDividerX1 = static_cast<float>(advancedSection.getX() + groupGap / 2);
-    advancedSection.removeFromLeft(groupGap);
-
-    if (showStochasticKnobs)
+    juce::Array<juce::Component*> perfSliders;
+    juce::Array<juce::Component*> perfLabels;
+    auto queuePerf = [&](bool show, juce::Slider& slider, juce::Label& label)
     {
-        auto stepSizeArea = advancedSection.removeFromLeft(knobSize);
-        stepSizeLabel.setBounds(stepSizeArea.removeFromBottom(18));
-        stepSizeSlider.setBounds(stepSizeArea);
+        if (!show)
+            return;
+        perfSliders.add(&slider);
+        perfLabels.add(&label);
+    };
+    queuePerf(true, tempoSlider, tempoLabel);
+    queuePerf(showEuclideanKnobs, stepsSlider, stepsLabel);
+    queuePerf(showEuclideanKnobs, pulsesSlider, pulsesLabel);
+    queuePerf(showEuclideanKnobs, rotationSlider, rotationLabel);
+    queuePerf(showStochasticKnobs, stepSizeSlider, stepSizeLabel);
+    queuePerf(showStochasticKnobs, momentumSlider, momentumLabel);
+    queuePerf(showStochasticKnobs, timeScaleSlider, timeScaleLabel);
+    queuePerf(showMarkovKnobs, markovOrderSlider, markovOrderLabel);
+    queuePerf(showMarkovKnobs, markovStepSlider, markovStepLabel);
+    queuePerf(showMarkovKnobs, markovSurpriseSlider, markovSurpriseLabel);
+    queuePerf(showLSystemKnobs, lsystemGrammarSlider, lsystemGrammarLabel);
+    queuePerf(showLSystemKnobs, lsystemGenerationSlider, lsystemGenerationLabel);
+    queuePerf(showLSystemKnobs, lsystemIntervalSlider, lsystemIntervalLabel);
+    queuePerf(showCellularKnobs, cellularRuleSlider, cellularRuleLabel);
+    queuePerf(showCellularKnobs, cellularSeedSlider, cellularSeedLabel);
+    queuePerf(showCellularKnobs, cellularListenSlider, cellularListenLabel);
+    queuePerf(true, densitySlider, densityLabel);
 
-        advancedSection.removeFromLeft(spacing);
+    const int perfCount = perfSliders.size();
+    if (perfCount > 0)
+    {
+        int knobW = 80;
+        if (perfCount >= 5 && primary.getWidth() < perfCount * knobW && primary.getWidth() >= 3 * 74)
+            knobW = juce::jmax(74, primary.getWidth() / 3);
+        int cols = juce::jmax(1, juce::jmin(perfCount, primary.getWidth() / knobW));
+        if (perfCount >= 5 && primary.getWidth() >= 3 * 74)
+            cols = juce::jmin(perfCount, juce::jmax(cols, 3));
+        const int rows = (perfCount + cols - 1) / cols;
+        const int rowH = juce::jmin(100, juce::jmax(1, primary.getHeight() / rows));
+        const int gridH = rowH * rows;
+        const int y0 = primary.getY() + juce::jmax(0, (primary.getHeight() - gridH) / 2);
+        for (int i = 0; i < perfCount; ++i)
+        {
+            const int r = i / cols;
+            const int c = i % cols;
+            const int inRow = juce::jmin(cols, perfCount - r * cols);
+            const int rowX = primary.getX() + (primary.getWidth() - inRow * knobW) / 2;
+            auto cell = juce::Rectangle<int>(rowX + c * knobW, y0 + r * rowH, knobW, rowH).reduced(2, 2);
+            placeKnob(cell, *static_cast<juce::Slider*>(perfSliders[i]),
+                      *static_cast<juce::Label*>(perfLabels[i]), knobW - 4);
+        }
+    }
+    }
 
-        auto momentumArea = advancedSection.removeFromLeft(knobSize);
-        momentumLabel.setBounds(momentumArea.removeFromBottom(18));
-        momentumSlider.setBounds(momentumArea);
+    if (!plan.sideBySide)
+        area.removeFromTop(plan.gap);
 
-        advancedSection.removeFromLeft(spacing);
+    auto musical = plan.sideBySide ? musicalSlot : insetX(area.removeFromTop(plan.musical));
+    expressionPanelBounds = musical.toFloat();
+    placeDisclosure(musical, musicalButton);
 
-        auto timeScaleArea = advancedSection.removeFromLeft(knobSize);
-        timeScaleLabel.setBounds(timeScaleArea.removeFromBottom(18));
-        timeScaleSlider.setBounds(timeScaleArea);
+    juce::Component* musicalWidgets[] = {
+        &velocityMinSlider, &velocityMaxSlider, &velocityLabel, &velocityMinCaption, &velocityMaxCaption,
+        &pitchMinSlider, &pitchMaxSlider, &pitchLabel, &pitchMinCaption, &pitchMaxCaption,
+        &scaleLabel, &scaleRootCombo, &scaleTypeCombo,
+        &swingSlider, &swingLabel, &timingHumanizeSlider, &timingHumanizeLabel,
+        &velocityHumanizeSlider, &velocityHumanizeLabel,
+        &gateLengthSlider, &gateLengthLabel, &voiceModeCombo, &legatoButton, &legatoLabel
+    };
+    setShown(musicalWidgets, musicalExpanded);
 
-        advancedDividerX2 = static_cast<float>(advancedSection.getX() + groupGap / 2);
-        advancedSection.removeFromLeft(groupGap);
+    if (musicalExpanded)
+    {
+    musical.removeFromTop(kPanelHeaderH);
+    musical = musical.reduced(8, 0);
+
+    const bool wrapMusical = musical.getWidth() < 780;
+    // Centre the two musical bands on a fixed rhythm so faders do not stretch.
+    juce::Rectangle<int> musicalTop;
+    juce::Rectangle<int> musicalBottom;
+    if (wrapMusical)
+    {
+        const int rangeH = juce::jmin(112, musical.getHeight() / 2);
+        const int knobH = juce::jmin(100, juce::jmax(72, musical.getHeight() - rangeH));
+        auto block = musical.withSizeKeepingCentre(musical.getWidth(), juce::jmin(musical.getHeight(), rangeH + knobH));
+        musicalTop = block.removeFromTop(rangeH);
+        musicalBottom = block;
     }
     else
     {
-        advancedDividerX2 = advancedDividerX1;
+        musicalTop = musical;
     }
 
-    // Modulation v2 MVP controls (LFO → velocity)
+    auto layoutRange = [](juce::Rectangle<int> slot, juce::Label& title, juce::Label& minCaption,
+                          juce::Slider& minSlider, juce::Label& maxCaption, juce::Slider& maxSlider)
+    {
+        const int blockH = juce::jmin(slot.getHeight(), 112);
+        auto block = slot.withSizeKeepingCentre(slot.getWidth(), blockH);
+        title.setBounds(block.removeFromTop(14));
+        auto captions = block.removeFromTop(14);
+        const int half = block.getWidth() / 2;
+        minCaption.setBounds(captions.removeFromLeft(half));
+        maxCaption.setBounds(captions);
+        minSlider.setBounds(block.removeFromLeft(half).reduced(4, 0));
+        maxSlider.setBounds(block.reduced(4, 0));
+    };
+
+    auto layoutScale = [](juce::Rectangle<int> slot, juce::Label& title, juce::ComboBox& root, juce::ComboBox& type)
+    {
+        const int blockH = juce::jmin(slot.getHeight(), 112);
+        auto block = slot.withSizeKeepingCentre(slot.getWidth(), blockH);
+        title.setBounds(block.removeFromTop(14));
+        block.removeFromTop(8);
+        const int comboH = 26;
+        root.setBounds(block.removeFromTop(comboH).reduced(2, 0));
+        block.removeFromTop(6);
+        type.setBounds(block.removeFromTop(comboH).reduced(2, 0));
+    };
+
+    auto layoutLegato = [](juce::Rectangle<int> col, juce::ComboBox& voice, juce::TextButton& button, juce::Label& label)
+    {
+        label.setBounds(col.removeFromBottom(16));
+        const int voiceH = juce::jmin(26, juce::jmax(22, col.getHeight() / 2));
+        voice.setBounds(col.removeFromTop(voiceH).reduced(2, 1));
+        const int w = juce::jmin(76, juce::jmax(48, col.getWidth() - 8));
+        const int h = juce::jmin(28, juce::jmax(22, col.getHeight() - 4));
+        button.setBounds(col.withSizeKeepingCentre(w, h));
+    };
+
+    auto fillRow = [&](juce::Rectangle<int> row, bool rangesAndScale)
+    {
+        const int weights[] = { 18, 18, 16, 12, 12, 12, 12, 14 };
+        const int first = rangesAndScale ? 0 : 3;
+        const int count = rangesAndScale ? (wrapMusical ? 3 : 8) : 5;
+        int left = 0;
+        for (int i = 0; i < count; ++i)
+            left += weights[first + i];
+        auto take = [&](int weight)
+        {
+            const int width = row.getWidth() * weight / juce::jmax(1, left);
+            left -= weight;
+            return row.removeFromLeft(width);
+        };
+
+        if (rangesAndScale)
+        {
+            layoutRange(take(weights[0]).reduced(4, 0), velocityLabel, velocityMinCaption,
+                        velocityMinSlider, velocityMaxCaption, velocityMaxSlider);
+            layoutRange(take(weights[1]).reduced(4, 0), pitchLabel, pitchMinCaption,
+                        pitchMinSlider, pitchMaxCaption, pitchMaxSlider);
+            layoutScale(take(weights[2]).reduced(4, 0), scaleLabel, scaleRootCombo, scaleTypeCombo);
+        }
+        if (!rangesAndScale || !wrapMusical)
+        {
+            placeKnob(take(weights[3]), swingSlider, swingLabel);
+            placeKnob(take(weights[4]), timingHumanizeSlider, timingHumanizeLabel);
+            placeKnob(take(weights[5]), velocityHumanizeSlider, velocityHumanizeLabel);
+            placeKnob(take(weights[6]), gateLengthSlider, gateLengthLabel);
+            layoutLegato(take(weights[7]), voiceModeCombo, legatoButton, legatoLabel);
+        }
+    };
+
+    fillRow(musicalTop, true);
+    if (wrapMusical)
+        fillRow(musicalBottom, false);
+    }
+
+    if (!plan.sideBySide)
+        area.removeFromTop(plan.gap);
+
+    auto shape = plan.sideBySide ? shapeSlot : insetX(area.removeFromTop(plan.shape));
+    advancedPanelBounds = shape.toFloat();
+    placeDisclosure(shape, shapeButton);
+    setShapeFamilyVisible(shapeExpanded);
+
+    if (!shapeExpanded)
+    {
+        advancedDividerX1 = 0.0f;
+        advancedDividerX2 = 0.0f;
+    }
+    else
+    {
+    shape.removeFromTop(kPanelHeaderH);
+    shape = shape.reduced(8, 0);
+
 #if JUCE_IOS
-    const int lfoBtnW = 56;
-    const int lfoBtnH = 36;
+    const int midiBtnH = 36;
+    const int midiBtnW = 64;
 #else
-    const int lfoBtnW = 48;
-    const int lfoBtnH = 28;
+    const int midiBtnH = 30;
+    const int midiBtnW = 52;
 #endif
-    auto modEnableArea = advancedSection.removeFromLeft(lfoBtnW);
-    modLfoEnableButton.setBounds(modEnableArea.withSizeKeepingCentre(lfoBtnW, lfoBtnH));
+    const int exprKnobW = 76;
+    const int exprGap = 8;
 
-    advancedSection.removeFromLeft(6);
+    auto layoutExprGroup = [&](juce::Rectangle<int> group, juce::Button& toggle, juce::Slider& amount,
+                               juce::Label& amountLabel, juce::Slider* extra, juce::Label* extraLabel)
+    {
+        const int knobs = extra != nullptr ? 2 : 1;
+        const int used = midiBtnW + exprGap + exprKnobW * knobs + exprGap * (knobs - 1);
+        if (group.getWidth() > used)
+            group = group.withSizeKeepingCentre(used, group.getHeight());
 
-    auto modRateArea = advancedSection.removeFromLeft(knobSize);
-    modLfoRateLabel.setBounds(modRateArea.removeFromBottom(20));
-    modLfoRateSlider.setBounds(modRateArea);
+        placeToggleInKnobBand(group.removeFromLeft(midiBtnW), toggle, midiBtnW - 4, midiBtnH);
+        group.removeFromLeft(exprGap);
+        placeKnob(group.removeFromLeft(exprKnobW), amount, amountLabel, exprKnobW);
+        if (extra != nullptr && extraLabel != nullptr)
+        {
+            group.removeFromLeft(exprGap);
+            placeKnob(group.removeFromLeft(exprKnobW), *extra, *extraLabel, exprKnobW);
+        }
+    };
 
-    advancedSection.removeFromLeft(spacing);
+    auto placeThree = [&](juce::Rectangle<int> row, juce::Slider& a, juce::Label& aLabel,
+                          juce::Slider& b, juce::Label& bLabel, juce::Slider& c, juce::Label& cLabel)
+    {
+        const int col = row.getWidth() / 3;
+        placeKnob(row.removeFromLeft(col), a, aLabel, exprKnobW);
+        placeKnob(row.removeFromLeft(col), b, bLabel, exprKnobW);
+        placeKnob(row, c, cLabel, exprKnobW);
+    };
 
-    auto modDepthArea = advancedSection.removeFromLeft(knobSize);
-    modLfoDepthLabel.setBounds(modDepthArea.removeFromBottom(20));
-    modLfoDepthSlider.setBounds(modDepthArea);
+    advancedDividerX1 = 0.0f;
+    advancedDividerX2 = 0.0f;
 
-    advancedSection.removeFromLeft(spacing);
+    auto placeRowCaption = [](juce::Rectangle<int>& row, juce::Label& label)
+    {
+        auto cap = row.removeFromTop(14);
+        label.setBounds(cap.removeFromLeft(juce::jmin(88, cap.getWidth())));
+    };
 
-    auto modDensArea = advancedSection.removeFromLeft(knobSize);
-    modLfoDensityDepthLabel.setBounds(modDensArea.removeFromBottom(20));
-    modLfoDensityDepthSlider.setBounds(modDensArea);
+    const bool exprOnOneRow = shape.getWidth() >= 500;
+    const int shapeRows = exprOnOneRow ? 2 : 3;
+    const int shapeRowH = juce::jmin(96, juce::jmax(64, shape.getHeight() / shapeRows));
+    auto shapeBlock = shape.withSizeKeepingCentre(shape.getWidth(), juce::jmin(shape.getHeight(), shapeRowH * shapeRows));
+    auto takeShapeRow = [&]()
+    {
+        return shapeBlock.removeFromTop(shapeRowH);
+    };
 
-    // Collapsible MIDI activity / last-events strip
-    area.removeFromTop(4);
-    const int midiLogH = midiActivityPane.getPreferredHeight();
-    auto midiLogArea = area.removeFromTop(midiLogH).reduced(inset, 0);
-    midiActivityPane.setBounds(midiLogArea);
+    auto layoutRatchet = [&](juce::Rectangle<int> row)
+    {
+        placeRowCaption(row, advancedRatchetGroupLabel);
+        placeThree(row, ratchetCountSlider, ratchetCountLabel,
+                   ratchetProbabilitySlider, ratchetProbabilityLabel,
+                   ratchetDecaySlider, ratchetDecayLabel);
+    };
+
+    if (exprOnOneRow)
+    {
+        auto expr = takeShapeRow();
+        placeRowCaption(expr, advancedStochasticGroupLabel);
+        const int atW = midiBtnW + exprGap + exprKnobW;
+        const int ccW = midiBtnW + exprGap + exprKnobW * 2 + exprGap;
+        const int packed = atW * 2 + ccW + exprGap * 2;
+        if (expr.getWidth() > packed)
+            expr = expr.withSizeKeepingCentre(packed, expr.getHeight());
+        layoutExprGroup(expr.removeFromLeft(atW), aftertouchEnableButton,
+                        aftertouchAmountSlider, aftertouchAmountLabel, nullptr, nullptr);
+        expr.removeFromLeft(exprGap);
+        layoutExprGroup(expr.removeFromLeft(atW), pitchbendEnableButton,
+                        pitchbendRangeSlider, pitchbendRangeLabel, nullptr, nullptr);
+        expr.removeFromLeft(exprGap);
+        layoutExprGroup(expr, ccEnableButton, ccNumberSlider, ccNumberLabel,
+                        &ccAmountSlider, &ccAmountLabel);
+
+        if (shapeRows == 2)
+            layoutRatchet(takeShapeRow());
+    }
+    else
+    {
+        auto exprTop = takeShapeRow();
+        placeRowCaption(exprTop, advancedStochasticGroupLabel);
+        const int half = exprTop.getWidth() / 2;
+        layoutExprGroup(exprTop.removeFromLeft(half).reduced(2, 0), aftertouchEnableButton,
+                        aftertouchAmountSlider, aftertouchAmountLabel, nullptr, nullptr);
+        layoutExprGroup(exprTop.reduced(2, 0), pitchbendEnableButton,
+                        pitchbendRangeSlider, pitchbendRangeLabel, nullptr, nullptr);
+        layoutExprGroup(takeShapeRow().reduced(4, 0), ccEnableButton, ccNumberSlider, ccNumberLabel,
+                        &ccAmountSlider, &ccAmountLabel);
+        layoutRatchet(takeShapeRow());
+    }
+    }
+
+    juce::Component* modWidgets[] = {
+        &modLfoEnableButton, &modLfoRateSlider, &modLfoRateLabel,
+        &modShRateSlider, &modShRateLabel,
+        &modLfoDepthSlider, &modLfoDepthLabel,
+        &modLfoDensityDepthSlider, &modLfoDensityDepthLabel,
+        &modRoute3SourceCombo, &modRoute3DestCombo, &modRoute3AmountSlider, &modRoute3AmountLabel,
+        &modRoute4SourceCombo, &modRoute4DestCombo, &modRoute4AmountSlider, &modRoute4AmountLabel
+    };
+    setShown(modWidgets, true);
+
+    if (area.getHeight() > plan.mod)
+        area.removeFromTop(juce::jmin(plan.gap, area.getHeight() - plan.mod));
+    auto modSection = insetX(area.removeFromTop(juce::jmin(plan.mod, juce::jmax(0, area.getHeight()))));
+    modulationPanelBounds = modSection.toFloat();
+    auto modRow = modSection.reduced(8, 4);
+
+    auto layoutSources = [&](juce::Rectangle<int> row)
+    {
+        placeToggleInKnobBand(row.removeFromLeft(juce::jmin(64, juce::jmax(40, row.getWidth() / 3))),
+                              modLfoEnableButton, 56, 28);
+        row.removeFromLeft(4);
+        const int col = juce::jmax(1, row.getWidth() / 2);
+        placeKnob(row.removeFromLeft(col), modLfoRateSlider, modLfoRateLabel, 76);
+        placeKnob(row, modShRateSlider, modShRateLabel, 76);
+    };
+    auto layoutFree = [&](juce::Rectangle<int> cell, juce::ComboBox& source, juce::ComboBox& dest,
+                          juce::Slider& amount, juce::Label& label)
+    {
+        auto combos = cell.removeFromTop(juce::jmin(22, juce::jmax(16, cell.getHeight() / 3)));
+        source.setBounds(combos.removeFromLeft(combos.getWidth() / 2).reduced(2, 0));
+        dest.setBounds(combos.reduced(2, 0));
+        placeKnob(cell, amount, label, 72);
+    };
+    auto layoutRoutes = [&](juce::Rectangle<int> row)
+    {
+        const int cellW = juce::jmax(1, row.getWidth() / 4);
+        placeKnob(row.removeFromLeft(cellW), modLfoDepthSlider, modLfoDepthLabel, cellW);
+        placeKnob(row.removeFromLeft(cellW), modLfoDensityDepthSlider, modLfoDensityDepthLabel, cellW);
+        layoutFree(row.removeFromLeft(cellW), modRoute3SourceCombo, modRoute3DestCombo,
+                   modRoute3AmountSlider, modRoute3AmountLabel);
+        layoutFree(row, modRoute4SourceCombo, modRoute4DestCombo,
+                   modRoute4AmountSlider, modRoute4AmountLabel);
+    };
+
+    if (plan.mod > 100)
+    {
+        auto top = modRow.removeFromTop(modRow.getHeight() / 2);
+        layoutSources(top);
+        layoutRoutes(modRow);
+    }
+    else
+    {
+        auto sources = modRow.removeFromLeft(juce::jmin(230, juce::jmax(120, modRow.getWidth() / 4)));
+        layoutSources(sources);
+        layoutRoutes(modRow);
+    }
+
+    patternButton.toFront(false);
+    performanceButton.toFront(false);
+    musicalButton.toFront(false);
+    shapeButton.toFront(false);
+}
+
+void GenerativeMIDIEditor::feedSoundingNotes(int generatorType, int partStep, int pitchMin, int pitchMax)
+{
+    pitchMin = juce::jlimit(0, 126, pitchMin);
+    pitchMax = juce::jlimit(pitchMin + 1, 127, pitchMax);
+    auto& scale = audioProcessor.getScaleQuantizer();
+    auto quantize = [&](int note)
+    {
+        return scale.quantize(juce::jlimit(0, 127, note));
+    };
+
+    if (generatorType != melodyFeedGenerator)
+    {
+        melodyFeedGenerator = generatorType;
+        melodyFeedStep = -2;
+        lSystemFeedNote = 0;
+        for (int i = 0; i < 16; ++i)
+            polyLayerFeedSeen[i] = false;
+    }
+
+    const bool stepChanged = partStep >= 0 && partStep != melodyFeedStep;
+    if (partStep >= 0)
+        melodyFeedStep = partStep;
+
+    if (generatorType == GeneratorTypeMapping::kEuclidean && stepChanged)
+    {
+        auto& euclidean = audioProcessor.getEuclideanEngine();
+        const int steps = juce::jmax(1, euclidean.getSteps());
+        const int step = partStep % steps;
+        if (euclidean.getStep(step))
+        {
+            const int range = pitchMax - pitchMin;
+            patternDisplay.noteMelody(quantize(pitchMin + (step % (range + 1))));
+        }
+    }
+    else if (generatorType == GeneratorTypeMapping::kPolyrhythm)
+    {
+        auto& engine = audioProcessor.getPolyrhythmEngine();
+        const int layers = juce::jmin(16, engine.getNumLayers());
+        for (int i = 0; i < layers; ++i)
+        {
+            auto* layer = engine.getLayer(i);
+            if (layer == nullptr || !layer->enabled || layer->length <= 0)
+                continue;
+            if (!polyLayerFeedSeen[i])
+            {
+                polyLayerFeedSeen[i] = true;
+                polyLayerFeedStep[i] = layer->currentStep;
+                continue;
+            }
+            if (layer->currentStep == polyLayerFeedStep[i])
+                continue;
+
+            const int length = juce::jmax(1, layer->length);
+            const int played = (layer->currentStep - 1 + length) % length;
+            polyLayerFeedStep[i] = layer->currentStep;
+            if (played >= static_cast<int>(layer->pattern.size())
+                || played >= static_cast<int>(layer->pitches.size())
+                || !layer->pattern[static_cast<size_t>(played)])
+                continue;
+
+            const int raw = juce::jlimit(pitchMin, pitchMax,
+                                         layer->pitches[static_cast<size_t>(played)] + layer->pitchOffset);
+            patternDisplay.noteMelody(quantize(raw));
+        }
+    }
+    else if (generatorType == GeneratorTypeMapping::kLSystem && stepChanged && !lSystemRows.isEmpty())
+    {
+        const auto& text = lSystemRows[lSystemRows.size() - 1];
+        const int length = text.length();
+        const int interval = juce::jmax(1, static_cast<int>(lsystemIntervalSlider.getValue()));
+        int noteCount = 0;
+        for (int i = 0; i < length; ++i)
+        {
+            const auto ch = text[i];
+            if (ch >= 'A' && ch <= 'D')
+                ++noteCount;
+        }
+
+        if (noteCount > 0)
+        {
+            const int want = lSystemFeedNote % noteCount;
+            int cursor = pitchMin + juce::jmax(0, pitchMax - pitchMin) / 2;
+            int seen = 0;
+            int found = -1;
+            for (int i = 0; i < length; ++i)
+            {
+                const auto ch = text[i];
+                int emitted = -1;
+                switch (ch)
+                {
+                    case 'A': emitted = cursor; break;
+                    case 'B': emitted = cursor + interval; break;
+                    case 'C': emitted = cursor + interval * 2; break;
+                    case 'D': emitted = cursor + interval * 3; break;
+                    case '+': cursor = juce::jlimit(0, 127, cursor + 12); break;
+                    case '-': cursor = juce::jlimit(0, 127, cursor - 12); break;
+                    case '[': cursor = juce::jlimit(0, 127, cursor + 1); break;
+                    case ']': cursor = juce::jlimit(0, 127, cursor - 1); break;
+                    default: break;
+                }
+                if (emitted < 0)
+                    continue;
+                if (seen == want)
+                {
+                    found = juce::jlimit(pitchMin, pitchMax, emitted);
+                    break;
+                }
+                ++seen;
+            }
+            if (found >= 0)
+                patternDisplay.noteMelody(quantize(found));
+            lSystemFeedNote = want + 1;
+        }
+    }
+    else if (stepChanged
+             && (generatorType == GeneratorTypeMapping::kBrownian
+                 || generatorType == GeneratorTypeMapping::kPerlin
+                 || generatorType == GeneratorTypeMapping::kDrunkWalk
+                 || generatorType == GeneratorTypeMapping::kLorenz))
+    {
+        patternDisplay.noteMelody(quantize(audioProcessor.getStochasticEngine().getCurrentPitch(pitchMin, pitchMax)));
+    }
+
+    int newest = patternDisplay.newestMelody();
+    if (newest < 0)
+        newest = juce::jlimit(0, 127, 60 + scale.getRootNote());
+
+    const bool chromatic = scale.getScale() == ScaleQuantizer::Scale::Chromatic;
+    int intervals[12];
+    int intervalCount = 0;
+    if (!chromatic)
+    {
+        const auto& src = scale.getScaleIntervals();
+        intervalCount = juce::jmin(12, static_cast<int>(src.size()));
+        for (int i = 0; i < intervalCount; ++i)
+            intervals[i] = src[static_cast<size_t>(i)];
+    }
+
+    const auto triad = HarmonyParts::triadForMelody(
+        newest, scale.getRootNote(), intervals, intervalCount, chromatic);
+    patternDisplay.setPitchSpan(pitchMin, pitchMax);
+    patternDisplay.setHarmony(triad.root, triad.third, triad.fifth);
+
+    if (polyLayerEditor != nullptr)
+    {
+        PatternVisualizer::StackMark marks[16];
+        const int n = patternDisplay.fillStack(marks, 16);
+        polyLayerEditor->setStack(marks, n, pitchMin, pitchMax);
+    }
 }
 
 void GenerativeMIDIEditor::timerCallback()
 {
     const int generatorType = generatorTypeCombo.getSelectedId() - 1;
 
-    juce::Colour visualizerColor;
-    if (generatorType == GeneratorTypeMapping::kEuclidean)
-        visualizerColor = juce::Colour(CustomLookAndFeel::GOLD_TEMPLE);
-    else if (GeneratorTypeMapping::isPolyrhythm(generatorType))
-        visualizerColor = juce::Colour(CustomLookAndFeel::COPPER_STEAM);
-    else if (GeneratorTypeMapping::isAlgorithmic(generatorType))
-        visualizerColor = juce::Colour(CustomLookAndFeel::GREEN_VERDIGRIS);
-    else if (GeneratorTypeMapping::isStochastic(generatorType))
-        visualizerColor = juce::Colour(CustomLookAndFeel::VIOLET_ALCHEMY);
-    else
-        visualizerColor = juce::Colour(CustomLookAndFeel::AMBER_TESLA);
-
-    patternDisplay.setAccentColor(visualizerColor);
-
     const uint32_t noteCount = audioProcessor.getNoteActivityCount();
-    const bool notesFired = noteCount != lastNoteActivityCount;
-    if (notesFired)
+    if (noteCount != lastNoteActivityCount)
     {
         activityPulse = 1.0f;
         lastNoteActivityCount = noteCount;
@@ -1052,41 +1701,172 @@ void GenerativeMIDIEditor::timerCallback()
         activityPulse = juce::jmax(0.0f, activityPulse - 0.08f);
     }
 
+    const float pitchMin = static_cast<float>(pitchMinSlider.getValue());
+    const float pitchMax = juce::jmax(pitchMin + 1.0f, static_cast<float>(pitchMaxSlider.getValue()));
+    auto normPitch = [pitchMin, pitchMax](float note)
+    {
+        return juce::jlimit(0.0f, 1.0f, (note - pitchMin) / (pitchMax - pitchMin));
+    };
+
+    patternDisplay.setGenerator(generatorType);
+    patternDisplay.setShowDensity(false);
+    const bool monoVoice = voiceModeCombo.getSelectedItemIndex() == 1;
+    const float gateLength = static_cast<float>(gateLengthSlider.getValue());
+    patternDisplay.setVoice(monoVoice, gateLength);
+    const int partCount = juce::jlimit(1, 4, partCountCombo.getSelectedItemIndex() + 1);
+    const int timeNum = juce::jmax(1, static_cast<int>(audioProcessor.getValueTreeState().getRawParameterValue("timeSigNum")->load()));
+    const int timeDen = juce::jmax(1, static_cast<int>(audioProcessor.getValueTreeState().getRawParameterValue("timeSigDenom")->load()));
+    const int barSixteenths = juce::jmax(1, timeNum * 16 / timeDen);
+    const int partStep = audioProcessor.isClockAdvancing()
+                             ? juce::jmax(0, audioProcessor.getCurrentStep() - 1)
+                             : -1;
+    const float tempo = juce::jmax(20.0f, static_cast<float>(tempoSlider.getValue()));
+    const float gateSeconds = gateLength * (60.0f / tempo) / 4.0f;
+    patternDisplay.setParts(partCount, partStep, barSixteenths, gateSeconds);
+    if (polyLayerEditor != nullptr)
+    {
+        polyLayerEditor->setVoice(monoVoice, gateLength);
+        polyLayerEditor->setParts(partCount, partStep, barSixteenths, gateSeconds);
+    }
+    if (generatorType != GeneratorTypeMapping::kCellular)
+        cellularSeenGen = -1;
+    if (generatorType != GeneratorTypeMapping::kMarkov)
+        markovSeenSerial = 0;
+    if (generatorType != GeneratorTypeMapping::kProbabilistic)
+        probSeenPrimed = false;
+
     if (generatorType == GeneratorTypeMapping::kEuclidean)
     {
         auto& euclidean = audioProcessor.getEuclideanEngine();
-        const int steps = juce::jmax(1, euclidean.getSteps());
-        std::vector<bool> pattern(static_cast<size_t>(steps));
+        const int steps = juce::jlimit(1, 64, euclidean.getSteps());
+        bool hits[64];
         for (int i = 0; i < steps; ++i)
-            pattern[static_cast<size_t>(i)] = euclidean.getStep(i);
+            hits[i] = euclidean.getStep(i);
 
-        patternDisplay.setPattern(pattern);
-        patternDisplay.setCurrentStep(audioProcessor.getCurrentStep() % steps);
-        patternDisplay.setStatusText({});
-        patternDisplay.setActivityLevel(0.0f);
+        patternDisplay.setMode(PatternVisualizer::Mode::Steps);
+        patternDisplay.setSteps(hits, steps, audioProcessor.getCurrentStep() % steps);
+        patternDisplay.setCaption("Euclidean  " + juce::String(euclidean.getPulses())
+                                   + " / " + juce::String(steps));
     }
-    else if (!GeneratorTypeMapping::isPolyrhythm(generatorType))
+    else if (generatorType == GeneratorTypeMapping::kMarkov)
     {
-        patternDisplay.setPattern({});
-        patternDisplay.setCurrentStep(0);
-
-        juce::String genName = generatorTypeCombo.getText();
-        if (genName.isEmpty())
-            genName = "Generator";
-
-        const bool advancing = audioProcessor.isClockAdvancing();
-        juce::String status = genName + (advancing ? " · generating" : " · idle");
-        patternDisplay.setStatusText(status);
-        patternDisplay.setActivityLevel(activityPulse);
-
-        activitySampleHit = activitySampleHit || (notesFired && advancing);
-        if (++activitySampleFrames >= 3)
+        auto& algo = audioProcessor.getAlgorithmicEngine();
+        patternDisplay.setMode(PatternVisualizer::Mode::Stems);
+        const uint32_t serial = algo.getHistorySerial();
+        if (serial != 0 && serial != markovSeenSerial)
         {
-            patternDisplay.pushActivityTick(activitySampleHit);
-            activitySampleHit = false;
-            activitySampleFrames = 0;
+            uint32_t pending = serial - markovSeenSerial;
+            if (markovSeenSerial == 0)
+                pending = 1;
+            const int count = algo.getHistoryCount();
+            const int pushN = juce::jmin(count, static_cast<int>(juce::jmin<uint32_t>(pending, 16u)));
+            for (int age = pushN - 1; age >= 0; --age)
+            {
+                const int note = algo.getHistoryNoteFromNewest(age);
+                patternDisplay.pushSample(0.0f, normPitch(static_cast<float>(note)));
+                patternDisplay.noteMelody(audioProcessor.getScaleQuantizer().quantize(note));
+            }
+            markovSeenSerial = serial;
         }
+        patternDisplay.setCaption("Markov  order " + juce::String(static_cast<int>(markovOrderSlider.getValue()))
+                                   + "  step " + juce::String(static_cast<int>(markovStepSlider.getValue())));
     }
+    else if (generatorType == GeneratorTypeMapping::kLSystem)
+    {
+        const int grammar = static_cast<int>(lsystemGrammarSlider.getValue());
+        const int generation = static_cast<int>(lsystemGenerationSlider.getValue());
+        if (lSystemVizGrammar != grammar || lSystemVizGeneration != generation || lSystemRows.isEmpty())
+        {
+            lSystemRows.clear();
+            char symbols[LSystemCatalog::kMaxSymbols];
+            for (int row = 0; row <= generation; ++row)
+            {
+                int length = 0;
+                LSystemCatalog::expand(grammar, row, symbols, LSystemCatalog::kMaxSymbols, length);
+                lSystemRows.add(juce::String(symbols));
+            }
+            lSystemVizGrammar = grammar;
+            lSystemVizGeneration = generation;
+            lSystemFeedNote = 0;
+        }
+        const int n = juce::jmax(1, lSystemRows[lSystemRows.size() - 1].length());
+        patternDisplay.setMode(PatternVisualizer::Mode::Symbols);
+        patternDisplay.setGrowth(lSystemRows, audioProcessor.getCurrentStep() % n);
+        patternDisplay.setCaption("L-System   " + juce::String(LSystemCatalog::name(grammar))
+                                   + "  gen " + juce::String(generation));
+    }
+    else if (generatorType == GeneratorTypeMapping::kCellular)
+    {
+        auto& cells = audioProcessor.getAlgorithmicEngine().getCellularAutomaton();
+        bool row[64];
+        int count = 0;
+        const int generation = cells.copyCells(row, 64, count);
+        patternDisplay.setMode(PatternVisualizer::Mode::Cells);
+        if (generation != cellularSeenGen && count > 0)
+        {
+            const int listen = juce::jlimit(0, count - 1, static_cast<int>(cellularListenSlider.getValue()));
+            patternDisplay.pushCells(row, count, listen);
+            if (row[static_cast<size_t>(listen)])
+            {
+                int weighted = 0;
+                for (int i = 0; i < count; ++i)
+                    if (row[static_cast<size_t>((listen + i) % count)])
+                        weighted += i + 1;
+                const int maxWeight = count * (count + 1) / 2;
+                const int span = juce::jmax(0, static_cast<int>(pitchMax - pitchMin));
+                const int raw = static_cast<int>(pitchMin) + (weighted * span) / juce::jmax(1, maxWeight);
+                patternDisplay.noteMelody(audioProcessor.getScaleQuantizer().quantize(raw));
+            }
+            cellularSeenGen = generation;
+        }
+        patternDisplay.setCaption("Cellular   rule " + juce::String(static_cast<int>(cellularRuleSlider.getValue()))
+                                   + "  listen " + juce::String(static_cast<int>(cellularListenSlider.getValue())));
+    }
+    else if (generatorType == GeneratorTypeMapping::kProbabilistic)
+    {
+        auto& algo = audioProcessor.getAlgorithmicEngine();
+        patternDisplay.setMode(PatternVisualizer::Mode::Stems);
+        patternDisplay.setShowDensity(true);
+        patternDisplay.setDensity(static_cast<float>(densitySlider.getValue()));
+        const uint32_t notes = audioProcessor.getNoteActivityCount();
+        if (!probSeenPrimed)
+        {
+            probSeenNotes = notes;
+            probSeenPrimed = true;
+            patternDisplay.pushSample(0.0f, normPitch(static_cast<float>(algo.getLastProbNote())));
+            patternDisplay.noteMelody(audioProcessor.getScaleQuantizer().quantize(algo.getLastProbNote()));
+        }
+        else if (notes != probSeenNotes)
+        {
+            patternDisplay.pushSample(0.0f, normPitch(static_cast<float>(algo.getLastProbNote())));
+            patternDisplay.noteMelody(audioProcessor.getScaleQuantizer().quantize(algo.getLastProbNote()));
+            probSeenNotes = notes;
+        }
+        patternDisplay.setCaption("Probabilistic");
+    }
+    else if (generatorType == GeneratorTypeMapping::kBrownian
+             || generatorType == GeneratorTypeMapping::kPerlin
+             || generatorType == GeneratorTypeMapping::kDrunkWalk)
+    {
+        auto& stochastic = audioProcessor.getStochasticEngine();
+        const auto mode = generatorType == GeneratorTypeMapping::kDrunkWalk
+                              ? PatternVisualizer::Mode::Stairs
+                              : PatternVisualizer::Mode::Curve;
+        patternDisplay.setMode(mode);
+        patternDisplay.pushSample(0.0f, stochastic.getCurrentValue());
+        patternDisplay.setCaption(generatorType == GeneratorTypeMapping::kBrownian ? "Brownian"
+                                 : generatorType == GeneratorTypeMapping::kPerlin ? "Perlin"
+                                 : "Drunk Walk");
+    }
+    else if (generatorType == GeneratorTypeMapping::kLorenz)
+    {
+        auto& stochastic = audioProcessor.getStochasticEngine();
+        patternDisplay.setMode(PatternVisualizer::Mode::Orbit);
+        patternDisplay.pushSample(stochastic.getCurrentValue(), stochastic.getTertiaryValue());
+        patternDisplay.setCaption("Lorenz");
+    }
+
+    feedSoundingNotes(generatorType, partStep, static_cast<int>(pitchMin), static_cast<int>(pitchMax));
 
     updateStatusChip();
 
@@ -1100,14 +1880,55 @@ void GenerativeMIDIEditor::timerCallback()
 void GenerativeMIDIEditor::currentPresetChanged(const juce::String& presetName)
 {
     syncPresetLabel(presetName);
+    refreshPresetCombo();
+}
+
+void GenerativeMIDIEditor::refreshPresetCombo()
+{
+    const auto names = audioProcessor.getPresetManager().getPresetNames();
+    const auto current = audioProcessor.getPresetManager().getCurrentPresetName();
+
+    juce::ScopedValueSetter<bool> guard(updatingPresetCombo, true);
+    presetCombo.clear(juce::dontSendNotification);
+    presetCombo.addItemList(names, 1);
+    const int index = names.indexOf(current);
+    if (index >= 0)
+        presetCombo.setSelectedItemIndex(index, juce::dontSendNotification);
+    else
+        presetCombo.setTextWhenNothingSelected(current.isNotEmpty() ? current : "No Preset");
 }
 
 void GenerativeMIDIEditor::syncPresetLabel(const juce::String& presetName)
 {
+    loadedPresetName = presetName;
+    loadedGeneratorId = presetName.isNotEmpty() ? generatorTypeCombo.getSelectedId() : -1;
+    currentPresetLabel.setColour(juce::Label::textColourId,
+                                 juce::Colour(CustomLookAndFeel::COPPER_STEAM));
     if (presetName.isNotEmpty())
         currentPresetLabel.setText(presetName, juce::dontSendNotification);
     else
         currentPresetLabel.setText("No Preset", juce::dontSendNotification);
+    resized();
+}
+
+void GenerativeMIDIEditor::notePresetDivergence()
+{
+    if (loadedPresetName.isEmpty())
+        return;
+
+    if (generatorTypeCombo.getSelectedId() == loadedGeneratorId)
+    {
+        currentPresetLabel.setColour(juce::Label::textColourId,
+                                     juce::Colour(CustomLookAndFeel::COPPER_STEAM));
+        currentPresetLabel.setText(loadedPresetName, juce::dontSendNotification);
+        resized();
+        return;
+    }
+
+    currentPresetLabel.setColour(juce::Label::textColourId,
+                                 juce::Colour(CustomLookAndFeel::AETHER_CYAN));
+    currentPresetLabel.setText("Edited", juce::dontSendNotification);
+    resized();
 }
 
 void GenerativeMIDIEditor::updateStatusChip()
@@ -1135,7 +1956,6 @@ void GenerativeMIDIEditor::updateControlsForGeneratorType(int generatorType)
 {
     const bool isEuclideanGen = (generatorType == GeneratorTypeMapping::kEuclidean);
     const bool isPolyrhythmGen = GeneratorTypeMapping::isPolyrhythm(generatorType);
-    const bool isAlgorithmicGen = GeneratorTypeMapping::isAlgorithmic(generatorType);
     const bool isStochasticGen = GeneratorTypeMapping::isStochastic(generatorType);
 
     stepsSlider.setEnabled(isEuclideanGen);
@@ -1178,19 +1998,9 @@ void GenerativeMIDIEditor::updateControlsForGeneratorType(int generatorType)
     else
         densityLabel.setText("Density", juce::dontSendNotification);
 
-    juce::Colour generatorColor;
-    if (isEuclideanGen)
-        generatorColor = juce::Colour(CustomLookAndFeel::GOLD_TEMPLE);
-    else if (isPolyrhythmGen)
-        generatorColor = juce::Colour(CustomLookAndFeel::COPPER_STEAM);
-    else if (isAlgorithmicGen)
-        generatorColor = juce::Colour(CustomLookAndFeel::GREEN_VERDIGRIS);
-    else if (isStochasticGen)
-        generatorColor = juce::Colour(CustomLookAndFeel::VIOLET_ALCHEMY);
-    else
-        generatorColor = juce::Colour(CustomLookAndFeel::GOLD_TEMPLE);
-
-    generatorLabel.setColour(juce::Label::textColourId, generatorColor);
+    const auto family = CustomLookAndFeel::familyAccent(generatorType);
+    generatorLabel.setColour(juce::Label::textColourId, family);
+    generatorTypeCombo.setColour(juce::ComboBox::textColourId, family);
 
     patternDisplay.setVisible(!isPolyrhythmGen);
     if (polyLayerEditor)
