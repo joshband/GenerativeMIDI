@@ -117,7 +117,10 @@
           <figcaption><strong class="plain">This is the real app.</strong> Screenshot of the Standalone app, cropped to the plugin window from the repo’s QA evidence (<code>docs/qa/logs/ui_overhaul_overview.png</code>, captured 22 Sep 2026). The generator is Drunk Walk and playback is stopped, so the pattern display is empty. The interface may have changed in later commits.</figcaption>
         </figure>
         <figure class="diagram">
-          <img src="assets/signal-path.svg?v=2" width="920" height="160" alt="Illustrative signal path from DAW host through format wrapper, processor, engines, to MIDI out">
+          <picture>
+            <source media="(max-width: 720px)" srcset="assets/signal-path-narrow.svg" width="320" height="480">
+            <img src="assets/signal-path.svg?v=2" width="920" height="160" alt="Illustrative signal path from DAW host through format wrapper, processor, engines, to MIDI out">
+          </picture>
           <figcaption>Illustrative signal path — not a measured trace.</figcaption>
           <details class="flow-text">
             <summary>Text version of the signal path</summary>

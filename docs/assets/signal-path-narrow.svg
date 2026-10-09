@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 480" role="img" aria-labelledby="spnTitle spnDesc">
+  <title id="spnTitle">Illustrative signal path</title>
+  <desc id="spnDesc">Host to format wrapper to processor to engines to MIDI out</desc>
+  <rect width="320" height="480" fill="#0c1014"/>
+  <defs>
+    <marker id="arrow" markerWidth="8" markerHeight="8" refX="3" refY="6" orient="auto">
+      <path d="M0,0 L6,0 L3,6 Z" fill="#4a8ca8"/>
+    </marker>
+  </defs>
+  <g font-family="Karla, Segoe UI, sans-serif" font-size="15" text-anchor="middle">
+    <rect x="30" y="16" width="260" height="64" rx="2" fill="#141a1f" stroke="#c9954a" stroke-width="1.5"/>
+    <text x="160" y="44" fill="#e8d5b0">DAW Host</text>
+    <text x="160" y="64" fill="#8a939c" font-size="12">MIDI effect slot</text>
+    <line x1="160" y1="80" x2="160" y2="110" stroke="#4a8ca8" stroke-width="1.5" marker-end="url(#arrow)"/>
+    <rect x="30" y="112" width="260" height="64" rx="2" fill="#141a1f" stroke="#4a8ca8" stroke-width="1.5"/>
+    <text x="160" y="140" fill="#e8d5b0">Format wrapper</text>
+    <text x="160" y="160" fill="#8a939c" font-size="12">AU / VST3 / Standalone</text>
+    <line x1="160" y1="176" x2="160" y2="206" stroke="#4a8ca8" stroke-width="1.5" marker-end="url(#arrow)"/>
+    <rect x="30" y="208" width="260" height="64" rx="2" fill="#141a1f" stroke="#c9954a" stroke-width="1.5"/>
+    <text x="160" y="236" fill="#e8d5b0">PluginProcessor</text>
+    <text x="160" y="256" fill="#8a939c" font-size="12">APVTS / lifecycle</text>
+    <line x1="160" y1="272" x2="160" y2="302" stroke="#4a8ca8" stroke-width="1.5" marker-end="url(#arrow)"/>
+    <rect x="30" y="304" width="260" height="64" rx="2" fill="#141a1f" stroke="#c9954a" stroke-width="1.5"/>
+    <text x="160" y="332" fill="#e8d5b0">Core engines</text>
+    <text x="160" y="352" fill="#8a939c" font-size="12">Generate / schedule</text>
+    <line x1="160" y1="368" x2="160" y2="398" stroke="#4a8ca8" stroke-width="1.5" marker-end="url(#arrow)"/>
+    <rect x="30" y="400" width="260" height="64" rx="2" fill="#141a1f" stroke="#4a8ca8" stroke-width="1.5"/>
+    <text x="160" y="428" fill="#e8d5b0">MIDI out</text>
+    <text x="160" y="448" fill="#8a939c" font-size="12">To instrument</text>
+  </g>
+</svg>
