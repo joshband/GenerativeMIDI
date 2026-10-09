@@ -670,3 +670,113 @@ main {
     transition: none;
   }
 }
+
+/* ——— Plain-language layer ——— */
+
+.plain {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.tech {
+  color: var(--text-muted);
+}
+
+.claim-grid .plain {
+  margin: 0 0 0.5rem;
+  font-size: 1.02rem;
+}
+
+.hero__plain {
+  margin: 0 0 0.75rem;
+  max-width: 36rem;
+  font-size: 1.15rem;
+  font-weight: 600;
+  line-height: 1.45;
+  color: var(--text);
+}
+
+.hero__midi {
+  margin: 0 0 0.85rem;
+  max-width: 34rem;
+  color: var(--text);
+  font-size: 1rem;
+}
+
+.reading-guide {
+  margin: 0;
+  padding: 0.9rem clamp(1.25rem, 5vw, 3rem);
+  text-align: center;
+  font-weight: 600;
+  color: var(--brass-soft);
+  background: var(--bg-panel);
+  border-top: 1px solid var(--rule);
+}
+
+a.term {
+  text-decoration-style: dotted;
+  text-decoration-thickness: 2px;
+}
+
+.in-short {
+  margin: 0 0 2rem;
+  padding: 1.1rem 1.25rem;
+  background: var(--bg-panel);
+  border: 1px solid var(--rule);
+  border-left: 3px solid var(--brass);
+}
+
+.in-short h2 {
+  margin: 0 0 0.5rem;
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  font-weight: 500;
+  color: var(--brass-soft);
+}
+
+.in-short p {
+  margin: 0;
+  color: var(--text);
+}
+
+details {
+  margin-top: 0.5rem;
+}
+
+summary {
+  cursor: pointer;
+  color: var(--steel-bright);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+details > :not(summary) {
+  margin-top: 0.6rem;
+}
+
+.glossary {
+  margin: 0;
+  display: grid;
+  gap: 0.25rem 2rem;
+  grid-template-columns: 1fr;
+}
+
+.glossary dt {
+  margin-top: 0.9rem;
+  font-family: var(--font-display);
+  color: var(--brass-soft);
+  font-size: 1.05rem;
+}
+
+.glossary dd {
+  margin: 0.15rem 0 0;
+  color: var(--text-muted);
+}
+
+.glossary dt:target {
+  color: var(--brass);
+}
+
+.diagram--shot img {
+  border: 1px solid var(--rule);
+}

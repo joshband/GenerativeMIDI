@@ -31,8 +31,10 @@
         <p class="brand-builder">Josh Band</p>
         <p class="brand-product">Generative MIDI</p>
       </div>
-      <h1 class="hero__thesis">Full-stack ownership of a generative MIDI plugin system — engines, host formats, and verification.</h1>
-      <p class="hero__support">A macOS MIDI effect built end-to-end in C++/JUCE, with architecture decisions and build evidence kept on disk for employers who want proof, not pitch.</p>
+      <h1 class="hero__thesis">Full-stack ownership of a generative MIDI plugin: engines, host formats, and verification.</h1>
+      <p class="hero__plain">A <a class="term" href="#g-plugin">plugin</a> that invents melodies and rhythms for you. You choose a style; it writes the notes and sends them to the instrument you pick.</p>
+      <p class="hero__midi"><strong>What’s <a class="term" href="#g-midi">MIDI</a>?</strong> A way for music software to pass notes around — which note, how hard, how long — instead of sending sound itself.</p>
+      <p class="hero__support">A macOS MIDI effect built end-to-end in C++/<a class="term" href="#g-juce">JUCE</a>, with architecture decisions and build evidence kept on disk for employers who want proof, not pitch.</p>
       <div class="cta-row">
         <a class="cta cta--primary" href="engineering.html">Engineering</a>
         <a class="cta cta--ghost" href="https://github.com/joshband/GenerativeMIDI" rel="noopener noreferrer">GitHub</a>
@@ -41,6 +43,8 @@
   </header>
 
   <main id="main">
+    <p class="reading-guide">Not a musician or engineer? Read the bold lines. Engineers: the detail and links are one click away.</p>
+
     <section class="section" data-reveal aria-labelledby="proves-title">
       <div class="section__inner">
         <p class="section__label">Ownership</p>
@@ -48,16 +52,19 @@
         <p class="section__lead">Three layers one person owns — not a thin UI over someone else’s engine.</p>
         <ul class="claim-grid">
           <li>
-            <h3>Core engines</h3>
-            <p>Generative engines (Euclidean, algorithmic, stochastic/chaos), scale quantization, swing, gate, and ratchet paths that feed MIDI scheduling.</p>
+            <h3>The idea engine</h3>
+            <p class="plain">Ten ways of inventing a tune or rhythm, from evenly spaced drum-style patterns to random walks and chaos.</p>
+            <p class="tech">Core engines: generative engines (<a class="term" href="#g-euclidean">Euclidean</a>, algorithmic, stochastic/chaos), scale <a class="term" href="#g-quantization">quantization</a>, <a class="term" href="#g-swing">swing</a>, <a class="term" href="#g-gate">gate</a>, and <a class="term" href="#g-ratchet">ratchet</a> paths that feed MIDI scheduling.</p>
           </li>
           <li>
-            <h3>Format wrapper</h3>
-            <p>macOS <strong>AU</strong>, <strong>VST3</strong>, and <strong>Standalone</strong> build-verified. <strong>AUv3</strong> is a configured CMake target with iOS docs — not store-ready.</p>
+            <h3>Packaged for real music apps</h3>
+            <p class="plain">It is built in the formats music apps actually load, so it is more than a demo.</p>
+            <p class="tech">Format wrapper: macOS <a class="term" href="#g-au"><strong>AU</strong></a>, <a class="term" href="#g-vst3"><strong>VST3</strong></a>, and <a class="term" href="#g-standalone"><strong>Standalone</strong></a> build-verified. <a class="term" href="#g-auv3"><strong>AUv3</strong></a> is a configured CMake target with iOS docs — not store-ready.</p>
           </li>
           <li>
-            <h3>Evidence discipline</h3>
-            <p>Status, build verification, design specs, smoke checklist, and session notes live in-repo. Claims point at those files — not at enthusiasm.</p>
+            <h3>Checked, not claimed</h3>
+            <p class="plain">Every claim on this site points to a file you can open: build records, tests, and notes.</p>
+            <p class="tech">Evidence discipline: status, build verification, design specs, smoke checklist, and session notes live in-repo. Claims point at those files — not at enthusiasm.</p>
           </li>
         </ul>
       </div>
@@ -71,7 +78,7 @@
         <ol class="method-steps">
           <li>
             <strong>Written decisions</strong>
-            <span>Capture intent and constraints in status, design, or session notes before changing the realtime path.</span>
+            <span>Capture intent and constraints in status, design, or session notes before changing the <a class="term" href="#g-realtime">realtime</a> path.</span>
           </li>
           <li>
             <strong>Interface plans</strong>
@@ -94,14 +101,18 @@
       <div class="section__inner">
         <p class="section__label">System</p>
         <h2 class="section__title" id="system-title">System at a glance</h2>
-        <p class="section__lead">What exists now: host → format wrapper → processor/params → engines → MIDI out.</p>
+        <p class="section__lead"><strong class="plain">The path a note takes: from your music app, through the plugin, to an instrument.</strong> <span class="tech">What exists now: <a class="term" href="#g-daw">host</a> → format wrapper → processor/params → engines → MIDI out.</span></p>
+        <figure class="diagram diagram--shot">
+          <img src="assets/standalone-screenshot.jpg" width="1600" height="979" alt="Screenshot of the Generative MIDI Standalone app: a dark blue and brass window with a pattern display, a Generator panel set to Drunk Walk with tempo and density knobs, an Expression panel, and an Advanced panel with ratchet, stochastic and LFO knobs.">
+          <figcaption><strong class="plain">This is the real app.</strong> Screenshot of the Standalone app, cropped to the plugin window from the repo’s QA evidence (<code>docs/qa/logs/ui_overhaul_overview.png</code>, captured 22 Sep 2026). The generator is Drunk Walk and playback is stopped, so the pattern display is empty. The interface may have changed in later commits.</figcaption>
+        </figure>
         <figure class="diagram">
           <img src="assets/signal-path.svg?v=2" width="920" height="160" alt="Illustrative signal path from DAW host through format wrapper, processor, engines, to MIDI out">
           <figcaption>Illustrative signal path — not a measured trace.</figcaption>
         </figure>
         <figure class="diagram">
           <img src="assets/editor-chrome.svg" width="920" height="420" alt="Illustrative Generative MIDI editor chrome showing pattern display, generator controls, and expression panel">
-          <figcaption>Editor chrome illustration (v0.8.0 surface) — not a live Standalone screenshot.</figcaption>
+          <figcaption>Editor chrome illustration (v0.8.0 surface) — a labeled drawing, not a screenshot. The real screenshot is above.</figcaption>
         </figure>
       </div>
     </section>
@@ -110,27 +121,27 @@
       <div class="section__inner">
         <p class="section__label">Honesty</p>
         <h2 class="section__title" id="boundary-title">Boundary — shipped vs deferred</h2>
-        <p class="section__lead">Grounded in STATUS.md (v0.8.0) and BUILD_VERIFICATION.md. Development status — not finished product polish.</p>
+        <p class="section__lead">Grounded in STATUS.md (v0.8.0) and BUILD_VERIFICATION.md. Development status — not finished product polish. <span class="plain">Plain version first, technical wording second.</span></p>
         <div class="boundary">
           <div class="boundary--shipped">
             <h3>Shipped / verified</h3>
             <ul>
-              <li><strong>v0.8.0</strong> per STATUS — <strong>38</strong> registered parameters (<strong>37</strong> automatable; one legacy slot is kept only so old sessions load), incl. expression + LFO; MIDI channel; stochastic UI.</li>
-              <li>macOS <strong>AU / VST3 / Standalone</strong> (historical local); CI builds on macOS, iOS (AUv3), Windows, and Linux via <code>.github/workflows/ci.yml</code>, with pluginval on the VST3 build for macOS, Windows, and Linux.</li>
-              <li><strong>10 generators</strong> in the editor (Euclidean, <em>experimental Polyrhythm</em>, Markov, L-System, Cellular, Probabilistic, Brownian, Perlin, Drunk Walk, Lorenz).</li>
-              <li><strong>Factory presets</strong> live (11 including Polyrhythm Layers).</li>
-              <li><strong>MIDI expression</strong> — note-on AT / PB / CC (static PB — not MPE). <strong>ADVANCED LFO</strong> → velocity (and density) — not a full modulation matrix.</li>
-              <li><strong>Realtime hot-path hardening</strong> — Euclidean / ratchet / algorithmic / EventScheduler steady-state alloc-free. Residual: trained Markov map-key vector.</li>
-              <li>Evidence: Catch2 / <code>ctest</code> in CI (<strong>29</strong> test cases) + format builds + <a href="https://github.com/joshband/GenerativeMIDI/blob/master/docs/qa/QA_FINDINGS_v0.8.0.md" rel="noopener noreferrer">Host/UI QA findings</a> (Standalone + REAPER MCP transport gate). Manual smoke: <a href="https://github.com/joshband/GenerativeMIDI/blob/master/docs/user/SMOKE_CHECKLIST.md" rel="noopener noreferrer">SMOKE_CHECKLIST.md</a>.</li>
+              <li><strong class="plain">Version 0.8.0, with 38 adjustable settings (37 can be automated).</strong> <span class="tech"><strong>v0.8.0</strong> per STATUS — <strong>38</strong> registered parameters (<strong>37</strong> automatable; one legacy slot is kept only so old sessions load), incl. expression + LFO; MIDI channel; stochastic UI.</span></li>
+              <li><strong class="plain">Checked on my Mac at an earlier build as a plugin and a standalone app. Automatic builds also run for Mac, iPhone/iPad, Windows and Linux.</strong> <span class="tech">macOS <strong>AU / VST3 / Standalone</strong> (historical local); <a class="term" href="#g-ci">CI</a> builds on macOS, iOS (AUv3), Windows, and Linux via <code>.github/workflows/ci.yml</code>, with <a class="term" href="#g-pluginval">pluginval</a> on the VST3 build for macOS, Windows, and Linux.</span></li>
+              <li><strong class="plain">Ten ways to generate music in the editor. One of them, Polyrhythm, is marked experimental.</strong> <span class="tech"><strong>10 generators</strong> in the editor (Euclidean, <em>experimental Polyrhythm</em>, <a class="term" href="#g-markov">Markov</a>, <a class="term" href="#g-lsystem">L-System</a>, <a class="term" href="#g-cellular">Cellular</a>, Probabilistic, Brownian, Perlin, Drunk Walk, <a class="term" href="#g-lorenz">Lorenz</a>).</span></li>
+              <li><strong class="plain">Eleven ready-made starting settings (presets), including one for Polyrhythm.</strong> <span class="tech"><strong>Factory presets</strong> live (11 including Polyrhythm Layers).</span></li>
+              <li><strong class="plain">Notes can carry extra expression at a fixed amount. A slow wobble can vary loudness and note density. Nothing here moves continuously, and it is not a full control-routing screen.</strong> <span class="tech"><strong>MIDI expression</strong> — note-on AT / PB / CC (static PB — <a class="term" href="#g-mpe">not MPE</a>). <strong>ADVANCED <a class="term" href="#g-lfo">LFO</a></strong> → velocity (and density) — not a full modulation matrix.</span></li>
+              <li><strong class="plain">The timing-critical code avoids work that could make it stutter. One known exception remains.</strong> <span class="tech"><strong>Realtime hot-path hardening</strong> — Euclidean / ratchet / algorithmic / EventScheduler steady-state <a class="term" href="#g-alloc">alloc-free</a>. Residual: trained Markov map-key vector.</span></li>
+              <li><strong class="plain">29 automated tests run in the automatic build, plus written test notes and a by-hand checklist.</strong> <span class="tech">Evidence: Catch2 / <code>ctest</code> in CI (<strong>29</strong> test cases, i.e. <a class="term" href="#g-unittest">unit tests</a>) + format builds + <a href="https://github.com/joshband/GenerativeMIDI/blob/master/docs/qa/QA_FINDINGS_v0.8.0.md" rel="noopener noreferrer">Host/UI QA findings</a> (Standalone + REAPER MCP transport gate). Manual smoke: <a href="https://github.com/joshband/GenerativeMIDI/blob/master/docs/user/SMOKE_CHECKLIST.md" rel="noopener noreferrer">SMOKE_CHECKLIST.md</a>.</span></li>
             </ul>
           </div>
           <div class="boundary--deferred">
             <h3>Deferred / not claimed</h3>
             <ul>
-              <li>App Store / finished product polish; listening clips for this site.</li>
-              <li>AUv3 as store-ready — configured target + iOS docs only.</li>
-              <li>Full modulation matrix UI; continuous CC/PB / MPE; Polyrhythm step-grid polish.</li>
-              <li>Dedicated touch / accessibility redesign; test coverage percentages.</li>
+              <li><strong class="plain">Not an App Store product, and not finished-product polish. No listening clips on this site yet.</strong> <span class="tech">App Store / finished product polish; listening clips for this site.</span></li>
+              <li><strong class="plain">The iPhone/iPad plugin version is set up to build, but it is not ready for the store.</strong> <span class="tech">AUv3 as store-ready — configured target + iOS docs only.</span></li>
+              <li><strong class="plain">No full control-routing screen, no continuously moving expression, and the Polyrhythm editor still needs work.</strong> <span class="tech">Full modulation matrix UI; continuous CC/PB / MPE; Polyrhythm step-grid polish.</span></li>
+              <li><strong class="plain">The plugin’s own screen has no dedicated touch or accessibility redesign, and no test-coverage percentages are claimed.</strong> <span class="tech">Dedicated touch / accessibility redesign; test coverage percentages.</span></li>
             </ul>
           </div>
         </div>
@@ -144,6 +155,68 @@
         <p>Josh Band builds audio software with end-to-end ownership — DSP and architecture through host formats and verification. Generative MIDI is an open-source case study of that practice.</p>
         <p><a href="https://github.com/joshband/GenerativeMIDI" rel="noopener noreferrer">github.com/joshband/GenerativeMIDI</a><br>
         <a href="https://github.com/joshband" rel="noopener noreferrer">github.com/joshband</a></p>
+      </div>
+    </section>
+
+    <section class="section" aria-labelledby="glossary-title" id="glossary">
+      <div class="section__inner">
+        <p class="section__label">Reference</p>
+        <h2 class="section__title" id="glossary-title">Glossary</h2>
+        <p class="section__lead">Plain-English meanings for the technical terms on both pages.</p>
+        <dl class="glossary">
+          <dt id="g-midi">MIDI</dt>
+          <dd>A standard way for music software and instruments to send each other notes and controls — which note, how hard, how long — instead of sending sound.</dd>
+          <dt id="g-plugin">Plugin</dt>
+          <dd>A small program that runs inside music software to add an instrument or an effect. This one is a “MIDI effect”: it creates notes rather than sound.</dd>
+          <dt id="g-daw">DAW / host</dt>
+          <dd>A DAW (digital audio workstation) is music-making software such as REAPER or Logic Pro. The “host” is whichever program has loaded the plugin.</dd>
+          <dt id="g-au">AU</dt>
+          <dd>Audio Units: Apple’s plugin format for macOS music software.</dd>
+          <dt id="g-vst3">VST3</dt>
+          <dd>A widely used plugin format that works on Windows, macOS, and Linux.</dd>
+          <dt id="g-standalone">Standalone</dt>
+          <dd>The plugin running as its own app, with no music software needed.</dd>
+          <dt id="g-auv3">AUv3</dt>
+          <dd>Apple’s newer Audio Unit format, used on iPhone and iPad. Here it is a build target that compiles, not a store-ready product.</dd>
+          <dt id="g-juce">JUCE</dt>
+          <dd>A C++ framework for building audio plugins and their screens.</dd>
+          <dt id="g-euclidean">Euclidean rhythm</dt>
+          <dd>Spreads a number of hits as evenly as possible across a number of steps. Many traditional drum patterns have this shape.</dd>
+          <dt id="g-markov">Markov chain</dt>
+          <dd>Picks the next note based on which notes tended to follow the current one.</dd>
+          <dt id="g-lsystem">L-system</dt>
+          <dd>Grows a pattern by repeatedly applying rewrite rules. It was first used to model how plants grow.</dd>
+          <dt id="g-cellular">Cellular automaton</dt>
+          <dd>A row of on/off cells that updates every step by simple rules based on its neighbours. The changing pattern becomes notes.</dd>
+          <dt id="g-lorenz">Lorenz</dt>
+          <dd>A famous chaotic system (the “butterfly effect” equations). As a generator it gives wandering note choices that almost, but never quite, repeat.</dd>
+          <dt id="g-swing">Swing</dt>
+          <dd>Delays every other beat slightly to give a shuffling, uneven feel.</dd>
+          <dt id="g-gate">Gate</dt>
+          <dd>How long each note is held before it is released.</dd>
+          <dt id="g-ratchet">Ratchet</dt>
+          <dd>Repeats one note several times, quickly, inside a single step, like a drum roll.</dd>
+          <dt id="g-quantization">Quantization (scale)</dt>
+          <dd>Snaps notes to a chosen musical scale so that everything sounds in key.</dd>
+          <dt id="g-lfo">LFO</dt>
+          <dd>Low-frequency oscillator: a slow, repeating wobble used to vary a setting over time.</dd>
+          <dt id="g-mpe">MPE</dt>
+          <dd>MIDI Polyphonic Expression: a way to give each held note its own pitch bend and pressure. This plugin does not do that.</dd>
+          <dt id="g-realtime">Realtime</dt>
+          <dd>Audio software has a hard deadline for every small chunk of work. If the plugin is a few milliseconds late, you hear a glitch.</dd>
+          <dt id="g-alloc">Allocation-free</dt>
+          <dd>Not asking the computer for new memory while running. Asking can take an unpredictable amount of time, which is risky under a hard deadline.</dd>
+          <dt id="g-ci">CI</dt>
+          <dd>Continuous integration: an automatic service that rebuilds and tests the code whenever it changes.</dd>
+          <dt id="g-unittest">Unit test</dt>
+          <dd>A small automated check that one piece of the code behaves as expected. Catch2 is the C++ testing library used, and <code>ctest</code> is the tool that runs the checks.</dd>
+          <dt id="g-pluginval">pluginval</dt>
+          <dd>A free third-party tool that stress-tests a plugin for problems that could upset a host app.</dd>
+          <dt id="g-apvts">APVTS</dt>
+          <dd>JUCE’s shared table of a plugin’s settings, so the screen, the host’s automation, and saved projects all agree on the values.</dd>
+          <dt id="g-submodule">Submodule</dt>
+          <dd>A Git feature that pulls another repository into a folder, pinned to an exact version.</dd>
+        </dl>
       </div>
     </section>
   </main>
