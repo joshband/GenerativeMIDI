@@ -1618,7 +1618,7 @@ void GenerativeMIDIEditor::feedSoundingNotes(int generatorType, int partStep, in
         if (noteCount > 0)
         {
             const int want = lSystemFeedNote % noteCount;
-            int cursor = pitchMin + juce::jmax(0, pitchMax - pitchMin) / 2;
+            int pitchCursor = pitchMin + juce::jmax(0, pitchMax - pitchMin) / 2;
             int seen = 0;
             int found = -1;
             for (int i = 0; i < length; ++i)
@@ -1627,14 +1627,14 @@ void GenerativeMIDIEditor::feedSoundingNotes(int generatorType, int partStep, in
                 int emitted = -1;
                 switch (ch)
                 {
-                    case 'A': emitted = cursor; break;
-                    case 'B': emitted = cursor + interval; break;
-                    case 'C': emitted = cursor + interval * 2; break;
-                    case 'D': emitted = cursor + interval * 3; break;
-                    case '+': cursor = juce::jlimit(0, 127, cursor + 12); break;
-                    case '-': cursor = juce::jlimit(0, 127, cursor - 12); break;
-                    case '[': cursor = juce::jlimit(0, 127, cursor + 1); break;
-                    case ']': cursor = juce::jlimit(0, 127, cursor - 1); break;
+                    case 'A': emitted = pitchCursor; break;
+                    case 'B': emitted = pitchCursor + interval; break;
+                    case 'C': emitted = pitchCursor + interval * 2; break;
+                    case 'D': emitted = pitchCursor + interval * 3; break;
+                    case '+': pitchCursor = juce::jlimit(0, 127, pitchCursor + 12); break;
+                    case '-': pitchCursor = juce::jlimit(0, 127, pitchCursor - 12); break;
+                    case '[': pitchCursor = juce::jlimit(0, 127, pitchCursor + 1); break;
+                    case ']': pitchCursor = juce::jlimit(0, 127, pitchCursor - 1); break;
                     default: break;
                 }
                 if (emitted < 0)
