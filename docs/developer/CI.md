@@ -63,7 +63,7 @@ Each build step tees its output to `build.log`, and a `Summarize compiler warnin
 
 ### Log groups
 
-Noisy configure, build and `ctest` output in the build jobs is wrapped in collapsible `::group::` / `::endgroup::` blocks. Each `run:` script closes its group with `trap 'echo "::endgroup::"' EXIT`, so the group also closes when the command fails. The `Summarize compiler warnings` steps and the runner's error line are outside any group, so they stay visible. The TSan test step is not grouped because its `::error::` annotation must stay readable.
+Noisy configure and build output in the build jobs is wrapped in collapsible `::group::` / `::endgroup::` blocks. Each `run:` script closes its group with `trap 'echo "::endgroup::"' EXIT`, so the group also closes when the command fails. The `Summarize compiler warnings` steps and the runner's error line are outside any group, so they stay visible. `ctest` steps are not grouped, so a failing test's output is visible without expanding anything (the TSan test step's `::error::` annotation included).
 
 ### Linux LTO and parallel LTRANS
 
