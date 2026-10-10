@@ -114,13 +114,13 @@ Known debt: the audio thread still resolves parameters by string, via `parameter
 
 ## Transport
 
-Current behaviour (`Source/PluginProcessor.cpp:470-519`):
+Behaviour (`processBlock` in `Source/PluginProcessor.cpp`):
 
 - **Standalone free-runs.** `shouldAdvance` is `true` unless the wrapper is not Standalone and the host playhead reports "not playing" (`:514-519`).
 - **Hosts gate on `isPlaying`.** If `getPlayHead()->getPosition()` exists, `shouldAdvance = position->getIsPlaying()`. If the host provides no position, the processor keeps advancing.
 - **Stopping releases notes.** A `wasAdvancing && !shouldAdvance` transition triggers the panic path: `allNotesOff` plus clearing melody voices and held CC / pitch-bend state (`:525-535`).
 - **Play edge restarts the grid.** On `shouldAdvance && !wasAdvancing` the grid starts at the host ppq (converted to sixteenths, `ppq * 4`) when the host provides one, otherwise at 0. `ClockManager::restart` sets the sample position and the offset to the next sixteenth (`Source/DSP/ClockManager.cpp:54-64`), the polyrhythm layers are told to restart, and `lastSubdivisionStep` is set to match (`:457-462`).
-- Tempo is always the `Tempo` parameter today (`:499`); the host BPM is not read.
+- Tempo comes from the host or the `Tempo` parameter; see Host tempo and position jumps below.
 
 ### Host tempo and position jumps
 
