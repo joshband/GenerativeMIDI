@@ -23,13 +23,13 @@ env:
 jobs:
   # The c-cpp scan needs a full uncached build (~15 min), so on pull requests it only runs with the
   # full-ci label or when build/CI files change. Always on push to master, weekly and manual runs.
-  # The actions scan is cheap and runs everywhere. Skipped matrix entries are not required checks.
+  # The actions scan is cheap and runs everywhere. The matrix is built by the scope job, so no c-cpp check is created when it is not needed.
   scope:
     name: CodeQL scope
     runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:
-      cpp: ${{ steps.diff.outputs.cpp }}
+      matrix: ${{ steps.diff.outputs.matrix }}
     steps:
     - name: Checkout code
       uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -44,22 +44,28 @@ jobs:
         HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         FULL_CI_LABEL: ${{ contains(github.event.pull_request.labels.*.name, 'full-ci') }}
       run: |
-        if [ "${EVENT}" != "pull_request" ] || [ "${FULL_CI_LABEL}" = "true" ]; then
-          echo "cpp=true" >> "$GITHUB_OUTPUT"; exit 0
-        fi
         cpp=false
-        while IFS= read -r f; do
-          case "$f" in
-            CMakeLists.txt|*/CMakeLists.txt|cmake/*|*.cmake|.github/*|.gitmodules)
-              cpp=true; echo "build change: $f" ;;
-          esac
-        done < <(git diff --name-only "${BASE_SHA}" "${HEAD_SHA}")
-        echo "cpp=${cpp}" >> "$GITHUB_OUTPUT"
+        if [ "${EVENT}" != "pull_request" ] || [ "${FULL_CI_LABEL}" = "true" ]; then
+          cpp=true
+        else
+          while IFS= read -r f; do
+            case "$f" in
+              CMakeLists.txt|*/CMakeLists.txt|cmake/*|*.cmake|.github/*|.gitmodules)
+                cpp=true; echo "build change: $f" ;;
+            esac
+          done < <(git diff --name-only "${BASE_SHA}" "${HEAD_SHA}")
+        fi
+        actions='{"language":"actions","build-mode":"none"}'
+        cppjob='{"language":"c-cpp","build-mode":"manual"}'
+        if [ "${cpp}" = "true" ]; then
+          echo "matrix={\"include\":[${cppjob},${actions}]}" >> "$GITHUB_OUTPUT"
+        else
+          echo "matrix={\"include\":[${actions}]}" >> "$GITHUB_OUTPUT"
+        fi
 
   analyze:
     name: CodeQL (${{ matrix.language }})
     needs: scope
-    if: matrix.language != 'c-cpp' || needs.scope.outputs.cpp == 'true'
     runs-on: ubuntu-22.04
     timeout-minutes: 60
     permissions:
@@ -68,12 +74,7 @@ jobs:
       actions: read
     strategy:
       fail-fast: false
-      matrix:
-        include:
-        - language: c-cpp
-          build-mode: manual
-        - language: actions
-          build-mode: none
+      matrix: ${{ fromJSON(needs.scope.outputs.matrix) }}
 
     steps:
     - name: Checkout code
