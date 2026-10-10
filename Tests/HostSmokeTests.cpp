@@ -18,9 +18,11 @@
 #include "Core/GeneratorTypeMapping.h"
 #include "Core/PolyrhythmEngine.h"
 
+#include <cmath>
+#include <map>
 #include <atomic>
-#include <set>
 #include <thread>
+#include <set>
 
 namespace
 {
@@ -30,12 +32,15 @@ class FakePlayHead final : public juce::AudioPlayHead
 public:
     bool playing = false;
     double bpm = 120.0;
+    juce::Optional<double> ppq; // host position in quarter notes, when the test sets one
 
     juce::Optional<PositionInfo> getPosition() const override
     {
         PositionInfo info;
         info.setIsPlaying(playing);
         info.setBpm(bpm);
+        if (ppq.hasValue())
+            info.setPpqPosition(*ppq);
         return info;
     }
 };
@@ -302,6 +307,8 @@ TEST_CASE("Held notes keep a static CC and pitch bend when the LFO is off", "[ho
     REQUIRE(stats.ccValues.size() == 1);
     REQUIRE(stats.pitchBendCount == stats.noteOns);
     REQUIRE(stats.bendValues.size() == 1);
+    // 12 semitones of the 24-semitone full scale = half the wheel above centre (8192 + 4096).
+    REQUIRE(*stats.bendValues.begin() == 12288);
     REQUIRE(juce::String(GeneratorTypeMapping::kPresetSchemaVersion) == "1.2");
 
     processor.releaseResources();
@@ -339,6 +346,9 @@ TEST_CASE("Held notes continuously modulate CC and pitch bend from the LFO", "[h
     REQUIRE(moving.ccValues.size() >= 2);
     REQUIRE(moving.pitchBendCount > moving.noteOns);
     REQUIRE(moving.bendValues.size() >= 2);
+    // The LFO swings the wheel on both sides of centre, over the full -1..1 span.
+    REQUIRE(*moving.bendValues.begin() < 5000);
+    REQUIRE(*moving.bendValues.rbegin() > 12288);
 
     setFloatParam(processor, "modLfoDepth", 0.0f);
     const auto identity = processBlocksCollectingExpression(processor, 200, blockSize);
@@ -347,6 +357,7 @@ TEST_CASE("Held notes continuously modulate CC and pitch bend from the LFO", "[h
     REQUIRE(identity.ccValues.size() == 1);
     REQUIRE(identity.pitchBendCount == identity.noteOns);
     REQUIRE(identity.bendValues.size() == 1);
+    REQUIRE(*identity.bendValues.begin() == 12288);
 
     processor.releaseResources();
     processor.setPlayHead(nullptr);
@@ -648,6 +659,696 @@ TEST_CASE("Inverted pitch range is ordered instead of dividing by zero", "[host]
         REQUIRE(note >= 60);
         REQUIRE(note <= 61);
     }
+}
+
+//==============================================================================
+// Realtime MIDI correctness: note-off / note-on ordering
+
+namespace
+{
+struct StreamReport
+{
+    int ons = 0;
+    int offs = 0;
+    int onWhileSounding = 0;   // a note-on with no preceding note-off for that pitch/channel
+    int orphanOffs = 0;        // a note-off for a pitch/channel that was not sounding
+    int zeroLength = 0;        // a note closed on the very sample it opened
+    int stillSounding = 0;     // notes never closed by the end of the stream
+    std::map<std::pair<int, int>, int64_t> lastLength; // (channel, note) -> length of the last closed note
+};
+
+/** Replays a note stream (in emitted order) and reports ordering / balance violations. */
+StreamReport analyseStream(const std::vector<TimedNote>& stream)
+{
+    StreamReport report;
+    std::map<std::pair<int, int>, int64_t> sounding; // (channel, note) -> note-on sample
+    for (const auto& event : stream)
+    {
+        const auto key = std::make_pair(event.channel, event.note);
+        if (event.on)
+        {
+            ++report.ons;
+            if (sounding.count(key) != 0)
+                ++report.onWhileSounding;
+            sounding[key] = event.sample;
+        }
+        else
+        {
+            ++report.offs;
+            const auto it = sounding.find(key);
+            if (it == sounding.end())
+            {
+                ++report.orphanOffs;
+                continue;
+            }
+            if (event.sample <= it->second)
+                ++report.zeroLength;
+            report.lastLength[key] = event.sample - it->second;
+            sounding.erase(it);
+        }
+    }
+    report.stillSounding = static_cast<int>(sounding.size());
+    return report;
+}
+
+std::vector<TimedNote> drainScheduler(EventScheduler& scheduler, int64_t totalSamples, int blockSize)
+{
+    std::vector<TimedNote> out;
+    for (int64_t start = 0; start < totalSamples; start += blockSize)
+    {
+        juce::MidiBuffer midi;
+        scheduler.processEvents(start, midi, blockSize);
+        for (const auto metadata : midi)
+        {
+            const auto message = metadata.getMessage();
+            if (!message.isNoteOn() && !message.isNoteOff())
+                continue;
+            out.push_back({ start + metadata.samplePosition, message.getChannel(),
+                            message.getNoteNumber(), message.isNoteOn() });
+        }
+    }
+    return out;
+}
+} // namespace
+
+TEST_CASE("Same-pitch notes keep a note-off before every retrigger at gate 1.0 and 2.0",
+          "[scheduler][regression]")
+{
+    constexpr int step = 3000;
+    for (const float gate : { 1.0f, 2.0f })
+    {
+        INFO("gate " << gate);
+        EventScheduler scheduler;
+        scheduler.prepare(256);
+        const int duration = static_cast<int>(step * gate);
+        for (int i = 0; i < 4; ++i)
+            scheduler.scheduleNote(60, 0.8f, 1, static_cast<int64_t>(i) * step, duration);
+
+        const auto stream = drainScheduler(scheduler, 12 * step, 512);
+        const auto report = analyseStream(stream);
+
+        REQUIRE(report.ons == 4);
+        REQUIRE(report.onWhileSounding == 0);
+        REQUIRE(report.orphanOffs == 0);
+        REQUIRE(report.zeroLength == 0);
+        REQUIRE(report.stillSounding == 0);
+        // The newest note is never cut short by an older note's late note-off.
+        REQUIRE(report.lastLength.at({ 1, 60 }) >= duration);
+    }
+}
+
+TEST_CASE("Generated repeated pitches never overlap, vanish or leave a stuck note",
+          "[host][scheduler][regression]")
+{
+    juce::ScopedJuceInitialiser_GUI juceInit;
+    constexpr int blockSize = 512;
+
+    for (const int voiceIndex : { 0, 1 }) // Poly, Mono
+    {
+        for (const float gate : { 1.0f, 2.0f })
+        {
+            INFO("voice " << voiceIndex << " gate " << gate);
+            GenerativeMIDIProcessor processor;
+            FakePlayHead playHead;
+            playHead.playing = true;
+            playHead.bpm = 240.0;
+            processor.setPlayHead(&playHead);
+            processor.prepareToPlay(48000.0, blockSize);
+            configureDenseEuclidean(processor);
+            setFloatParam(processor, "gateLength", gate);
+            setFloatParam(processor, "swingAmount", 0.0f);
+            setFloatParam(processor, "timingHumanize", 0.0f);
+            setIntParam(processor, "pitchMin", 60);
+            setIntParam(processor, "pitchMax", 60);
+            setChoiceParam(processor, "voiceMode", voiceIndex);
+            setChoiceParam(processor, "partCount", 0);
+            setIntParam(processor, "midiChannel", 1);
+
+            std::vector<TimedNote> stream;
+            collectNotes(processor, 40, blockSize, stream);
+            setFloatParam(processor, "noteDensity", 0.0f); // let the pending note-offs drain
+            std::vector<TimedNote> tail;
+            collectNotes(processor, 40, blockSize, tail);
+            for (auto& event : tail)
+                event.sample += 40 * blockSize; // collectNotes timestamps restart at zero
+            stream.insert(stream.end(), tail.begin(), tail.end());
+
+            const auto report = analyseStream(stream);
+            REQUIRE(report.ons > 4);
+            REQUIRE(report.onWhileSounding == 0);
+            REQUIRE(report.orphanOffs == 0);
+            REQUIRE(report.zeroLength == 0);
+            REQUIRE(report.stillSounding == 0);
+
+            processor.releaseResources();
+            processor.setPlayHead(nullptr);
+        }
+    }
+}
+
+//==============================================================================
+// Realtime MIDI correctness: stuck notes
+
+namespace
+{
+struct RawEvent
+{
+    int64_t sample = 0;
+    juce::MidiMessage message;
+};
+
+std::vector<RawEvent> collectAll(GenerativeMIDIProcessor& proc, int numBlocks, int blockSize,
+                                 int64_t firstSample = 0)
+{
+    std::vector<RawEvent> out;
+    juce::AudioBuffer<float> buffer(0, blockSize);
+    for (int block = 0; block < numBlocks; ++block)
+    {
+        juce::MidiBuffer midi;
+        proc.processBlock(buffer, midi);
+        for (const auto metadata : midi)
+            out.push_back({ firstSample + static_cast<int64_t>(block) * blockSize + metadata.samplePosition,
+                            metadata.getMessage() });
+    }
+    return out;
+}
+
+std::vector<TimedNote> notesOf(const std::vector<RawEvent>& events)
+{
+    std::vector<TimedNote> out;
+    for (const auto& e : events)
+        if (e.message.isNoteOn() || e.message.isNoteOff())
+            out.push_back({ e.sample, e.message.getChannel(), e.message.getNoteNumber(), e.message.isNoteOn() });
+    return out;
+}
+
+int countAllNotesOff(const std::vector<RawEvent>& events, int channel)
+{
+    int count = 0;
+    for (const auto& e : events)
+        if (e.message.isAllNotesOff() && e.message.getChannel() == channel)
+            ++count;
+    return count;
+}
+
+int lastPitchWheel(const std::vector<RawEvent>& events, int channel)
+{
+    int value = -1;
+    for (const auto& e : events)
+        if (e.message.isPitchWheel() && e.message.getChannel() == channel)
+            value = e.message.getPitchWheelValue();
+    return value;
+}
+
+/** Long, overlapping notes with a non-centre pitch bend so there is plenty to clean up. */
+void configureSoundingNotes(GenerativeMIDIProcessor& processor)
+{
+    configureDenseEuclidean(processor);
+    setFloatParam(processor, "gateLength", 2.0f);
+    setFloatParam(processor, "swingAmount", 0.0f);
+    setFloatParam(processor, "timingHumanize", 0.0f);
+    setIntParam(processor, "pitchMin", 48);
+    setIntParam(processor, "pitchMax", 72);
+    setChoiceParam(processor, "scaleType", 0);
+    setChoiceParam(processor, "voiceMode", 0);
+    setChoiceParam(processor, "partCount", 0);
+    setIntParam(processor, "midiChannel", 1);
+    setBoolParam(processor, "pitchbendEnable", true);
+    setFloatParam(processor, "pitchbendRange", 12.0f);
+    setBoolParam(processor, "modLfoEnable", false);
+    setFloatParam(processor, "modLfoDepth", 0.0f);
+}
+} // namespace
+
+TEST_CASE("Note-offs survive a full event queue and drops are counted", "[scheduler][regression]")
+{
+    EventScheduler scheduler;
+    scheduler.prepare(64);
+    const int capacity = scheduler.getCapacity();
+    REQUIRE(capacity >= 64);
+
+    // One note sounds before the queue fills up.
+    scheduler.scheduleNoteOn(60, 0.8f, 1, 0);
+    {
+        juce::MidiBuffer midi;
+        scheduler.processEvents(0, midi, 512);
+        REQUIRE(midi.getNumEvents() == 1);
+    }
+
+    // Flood the queue with future expression events.
+    for (int i = 0; i < capacity + 50; ++i)
+        scheduler.scheduleCC(1, 0.5f, 1, 100000 + i);
+
+    REQUIRE(scheduler.getQueueSize() < capacity);          // room is kept back for note-offs
+    REQUIRE(scheduler.getDroppedEventCount() >= 50u);
+    REQUIRE(scheduler.getDroppedNoteOffCount() == 0u);
+
+    scheduler.scheduleNoteOff(60, 1, 600);
+    REQUIRE(scheduler.getDroppedNoteOffCount() == 0u);
+
+    juce::MidiBuffer midi;
+    scheduler.processEvents(512, midi, 512);
+    bool sawOff = false;
+    for (const auto metadata : midi)
+        sawOff = sawOff || metadata.getMessage().isNoteOff();
+    REQUIRE(sawOff);
+}
+
+TEST_CASE("A flood of notes keeps every accepted note balanced", "[scheduler][regression]")
+{
+    EventScheduler scheduler;
+    scheduler.prepare(64);
+
+    for (int i = 0; i < 2000; ++i)
+        scheduler.scheduleNote(i % 128, 0.8f, 1 + (i / 128) % 16, 10, 1000);
+
+    REQUIRE(scheduler.getDroppedEventCount() > 0u);
+    REQUIRE(scheduler.getDroppedNoteOffCount() == 0u);
+
+    const auto report = analyseStream(drainScheduler(scheduler, 4096, 512));
+    REQUIRE(report.ons > 0);
+    REQUIRE(report.orphanOffs == 0);
+    REQUIRE(report.stillSounding == 0);
+}
+
+TEST_CASE("allNotesOff releases sounding notes, sends CC123 and centres pitch bend",
+          "[scheduler][regression]")
+{
+    EventScheduler scheduler;
+    scheduler.prepare(256);
+    scheduler.scheduleNoteOn(60, 0.8f, 3, 0);
+    scheduler.scheduleNoteOn(64, 0.8f, 3, 0);
+    scheduler.schedulePitchBend(0.5f, 3, 0);
+    scheduler.scheduleNoteOn(67, 0.8f, 3, 5000); // still queued: must be discarded
+    {
+        juce::MidiBuffer midi;
+        scheduler.processEvents(0, midi, 512);
+    }
+
+    juce::MidiBuffer out;
+    scheduler.allNotesOff(out, 7);
+
+    int offs = 0;
+    int allOff = 0;
+    int centre = 0;
+    for (const auto metadata : out)
+    {
+        const auto m = metadata.getMessage();
+        REQUIRE(metadata.samplePosition == 7);
+        offs += m.isNoteOff() ? 1 : 0;
+        allOff += m.isAllNotesOff() ? 1 : 0;
+        centre += (m.isPitchWheel() && m.getPitchWheelValue() == 8192) ? 1 : 0;
+    }
+    REQUIRE(offs == 2);
+    REQUIRE(allOff == 1);
+    REQUIRE(centre == 1);
+    REQUIRE(scheduler.getQueueSize() == 0);
+    REQUIRE_FALSE(scheduler.hasSoundingNotes());
+
+    juce::MidiBuffer again;
+    scheduler.allNotesOff(again, 0);
+    REQUIRE(again.getNumEvents() == 0); // nothing left to clean up
+}
+
+TEST_CASE("Transport stop releases every sounding note and re-centres pitch bend",
+          "[host][scheduler][regression]")
+{
+    juce::ScopedJuceInitialiser_GUI juceInit;
+    constexpr int blockSize = 512;
+
+    GenerativeMIDIProcessor processor;
+    FakePlayHead playHead;
+    playHead.playing = true;
+    playHead.bpm = 240.0;
+    processor.setPlayHead(&playHead);
+    processor.prepareToPlay(48000.0, blockSize);
+    configureSoundingNotes(processor);
+
+    auto running = collectAll(processor, 40, blockSize);
+    REQUIRE(analyseStream(notesOf(running)).stillSounding > 0);
+    REQUIRE(lastPitchWheel(running, 1) != 8192);
+
+    playHead.playing = false;
+    const auto stopped = collectAll(processor, 1, blockSize, 40 * blockSize);
+    running.insert(running.end(), stopped.begin(), stopped.end());
+
+    const auto report = analyseStream(notesOf(running));
+    REQUIRE(report.orphanOffs == 0);
+    REQUIRE(report.stillSounding == 0);
+    REQUIRE(countAllNotesOff(stopped, 1) == 1);
+    REQUIRE(lastPitchWheel(running, 1) == 8192);
+
+    // Nothing else is released later: the queue was emptied.
+    const auto later = collectAll(processor, 20, blockSize, 41 * blockSize);
+    REQUIRE(notesOf(later).empty());
+
+    processor.releaseResources();
+    processor.setPlayHead(nullptr);
+}
+
+TEST_CASE("Switching generator releases sounding notes", "[host][scheduler][regression]")
+{
+    juce::ScopedJuceInitialiser_GUI juceInit;
+    constexpr int blockSize = 512;
+
+    GenerativeMIDIProcessor processor;
+    FakePlayHead playHead;
+    playHead.playing = true;
+    playHead.bpm = 240.0;
+    processor.setPlayHead(&playHead);
+    processor.prepareToPlay(48000.0, blockSize);
+    configureSoundingNotes(processor);
+
+    auto events = collectAll(processor, 40, blockSize);
+    REQUIRE(analyseStream(notesOf(events)).stillSounding > 0);
+
+    setFloatParam(processor, "noteDensity", 0.0f);
+    setChoiceParam(processor, "generatorType", 2); // Markov
+    const auto switched = collectAll(processor, 1, blockSize, 40 * blockSize);
+    events.insert(events.end(), switched.begin(), switched.end());
+
+    const auto report = analyseStream(notesOf(events));
+    REQUIRE(report.orphanOffs == 0);
+    REQUIRE(report.stillSounding == 0);
+    REQUIRE(countAllNotesOff(switched, 1) == 1);
+    REQUIRE(lastPitchWheel(events, 1) == 8192);
+
+    processor.releaseResources();
+    processor.setPlayHead(nullptr);
+}
+
+TEST_CASE("Disabling pitch bend re-centres the wheel", "[host][scheduler][regression]")
+{
+    juce::ScopedJuceInitialiser_GUI juceInit;
+    constexpr int blockSize = 512;
+
+    GenerativeMIDIProcessor processor;
+    FakePlayHead playHead;
+    playHead.playing = true;
+    playHead.bpm = 240.0;
+    processor.setPlayHead(&playHead);
+    processor.prepareToPlay(48000.0, blockSize);
+    configureSoundingNotes(processor);
+
+    auto events = collectAll(processor, 20, blockSize);
+    REQUIRE(lastPitchWheel(events, 1) != 8192);
+
+    setBoolParam(processor, "pitchbendEnable", false);
+    setFloatParam(processor, "noteDensity", 0.0f);
+    const auto after = collectAll(processor, 1, blockSize, 20 * blockSize);
+    events.insert(events.end(), after.begin(), after.end());
+    REQUIRE(lastPitchWheel(events, 1) == 8192);
+    REQUIRE(countAllNotesOff(after, 1) == 0); // notes keep sounding; only the wheel moves
+
+    processor.releaseResources();
+    processor.setPlayHead(nullptr);
+}
+
+TEST_CASE("releaseResources releases notes on the next block", "[host][scheduler][regression]")
+{
+    juce::ScopedJuceInitialiser_GUI juceInit;
+    constexpr int blockSize = 512;
+
+    GenerativeMIDIProcessor processor;
+    FakePlayHead playHead;
+    playHead.playing = true;
+    playHead.bpm = 240.0;
+    processor.setPlayHead(&playHead);
+    processor.prepareToPlay(48000.0, blockSize);
+    configureSoundingNotes(processor);
+
+    auto events = collectAll(processor, 40, blockSize);
+    REQUIRE(analyseStream(notesOf(events)).stillSounding > 0);
+
+    setFloatParam(processor, "noteDensity", 0.0f); // the restarted clock must not add new notes
+    processor.releaseResources(); // no MIDI buffer here: cleanup is emitted by the next block
+    processor.prepareToPlay(48000.0, blockSize);
+    const auto restarted = collectAll(processor, 1, blockSize, 40 * blockSize);
+    events.insert(events.end(), restarted.begin(), restarted.end());
+
+    REQUIRE(analyseStream(notesOf(events)).stillSounding == 0);
+    REQUIRE(lastPitchWheel(events, 1) == 8192);
+
+    processor.releaseResources();
+    processor.setPlayHead(nullptr);
+}
+
+//==============================================================================
+// Realtime MIDI correctness: sample-accurate timing
+
+TEST_CASE("ClockManager reports the in-block sample offset of every sixteenth",
+          "[clock][timing][regression]")
+{
+    constexpr double sampleRate = 48000.0;
+    constexpr int blockSize = 1024;
+    constexpr double samplesPerSixteenth = 6000.0; // 120 bpm
+
+    ClockManager clock;
+    clock.setSampleRate(sampleRate);
+    clock.setTempo(120.0);
+    clock.start();
+
+    std::vector<int64_t> hits;
+    std::set<int> offsets;
+    int64_t blockStart = 0;
+    clock.onSubdivisionHitAt = [&](int subdivision, int offset)
+    {
+        REQUIRE(subdivision == 16);
+        REQUIRE(offset >= 0);
+        REQUIRE(offset < blockSize);
+        offsets.insert(offset);
+        hits.push_back(blockStart + offset);
+    };
+
+    for (int block = 0; block < 100; ++block)
+    {
+        blockStart = static_cast<int64_t>(block) * blockSize;
+        clock.advance(blockSize);
+    }
+
+    REQUIRE(hits.size() >= 15);
+    for (size_t k = 0; k < hits.size(); ++k)
+    {
+        INFO("hit " << k);
+        REQUIRE(std::abs(static_cast<double>(hits[k]) - static_cast<double>(k) * samplesPerSixteenth) <= 1.0);
+    }
+    // 6000 is not a multiple of 1024: offsets must differ from block to block.
+    REQUIRE(offsets.size() > 4);
+}
+
+TEST_CASE("ClockManager restart rewinds the grid and can start mid-bar", "[clock][timing][regression]")
+{
+    ClockManager clock;
+    clock.setSampleRate(48000.0);
+    clock.setTempo(120.0);
+    clock.start();
+
+    int64_t blockStart = 0;
+    std::vector<int64_t> hits;
+    clock.onSubdivisionHitAt = [&](int, int offset) { hits.push_back(blockStart + offset); };
+
+    for (int block = 0; block < 10; ++block)
+    {
+        blockStart = static_cast<int64_t>(block) * 1024;
+        clock.advance(1024);
+    }
+    REQUIRE(hits.size() >= 2);
+
+    // Play edge: the next block starts a fresh grid whose first step lands on sample 0.
+    hits.clear();
+    clock.restart();
+    blockStart = 0;
+    clock.advance(1024);
+    REQUIRE(hits.size() == 1);
+    REQUIRE(hits[0] == 0);
+    REQUIRE(clock.getPositionInSamples() == 1024);
+
+    // Starting 2.4 sixteenths into the song: the next sixteenth is 0.6 * 6000 = 3600 samples away.
+    hits.clear();
+    clock.restart(2.4);
+    blockStart = 0;
+    for (int block = 0; block < 5; ++block)
+    {
+        blockStart = static_cast<int64_t>(block) * 1024;
+        clock.advance(1024);
+    }
+    REQUIRE_FALSE(hits.empty());
+    REQUIRE(std::abs(static_cast<double>(hits[0]) - 3600.0) <= 1.0);
+}
+
+TEST_CASE("ClockManager sample position does not truncate to 32 bits", "[clock][timing][regression]")
+{
+    ClockManager clock;
+    clock.start();
+    for (int i = 0; i < 40; ++i)
+        clock.advance(100000000); // 4e9 samples in total, past INT32_MAX
+    REQUIRE(clock.getPositionInSamples() == static_cast<int64_t>(4000000000LL));
+}
+
+TEST_CASE("Generated notes land on the host's 16th grid inside the block",
+          "[host][timing][regression]")
+{
+    juce::ScopedJuceInitialiser_GUI juceInit;
+    constexpr int blockSize = 1024;
+    constexpr double samplesPerSixteenth = 6000.0;
+
+    GenerativeMIDIProcessor processor;
+    FakePlayHead playHead;
+    playHead.playing = true;
+    playHead.bpm = 120.0;
+    processor.setPlayHead(&playHead);
+    processor.prepareToPlay(48000.0, blockSize);
+    configureDenseEuclidean(processor);
+    setFloatParam(processor, "tempo", 120.0f);
+    setFloatParam(processor, "swingAmount", 0.0f);
+    setFloatParam(processor, "timingHumanize", 0.0f);
+    setFloatParam(processor, "gateLength", 0.5f);
+    setChoiceParam(processor, "voiceMode", 0);
+    setChoiceParam(processor, "partCount", 0);
+
+    std::vector<TimedNote> notes;
+    std::set<int> offsetsInBlock;
+    collectNotes(processor, 120, blockSize, notes);
+    int ons = 0;
+    for (const auto& n : notes)
+    {
+        if (!n.on)
+            continue;
+        const double ideal = std::round(static_cast<double>(n.sample) / samplesPerSixteenth) * samplesPerSixteenth;
+        INFO("note-on at " << n.sample);
+        REQUIRE(std::abs(static_cast<double>(n.sample) - ideal) <= 1.0);
+        offsetsInBlock.insert(static_cast<int>(n.sample % blockSize));
+        ++ons;
+    }
+    REQUIRE(ons >= 15);
+    REQUIRE(offsetsInBlock.size() > 4); // not all stamped at the block start
+
+    processor.releaseResources();
+    processor.setPlayHead(nullptr);
+}
+
+TEST_CASE("A play edge restarts the step counter and the grid", "[host][timing][regression]")
+{
+    juce::ScopedJuceInitialiser_GUI juceInit;
+    constexpr int blockSize = 1024;
+
+    GenerativeMIDIProcessor processor;
+    FakePlayHead playHead;
+    playHead.playing = true;
+    playHead.bpm = 120.0;
+    processor.setPlayHead(&playHead);
+    processor.prepareToPlay(48000.0, blockSize);
+    configureDenseEuclidean(processor);
+    setFloatParam(processor, "tempo", 120.0f);
+    setFloatParam(processor, "swingAmount", 0.0f);
+    setFloatParam(processor, "timingHumanize", 0.0f);
+    setChoiceParam(processor, "partCount", 0);
+
+    std::vector<TimedNote> scratch;
+    collectNotes(processor, 13, blockSize, scratch); // ends mid-grid, step counter well past 0
+    REQUIRE(processor.getCurrentStep() >= 2);
+
+    playHead.playing = false;
+    collectNotes(processor, 3, blockSize, scratch);
+
+    playHead.playing = true;
+    std::vector<TimedNote> restarted;
+    collectNotes(processor, 1, blockSize, restarted);
+
+    bool firstOnAtZero = false;
+    for (const auto& n : restarted)
+        if (n.on)
+        {
+            firstOnAtZero = (n.sample == 0);
+            break;
+        }
+    REQUIRE(firstOnAtZero);       // the grid restarted on the play edge
+    REQUIRE(processor.getCurrentStep() == 1); // and so did the step counter
+    processor.releaseResources();
+    processor.setPlayHead(nullptr);
+}
+
+TEST_CASE("Bar-aligned chords follow the host bar when playback starts mid-bar",
+          "[host][timing][regression]")
+{
+    juce::ScopedJuceInitialiser_GUI juceInit;
+    constexpr int blockSize = 1024;
+
+    GenerativeMIDIProcessor processor;
+    FakePlayHead playHead;
+    playHead.playing = true;
+    playHead.bpm = 120.0;
+    playHead.ppq = 3.9; // 0.1 beat (= 2400 samples) before the next bar
+    processor.setPlayHead(&playHead);
+    processor.prepareToPlay(48000.0, blockSize);
+    configureDenseEuclidean(processor);
+    setFloatParam(processor, "tempo", 120.0f);
+    setFloatParam(processor, "swingAmount", 0.0f);
+    setFloatParam(processor, "timingHumanize", 0.0f);
+    setChoiceParam(processor, "partCount", 2); // melody + root + bar chord
+
+    std::vector<TimedNote> notes;
+    collectNotes(processor, 12, blockSize, notes);
+
+    int64_t chordSample = -1;
+    for (const auto& n : notes)
+        if (n.on && n.channel == 3)
+        {
+            chordSample = n.sample;
+            break;
+        }
+    REQUIRE(chordSample >= 0);
+    REQUIRE(std::abs(static_cast<double>(chordSample) - 2400.0) <= 1.0);
+
+    processor.releaseResources();
+    processor.setPlayHead(nullptr);
+}
+
+//==============================================================================
+// Pitch bend scaling
+
+TEST_CASE("Pitch bend range is in semitones and the LFO can bend downwards",
+          "[host][expression][regression]")
+{
+    juce::ScopedJuceInitialiser_GUI juceInit;
+    constexpr int blockSize = 256;
+
+    auto run = [&](float rangeSemitones, bool lfo)
+    {
+        GenerativeMIDIProcessor processor;
+        FakePlayHead playHead;
+        playHead.playing = true;
+        playHead.bpm = 120.0;
+        processor.setPlayHead(&playHead);
+        processor.prepareToPlay(48000.0, blockSize);
+        configureDenseEuclidean(processor);
+        setFloatParam(processor, "tempo", 120.0f);
+        enableStaticExpression(processor);
+        setBoolParam(processor, "ccEnable", false);
+        setFloatParam(processor, "pitchbendRange", rangeSemitones);
+        if (lfo)
+        {
+            setBoolParam(processor, "modLfoEnable", true);
+            setFloatParam(processor, "modLfoRate", 6.0f);
+            setFloatParam(processor, "modLfoDepth", 0.5f);
+        }
+        const auto stats = processBlocksCollectingExpression(processor, 400, blockSize);
+        processor.releaseResources();
+        processor.setPlayHead(nullptr);
+        return stats;
+    };
+
+    // Static: 6 semitones of the 24-semitone full scale = +0.25 of the wheel.
+    const auto fixed = run(6.0f, false);
+    REQUIRE(fixed.bendValues.size() == 1);
+    REQUIRE(*fixed.bendValues.begin() == 10240);
+
+    // A small range with a 0.5-depth LFO reaches below centre (negative bend) and above it.
+    const auto modulated = run(2.0f, true);
+    REQUIRE(modulated.bendValues.size() >= 2);
+    REQUIRE(*modulated.bendValues.begin() < 7000);  // clearly below centre (negative bend)
+    REQUIRE(*modulated.bendValues.begin() >= 0);
+    REQUIRE(*modulated.bendValues.rbegin() > 9000); // and clearly above it
 }
 
 TEST_CASE("Polyrhythm layers can be edited while processBlock runs", "[host][polyrhythm][threads]")

@@ -21,8 +21,18 @@ int quantizeCc(float value)
 
 int quantizePitchWheel(float bendMinus1To1)
 {
-    const int bendValue = static_cast<int>((bendMinus1To1 + 1.0f) * 0.5f * 16383.0f);
+    // 0 maps to 8192 (wheel centre); must match EventScheduler::schedulePitchBend.
+    const int bendValue = juce::roundToInt((juce::jlimit(-1.0f, 1.0f, bendMinus1To1) + 1.0f) * 8192.0f);
     return juce::jlimit(0, 16383, bendValue);
+}
+
+// The pitch bend control is in semitones; the wheel's full +/-1 span is taken as 24 semitones
+// (the control's maximum). Result is the signed -1..1 value schedulePitchBend expects.
+constexpr float kBendFullScaleSemitones = 24.0f;
+
+float bendFromSemitones(float semitones)
+{
+    return juce::jlimit(-1.0f, 1.0f, semitones / kBendFullScaleSemitones);
 }
 }
 
@@ -48,7 +58,10 @@ GenerativeMIDIProcessor::GenerativeMIDIProcessor()
 
     // Setup clock manager callback
     clockManager.onSubdivisionHit = [this](int subdivision) {
-        onSubdivisionHit(subdivision);
+        onSubdivisionHit(subdivision, 0);
+    };
+    clockManager.onSubdivisionHitAt = [this](int subdivision, int sampleOffset) {
+        onSubdivisionHit(subdivision, sampleOffset);
     };
 }
 
@@ -331,6 +344,9 @@ void GenerativeMIDIProcessor::prepareToPlay(double sampleRate, int samplesPerBlo
     lastHeldCcNumber = -1;
     lastHeldCcValue = -1;
     lastHeldPitchBend = -1;
+    wasAdvancing = false;
+    lastGeneratorType = -1;
+    lastPitchbendEnabled = parameters.getRawParameterValue(PARAM_PITCHBEND_ENABLE)->load() > 0.5f;
 
     // Update parameters from value tree
     auto tempo = parameters.getRawParameterValue(PARAM_TEMPO)->load();
@@ -371,6 +387,9 @@ void GenerativeMIDIProcessor::prepareToPlay(double sampleRate, int samplesPerBlo
 void GenerativeMIDIProcessor::releaseResources()
 {
     clockManager.stop();
+    // There is no MIDI buffer here, so the all-notes-off goes out with the next block.
+    eventScheduler.clearAll();
+    flushRequested.store(true, std::memory_order_relaxed);
 }
 
 #ifndef JucePlugin_PreferredChannelConfigurations
@@ -460,6 +479,45 @@ void GenerativeMIDIProcessor::processBlock(juce::AudioBuffer<float>& buffer, juc
         }
     }
     clockAdvancing.store(shouldAdvance, std::memory_order_relaxed);
+
+    // Panic when the host stops, the generator changes, or the session was torn down:
+    // release every sounding note and re-centre the pitch wheel.
+    const int generatorNow = static_cast<int>(parameters.getRawParameterValue(PARAM_GENERATOR_TYPE)->load());
+    const bool bendEnabledNow = parameters.getRawParameterValue(PARAM_PITCHBEND_ENABLE)->load() > 0.5f;
+    const bool panic = flushRequested.exchange(false, std::memory_order_relaxed)
+                       || (wasAdvancing && !shouldAdvance)
+                       || (lastGeneratorType >= 0 && generatorNow != lastGeneratorType);
+    if (panic)
+    {
+        eventScheduler.allNotesOff(midiMessages, 0, &midiActivityLog);
+        for (auto& voice : melodyVoices)
+            voice = {};
+        expressionHoldUntil = 0;
+        lastHeldCcNumber = -1;
+        lastHeldCcValue = -1;
+        lastHeldPitchBend = -1;
+    }
+    else if (lastPitchbendEnabled && !bendEnabledNow)
+    {
+        eventScheduler.centrePitchBend(midiMessages, 0, &midiActivityLog);
+    }
+    if (shouldAdvance && !wasAdvancing)
+    {
+        // Play edge: restart the grid and the step counter so bar-aligned parts line up with
+        // the host bar. With a host ppq the grid starts at that song position; without one
+        // (standalone free-run) it starts at the top.
+        double startSixteenths = 0.0;
+        if (auto* playHead = getPlayHead())
+            if (auto position = playHead->getPosition())
+                if (auto ppq = position->getPpqPosition())
+                    startSixteenths = juce::jmax(0.0, *ppq * 4.0);
+
+        clockManager.restart(startSixteenths);
+        lastSubdivisionStep = static_cast<int>(std::ceil(startSixteenths - 1.0e-6));
+    }
+    wasAdvancing = shouldAdvance;
+    lastGeneratorType = generatorNow;
+    lastPitchbendEnabled = bendEnabledNow;
 
     if (shouldAdvance)
     {
@@ -579,9 +637,9 @@ void GenerativeMIDIProcessor::emitContinuousExpression(int64_t sampleTime)
     if (parameters.getRawParameterValue(PARAM_PITCHBEND_ENABLE)->load() > 0.5f)
     {
         const float range = parameters.getRawParameterValue(PARAM_PITCHBEND_RANGE)->load();
-        float bendNorm = juce::jlimit(0.0f, 1.0f, range / 24.0f);
+        float bendNorm = bendFromSemitones(range);
         const float delta = mix.bendRouted ? mix.bendDelta : (lfoEnabled ? lfo * depth : 0.0f);
-        bendNorm = ModulationRouter::applyAdditive(bendNorm, delta, 0.0f, 1.0f);
+        bendNorm = ModulationRouter::applyAdditive(bendNorm, delta, -1.0f, 1.0f); // both directions
         const int midiValue = quantizePitchWheel(bendNorm);
         if (midiValue != lastHeldPitchBend)
         {
@@ -611,9 +669,12 @@ void GenerativeMIDIProcessor::scheduleExpressionSweep(int64_t noteOn, int64_t no
     }
 }
 
-void GenerativeMIDIProcessor::onSubdivisionHit(int subdivision)
+void GenerativeMIDIProcessor::onSubdivisionHit(int subdivision, int sampleOffset)
 {
     juce::ignoreUnused(subdivision);
+
+    // Where this step falls on the timeline: block start plus its offset inside the block.
+    const int64_t stepSample = currentSamplePosition + static_cast<int64_t>(sampleOffset);
 
     // Update scale quantizer from parameters
     auto scaleRoot = static_cast<int>(parameters.getRawParameterValue(PARAM_SCALE_ROOT)->load());
@@ -705,7 +766,7 @@ void GenerativeMIDIProcessor::onSubdivisionHit(int subdivision)
         {
             const int slotIndex = juce::jlimit(0, 15, midiChannel - 1);
             auto& slot = melodyVoices[slotIndex];
-            int64_t start = currentSamplePosition + static_cast<int64_t>(timingOffset);
+            int64_t start = stepSample + static_cast<int64_t>(timingOffset);
             if (slot.active && slot.offSample > start)
             {
                 int64_t offAt = start - 1;
@@ -716,15 +777,17 @@ void GenerativeMIDIProcessor::onSubdivisionHit(int subdivision)
                     offAt = currentSamplePosition;
                     ++timingOffset;
                 }
+                // Drop the stolen note's own later events so they cannot cut a retriggered pitch.
+                eventScheduler.cancelNoteEventsAfter(slot.pitch, midiChannel, offAt);
                 eventScheduler.scheduleNoteOff(slot.pitch, midiChannel, offAt);
             }
         }
 
-        const int64_t noteOnSample = currentSamplePosition + static_cast<int64_t>(timingOffset);
+        const int64_t noteOnSample = stepSample + static_cast<int64_t>(timingOffset);
 
         const int64_t noteOffSample = NoteSchedulerHelpers::scheduleGeneratedNote(
             eventScheduler, ratchetEngine, gateLengthController,
-            pitch, velocity, midiChannel, currentSamplePosition,
+            pitch, velocity, midiChannel, stepSample,
             timingOffset, samplesPerStep, useRatcheting);
 
         if (monoVoice)
@@ -757,8 +820,8 @@ void GenerativeMIDIProcessor::onSubdivisionHit(int subdivision)
 
         if (pitchbendEnable)
         {
-            // Map PB range (1–24 semitones) to a fraction of full MIDI bend wheel
-            const float bendNorm = juce::jlimit(0.0f, 1.0f, pitchbendRange / 24.0f);
+            // Map PB semitones (1–24) onto the signed -1..1 wheel span
+            const float bendNorm = bendFromSemitones(pitchbendRange);
             eventScheduler.schedulePitchBend(bendNorm, midiChannel, noteOnSample);
             lastHeldPitchBend = quantizePitchWheel(bendNorm);
         }
@@ -905,10 +968,10 @@ void GenerativeMIDIProcessor::onSubdivisionHit(int subdivision)
             break;
     }
 
-    scheduleRoleParts(harmonyStep, midiChannel, samplesPerStep, velocityMin, velocityMax);
+    scheduleRoleParts(stepSample, harmonyStep, midiChannel, samplesPerStep, velocityMin, velocityMax);
 }
 
-void GenerativeMIDIProcessor::scheduleRoleParts(int step, int melodyChannel, int samplesPerStep,
+void GenerativeMIDIProcessor::scheduleRoleParts(int64_t stepSample, int step, int melodyChannel, int samplesPerStep,
                                                 float velocityMin, float velocityMax)
 {
     const int partCount = juce::jlimit(
@@ -943,7 +1006,7 @@ void GenerativeMIDIProcessor::scheduleRoleParts(int step, int melodyChannel, int
     const float span = velocityMax - velocityMin;
     const int timingOffset = swingEngine.calculateTotalTimingOffset(
         step, samplesPerStep, clockManager.getSampleRate());
-    const int64_t noteOnSample = currentSamplePosition + static_cast<int64_t>(timingOffset);
+    const int64_t noteOnSample = stepSample + static_cast<int64_t>(timingOffset);
     const int duration = juce::jmax(1, gateLengthController.calculateGateLengthSamples(samplesPerStep));
 
     auto play = [&](int pitch, float velocity, int channel)
