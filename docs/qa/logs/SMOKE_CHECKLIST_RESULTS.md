@@ -12,7 +12,7 @@
 | 1. MIDI emit per generator | **PARTIAL** | UI cycling reached multiple gens (e.g. Brownian); no MIDI monitor — audibility **manual-required**. |
 | 2. Factory presets | **PASS (UI open)** | Preset Manager shows 11 factories incl. Polyrhythm Layers ([`standalone_presets_menu.png`](standalone_presets_menu.png)). Load-each + audible change: **manual-required**. |
 | 3. Standalone free-run | **PASS (process + code)** | Standalone runs; no playhead → always-run clock. |
-| 3. DAW Play/Stop gate | **PASS (MCP Phase C)** | TwelveTake MCP: new project, `Generative MIDI` + `ReaSynth`, play ~3.5s, stop ([`reaper_transport_gate_mcp.txt`](reaper_transport_gate_mcp.txt), [`reaper_transport_gate_mcp.png`](reaper_transport_gate_mcp.png)). Ear-check of MIDI silence on stop: optional. |
+| 3. DAW Play/Stop gate | **PASS (MCP Phase C)** | TwelveTake MCP: new project, `Generative MIDI` + `ReaSynth`, play ~3.5s, stop ([`reaper_transport_gate_mcp.txt`](reaper_transport_gate_mcp.txt)). Ear-check of MIDI silence on stop: optional. |
 | 4. Expression AT/PB/CC | **PARTIAL** | Controls visible/togglable in UI; MIDI emit **manual-required**. |
 | 5. MIDI channel 1–16 | **PARTIAL** | Channel combo visible (value “1”); routing **manual-required**. |
 | 6. LFO Vel / Dens | **PARTIAL** | LFO button clicked ([`standalone_lfo_toggled.png`](standalone_lfo_toggled.png)); knobs visible; audible check **manual-required**. |

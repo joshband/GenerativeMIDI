@@ -17,8 +17,8 @@ Steps (MCP):
 9. stop -> ok; get_play_state -> ret 0 (stopped)
 
 Evidence:
-- docs/qa/logs/reaper_earcheck_playing.png
-- docs/qa/logs/reaper_earcheck_stopped.png
+- (screenshot removed: it captured unrelated desktop windows)
+- (screenshot removed: it captured unrelated desktop windows)
 
 Result: PASS with residual human glance
 - Transport + FX chain verified via MCP (play→stop).

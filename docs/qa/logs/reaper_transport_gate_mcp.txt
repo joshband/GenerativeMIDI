@@ -19,7 +19,7 @@ Steps (MCP):
 10. get_all_tracks -> FX chain unchanged
 
 Evidence:
-- docs/qa/logs/reaper_transport_gate_mcp.png
+- (screenshot removed: it captured unrelated desktop windows)
 - docs/qa/reaper/FX_NAMES.md (working names)
 
 Result: PASS (agent MCP session — FX insert + play/stop transport)

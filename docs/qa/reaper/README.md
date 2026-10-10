@@ -36,7 +36,7 @@ Or load [`create_transport_gate_session.lua`](create_transport_gate_session.lua)
 
 - **TwelveTake MCP installed** — `uvx twelvetake-reaper-mcp`; Cursor `~/.cursor/mcp.json` server `reaper` → namespace `user-reaper`.
 - Bridge auto-started via `Scripts/__startup.lua` → `reaper_mcp_bridge.lua`.
-- Phase C MCP session **PASS**: new project, insert Generative MIDI VST3 + ReaSynth, play ~3.5s, stop (`get_play_state` = 0). Evidence: [`../logs/reaper_transport_gate_mcp.txt`](../logs/reaper_transport_gate_mcp.txt), [`../logs/reaper_transport_gate_mcp.png`](../logs/reaper_transport_gate_mcp.png).
+- Phase C MCP session **PASS**: new project, insert Generative MIDI VST3 + ReaSynth, play ~3.5s, stop (`get_play_state` = 0). Evidence: [`../logs/reaper_transport_gate_mcp.txt`](../logs/reaper_transport_gate_mcp.txt).
 - Working FX names recorded in [`FX_NAMES.md`](FX_NAMES.md).
 
 ## How to record evidence
