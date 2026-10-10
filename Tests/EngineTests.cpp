@@ -14,6 +14,7 @@
 #include "Core/HarmonyParts.h"
 #include "Core/GeneratorTypeMapping.h"
 #include "Core/StochasticEngine.h"
+#include "Core/TimeSignature.h"
 #include "DSP/ClockManager.h"
 #include "DSP/PianoSynth.h"
 #include "Modulation/ModLfo.h"
@@ -21,6 +22,8 @@
 #include "Modulation/ModulationRouter.h"
 
 #include <atomic>
+#include <cmath>
+#include <limits>
 #include <thread>
 #include <vector>
 
@@ -1415,4 +1418,57 @@ TEST_CASE("LSystemEngine keeps non-ASCII symbols distinct from ASCII ones", "[al
     engine.addRule('A', "AA", 1.0f);
 
     REQUIRE(engine.iterate(1) == juce::String("BAA"));
+}
+
+TEST_CASE("TimeSignature denominators snap to a power of two", "[clock]")
+{
+    REQUIRE(TimeSignature::sanitizeDenominator(1) == 1);
+    REQUIRE(TimeSignature::sanitizeDenominator(2) == 2);
+    REQUIRE(TimeSignature::sanitizeDenominator(4) == 4);
+    REQUIRE(TimeSignature::sanitizeDenominator(8) == 8);
+    REQUIRE(TimeSignature::sanitizeDenominator(16) == 16);
+    REQUIRE(TimeSignature::sanitizeDenominator(3) == 2);   // tie: smaller
+    REQUIRE(TimeSignature::sanitizeDenominator(5) == 4);
+    REQUIRE(TimeSignature::sanitizeDenominator(7) == 8);
+    REQUIRE(TimeSignature::sanitizeDenominator(12) == 8);  // tie: smaller
+    REQUIRE(TimeSignature::sanitizeDenominator(15) == 16);
+    REQUIRE(TimeSignature::sanitizeDenominator(0) == 1);
+    REQUIRE(TimeSignature::sanitizeDenominator(-5) == 1);
+    REQUIRE(TimeSignature::sanitizeDenominator(100) == 32);
+}
+
+TEST_CASE("ClockManager applies a sane time signature and bar length", "[clock]")
+{
+    ClockManager clock;
+    clock.setSampleRate(48000.0);
+    clock.setTempo(120.0);
+
+    clock.setTimeSignature(6, 6);   // 6 is not a note value: snaps to 4
+    REQUIRE(clock.getTimeSignatureDenominator() == 4);
+    REQUIRE(clock.getSamplesPerBar() == Catch::Approx(clock.getSamplesPerBeat() * 6.0));
+
+    clock.setTimeSignature(6, 8);   // 6/8: six eighth notes = three beats
+    REQUIRE(clock.getSamplesPerBar() == Catch::Approx(clock.getSamplesPerBeat() * 3.0));
+}
+
+TEST_CASE("ClockManager ignores an invalid sample rate instead of hanging", "[clock]")
+{
+    ClockManager clock;
+    clock.setSampleRate(48000.0);
+    clock.setTempo(120.0);
+
+    clock.setSampleRate(0.0);
+    clock.setSampleRate(-44100.0);
+    clock.setSampleRate(std::numeric_limits<double>::quiet_NaN());
+    REQUIRE(clock.getSampleRate() == Catch::Approx(48000.0));
+
+    // The clock must still advance: with a zero sample rate every subdivision would be 0 samples
+    // long and this loop could never terminate.
+    int hits = 0;
+    clock.onSubdivisionHit = [&](int) { ++hits; };
+    clock.start();
+    clock.advance(48000);                 // one second at 120 bpm = 8 sixteenths
+    REQUIRE(hits == 8);
+
+    REQUIRE(std::isfinite(clock.getSamplesPerSubdivision(0)));
 }

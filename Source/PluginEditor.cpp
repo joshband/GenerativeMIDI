@@ -10,6 +10,7 @@
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 #include "Core/GeneratorTypeMapping.h"
+#include "Core/TimeSignature.h"
 #include <algorithm>
 
 namespace
@@ -1716,7 +1717,7 @@ void GenerativeMIDIEditor::timerCallback()
     patternDisplay.setVoice(monoVoice, gateLength);
     const int partCount = juce::jlimit(1, 4, partCountCombo.getSelectedItemIndex() + 1);
     const int timeNum = juce::jmax(1, static_cast<int>(audioProcessor.getValueTreeState().getRawParameterValue("timeSigNum")->load()));
-    const int timeDen = juce::jmax(1, static_cast<int>(audioProcessor.getValueTreeState().getRawParameterValue("timeSigDenom")->load()));
+    const int timeDen = TimeSignature::sanitizeDenominator(static_cast<int>(audioProcessor.getValueTreeState().getRawParameterValue("timeSigDenom")->load()));
     const int barSixteenths = juce::jmax(1, timeNum * 16 / timeDen);
     const int partStep = audioProcessor.isClockAdvancing()
                              ? juce::jmax(0, audioProcessor.getCurrentStep() - 1)

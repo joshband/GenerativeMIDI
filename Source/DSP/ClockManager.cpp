@@ -8,6 +8,8 @@
 */
 
 #include "ClockManager.h"
+#include "../Core/TimeSignature.h"
+#include <cmath>
 
 ClockManager::ClockManager()
 {
@@ -21,12 +23,15 @@ void ClockManager::setTempo(double bpm)
 void ClockManager::setTimeSignature(int numerator, int denominator)
 {
     timeSignatureNum = juce::jlimit(1, 32, numerator);
-    timeSignatureDenom = juce::jlimit(1, 32, denominator);
+    timeSignatureDenom = TimeSignature::sanitizeDenominator(denominator);
 }
 
 void ClockManager::setSampleRate(double rate)
 {
-    sampleRate = rate;
+    // A zero, negative or NaN rate would make every subdivision 0 samples long, and advance()
+    // would then spin forever on the audio thread. Keep the previous rate instead.
+    if (std::isfinite(rate) && rate >= 1.0)
+        sampleRate = rate;
 }
 
 void ClockManager::start()
@@ -42,7 +47,6 @@ void ClockManager::stop()
 void ClockManager::reset()
 {
     currentSample = 0;
-    subdivisionCounter = 0;
     midiClockCounter = 0;
     samplesToNextSixteenth = 0.0;
 }
@@ -109,8 +113,8 @@ double ClockManager::getSamplesPerBar() const
 
 double ClockManager::getSamplesPerSubdivision(int subdivision) const
 {
-    // subdivision is in notes per quarter (e.g., 16 = sixteenth notes)
-    return getSamplesPerBeat() / (subdivision / 4.0);
+    // subdivision is in notes per whole note (e.g., 16 = sixteenth notes); never divide by zero
+    return getSamplesPerBeat() / (juce::jmax(1, subdivision) / 4.0);
 }
 
 int64_t ClockManager::quantizeToSubdivision(int subdivision) const
