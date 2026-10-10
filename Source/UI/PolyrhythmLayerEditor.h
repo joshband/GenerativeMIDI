@@ -150,7 +150,7 @@ public:
         pitchSlider.setValue(layer->pitchOffset, juce::dontSendNotification);
         velocitySlider.setValue(layer->velocityMultiplier, juce::dontSendNotification);
         patternDisplay.setPattern(layer->pattern);
-        patternDisplay.setCurrentStep(layer->currentStep);
+        patternDisplay.setCurrentStep(polyEngine.getCurrentStep(layerIndex));
     }
 
     std::function<void()> onGeometryChanged;

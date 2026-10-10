@@ -20,6 +20,8 @@
 
 #include <cmath>
 #include <map>
+#include <atomic>
+#include <thread>
 #include <set>
 
 namespace
@@ -1347,4 +1349,81 @@ TEST_CASE("Pitch bend range is in semitones and the LFO can bend downwards",
     REQUIRE(*modulated.bendValues.begin() < 7000);  // clearly below centre (negative bend)
     REQUIRE(*modulated.bendValues.begin() >= 0);
     REQUIRE(*modulated.bendValues.rbegin() > 9000); // and clearly above it
+}
+
+TEST_CASE("Polyrhythm layers can be edited while processBlock runs", "[host][polyrhythm][threads]")
+{
+    // Regression for a data race: the audio thread read the layer vectors while the
+    // message thread resized / pushed / erased / replaced them. Run under
+    // -fsanitize=thread (or address) to catch it; without a sanitizer it still has to
+    // survive and keep producing sane MIDI.
+    juce::ScopedJuceInitialiser_GUI juceInit;
+
+    GenerativeMIDIProcessor processor;
+    FakePlayHead playHead;
+    playHead.playing = true;
+    playHead.bpm = 240.0;
+    processor.setPlayHead(&playHead);
+
+    constexpr int blockSize = 128;
+    processor.prepareToPlay(48000.0, blockSize);
+    setChoiceParam(processor, "generatorType", 1); // Polyrhythm
+    setFloatParam(processor, "noteDensity", 1.0f);
+    setFloatParam(processor, "tempo", 240.0f);
+
+    auto& engine = processor.getPolyrhythmEngine();
+    engine.addLayer();
+    engine.addLayer();
+
+    std::atomic<bool> audioDone { false };
+    std::atomic<int> noteOns { 0 };
+    std::atomic<int> badMessages { 0 };
+
+    std::thread audio([&]
+    {
+        juce::AudioBuffer<float> buffer(0, blockSize);
+        for (int block = 0; block < 20000; ++block)
+        {
+            juce::MidiBuffer midi;
+            processor.processBlock(buffer, midi);
+            for (const auto metadata : midi)
+            {
+                const auto m = metadata.getMessage();
+                if (m.getRawDataSize() == 3 && (m.getRawData()[0] & 0xF0) == 0x90)
+                {
+                    ++noteOns;
+                    if (m.getRawData()[1] > 127 || m.getRawData()[2] < 1 || m.getRawData()[2] > 127)
+                        ++badMessages;
+                }
+            }
+        }
+        audioDone = true;
+    });
+
+    juce::Random rng(1234);
+    int iteration = 0;
+    while (!audioDone.load())
+    {
+        const int layer = rng.nextInt(juce::jmax(1, engine.getNumLayers()));
+        switch (iteration++ % 8)
+        {
+            case 0: engine.addLayer(); break;
+            case 1: if (engine.getNumLayers() > 1) engine.removeLayer(engine.getNumLayers() - 1); break;
+            case 2: engine.setLayerLength(layer, 1 + rng.nextInt(128)); break;
+            case 3: engine.setStep(layer, rng.nextInt(16), rng.nextBool(), rng.nextFloat(), rng.nextInt(128)); break;
+            case 4: engine.setLayerDivision(layer, 1 + rng.nextInt(16)); break;
+            case 5: engine.setLayerEnabled(layer, true); break;
+            case 6: engine.loadFromValueTree(engine.toValueTree()); break;
+            case 7: engine.randomizeLayer(layer, 0.7f); break;
+        }
+    }
+
+    audio.join();
+
+    REQUIRE(badMessages.load() == 0);
+    REQUIRE(noteOns.load() > 0);
+    REQUIRE(engine.getNumLayers() >= 1);
+
+    processor.releaseResources();
+    processor.setPlayHead(nullptr);
 }

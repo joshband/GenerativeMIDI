@@ -379,29 +379,7 @@ void GenerativeMIDIProcessor::prepareToPlay(double sampleRate, int samplesPerBlo
     polyrhythmEngine.setTimeSignature(static_cast<int>(timeSigNum), static_cast<int>(timeSigDenom));
 
     // Ensure polyrhythm layer 0 has an audible default pattern (constructor starts empty).
-    if (auto* layer = polyrhythmEngine.getLayer(0))
-    {
-        bool anyActive = false;
-        for (bool step : layer->pattern)
-        {
-            if (step)
-            {
-                anyActive = true;
-                break;
-            }
-        }
-
-        if (!anyActive)
-        {
-            for (int i = 0; i < layer->length; ++i)
-            {
-                layer->pattern[static_cast<size_t>(i)] = (i % 4 == 0);
-                layer->velocities[static_cast<size_t>(i)] = 0.8f;
-                layer->pitches[static_cast<size_t>(i)] = 60 + (i % 12);
-            }
-            layer->enabled = true;
-        }
-    }
+    polyrhythmEngine.ensureLayerAudible(0);
 
     clockManager.start();
 }
@@ -876,35 +854,25 @@ void GenerativeMIDIProcessor::onSubdivisionHit(int subdivision, int sampleOffset
         {
             // Sixteenth-note clock grid; layer.division scales step rate (4 = quarters).
             constexpr int kClockGrid = 16;
-            for (int i = 0; i < polyrhythmEngine.getNumLayers(); ++i)
+            polyrhythmEngine.processTick(kClockGrid, [&](const PolyrhythmLayer& layer, int step)
             {
-                auto* layer = polyrhythmEngine.getLayer(i);
-                if (!layer || !layer->enabled || layer->length <= 0)
-                    continue;
-
-                if (!polyrhythmEngine.shouldEmitOnThisTick(i, kClockGrid))
-                    continue;
-
-                const int step = layer->currentStep % layer->length;
-                if (step >= 0 && step < static_cast<int>(layer->pattern.size())
-                    && step < static_cast<int>(layer->pitches.size())
-                    && step < static_cast<int>(layer->velocities.size())
-                    && layer->pattern[static_cast<size_t>(step)]
+                if (step >= 0 && step < static_cast<int>(layer.pattern.size())
+                    && step < static_cast<int>(layer.pitches.size())
+                    && step < static_cast<int>(layer.velocities.size())
+                    && layer.pattern[static_cast<size_t>(step)]
                     && rtRandom.nextFloat() < effectiveDensity)
                 {
                     const int rawPitch = juce::jlimit(
                         pitchMin, pitchMax,
-                        layer->pitches[static_cast<size_t>(step)] + layer->pitchOffset);
+                        layer.pitches[static_cast<size_t>(step)] + layer.pitchOffset);
                     const int pitch = modulatePitch(rawPitch);
                     const float rawVelocity = juce::jlimit(
                         0.0f, 1.0f,
-                        layer->velocities[static_cast<size_t>(step)] * layer->velocityMultiplier);
+                        layer.velocities[static_cast<size_t>(step)] * layer.velocityMultiplier);
                     const float velocity = velocityMin + (rawVelocity * (velocityMax - velocityMin));
                     scheduleNote(pitch, velocity, step);
                 }
-
-                polyrhythmEngine.advanceStep(i);
-            }
+            });
             lastSubdivisionStep++;
             break;
         }
