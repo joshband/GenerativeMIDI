@@ -46,7 +46,7 @@ private:
 // ============================================================================
 struct LSystemRule
 {
-    char symbol;
+    juce::juce_wchar symbol;
     juce::String replacement;
     float probability = 1.0f;
 };
@@ -57,7 +57,7 @@ public:
     LSystemEngine();
 
     void setAxiom(const juce::String& axiom);
-    void addRule(char symbol, const juce::String& replacement, float probability = 1.0f);
+    void addRule(juce::juce_wchar symbol, const juce::String& replacement, float probability = 1.0f);
     void clearRules();
     juce::String iterate(int generations);
     std::vector<int> toMidiNotes(const juce::String& sequence, int baseNote = 60);
@@ -65,7 +65,7 @@ public:
 
 private:
     juce::String axiom;
-    std::map<char, std::vector<LSystemRule>> rules;
+    std::map<juce::juce_wchar, std::vector<LSystemRule>> rules;
     juce::Random random;
 };
 

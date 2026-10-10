@@ -121,7 +121,7 @@ void LSystemEngine::setAxiom(const juce::String& ax)
     axiom = ax;
 }
 
-void LSystemEngine::addRule(char symbol, const juce::String& replacement, float probability)
+void LSystemEngine::addRule(juce::juce_wchar symbol, const juce::String& replacement, float probability)
 {
     LSystemRule rule;
     rule.symbol = symbol;

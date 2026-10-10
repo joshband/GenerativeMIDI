@@ -7,6 +7,7 @@
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/catch_approx.hpp>
 
+#include "Core/AlgorithmicEngine.h"
 #include "Core/EuclideanEngine.h"
 #include "Core/PolyrhythmEngine.h"
 #include "Core/ScaleQuantizer.h"
@@ -1399,4 +1400,19 @@ TEST_CASE("Perlin noise is continuous across the time wrap", "[stochastic][perli
         prev = v;
     }
     REQUIRE(maxJump < 0.03f);
+}
+
+TEST_CASE("LSystemEngine keeps non-ASCII symbols distinct from ASCII ones", "[algorithmic]")
+{
+    // U+0141 truncates to 'A' when squeezed into a char, so with a char-keyed rule map the two
+    // symbols shared one rule list and U+0141 was rewritten by the 'A' rule (or vice versa).
+    const juce::juce_wchar wideA = 0x0141;
+
+    LSystemEngine engine;
+    engine.clearRules();
+    engine.setAxiom(juce::String::charToString(wideA) + "A");
+    engine.addRule(wideA, "B", 1.0f);
+    engine.addRule('A', "AA", 1.0f);
+
+    REQUIRE(engine.iterate(1) == juce::String("BAA"));
 }
