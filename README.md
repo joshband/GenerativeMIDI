@@ -67,7 +67,7 @@ Artifacts appear in `build/GenerativeMIDI_artefacts/Release/` under `AU/`, `VST3
 
 | Check | Proves | Does not prove |
 |-------|--------|----------------|
-| `ctest` (78 Catch2 cases: 51 in `Tests/EngineTests.cpp`, 27 in `Tests/HostSmokeTests.cpp`) | Engine logic, preset round-trips, and a headless host smoke test behave as written | Real-DAW behavior, UI behavior, audio quality |
+| `ctest` (83 Catch2 cases: 56 in `Tests/EngineTests.cpp`, 27 in `Tests/HostSmokeTests.cpp`) | Engine logic, preset round-trips, and a headless host smoke test behave as written | Real-DAW behavior, UI behavior, audio quality |
 | CI ([`ci.yml`](.github/workflows/ci.yml)): macOS, iOS, Windows, Linux builds; `ctest` on macOS, Windows, Linux; pluginval on the VST3 build | The code compiles on four platforms and the VST3 passes pluginval (strictness 5, GUI tests skipped) | AU validation (not run in CI), running on a real iOS device |
 | Manual [smoke checklist](docs/user/SMOKE_CHECKLIST.md) and [QA findings](docs/qa/QA_FINDINGS_v0.8.0.md) | A person exercised the Standalone app and REAPER transport on recorded dates | Every DAW, every host version |
 

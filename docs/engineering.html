@@ -113,7 +113,7 @@
             <p class="plain">Music software has a hard deadline: if a plugin is a few milliseconds late, you hear a glitch. So the note-making code avoids anything that could cause a delay.</p>
             <details>
               <summary>Engineering detail</summary>
-              <p>Note generation must respect <a class="term" href="index.html#g-daw">host</a> block timing. Gate length and ratchet features are described in STATUS with sample-accurate intent. Steady-state hot path is <a class="term" href="index.html#g-alloc">allocation</a>-hardened (Euclidean regen, ratchet offsets, algorithmic single-note, EventScheduler pre-reserved queue; over-capacity schedules dropped). Residual risk called out in STATUS: trained Markov map-key vector on lookup. Engine behavior is covered by Catch2 / <code>ctest</code> in <a class="term" href="index.html#g-ci">CI</a> (<strong>78</strong> test cases, incl. headless host playhead smoke + polyrhythm layer persistence); host transport gating is also exercised via REAPER + TwelveTake MCP and the manual <a href="https://github.com/joshband/GenerativeMIDI/blob/master/docs/user/SMOKE_CHECKLIST.md" rel="noopener noreferrer">smoke checklist</a> — not a published latency bench suite.</p>
+              <p>Note generation must respect <a class="term" href="index.html#g-daw">host</a> block timing. Gate length and ratchet features are described in STATUS with sample-accurate intent. Steady-state hot path is <a class="term" href="index.html#g-alloc">allocation</a>-hardened (Euclidean regen, ratchet offsets, algorithmic single-note, EventScheduler pre-reserved queue; over-capacity schedules dropped). Residual risk called out in STATUS: trained Markov map-key vector on lookup. Engine behavior is covered by Catch2 / <code>ctest</code> in <a class="term" href="index.html#g-ci">CI</a> (<strong>83</strong> test cases, incl. headless host playhead smoke + polyrhythm layer persistence); host transport gating is also exercised via REAPER + TwelveTake MCP and the manual <a href="https://github.com/joshband/GenerativeMIDI/blob/master/docs/user/SMOKE_CHECKLIST.md" rel="noopener noreferrer">smoke checklist</a> — not a published latency bench suite.</p>
             </details>
           </li>
           <li>
@@ -137,7 +137,7 @@
             <p class="plain">Claims are limited to what was built, tested, and checked. No invented coverage percentages.</p>
             <details>
               <summary>Engineering detail</summary>
-              <p>On-disk contracts are STATUS.md, BUILD_VERIFICATION.md, CHANGELOG, CI (<code>.github/workflows/ci.yml</code> + Catch2 / <code>ctest</code> ×78), <a href="https://github.com/joshband/GenerativeMIDI/blob/master/docs/qa/QA_FINDINGS_v0.8.0.md" rel="noopener noreferrer">QA findings</a>, and the manual <a href="https://github.com/joshband/GenerativeMIDI/blob/master/docs/user/SMOKE_CHECKLIST.md" rel="noopener noreferrer">SMOKE_CHECKLIST</a> — not invented coverage percentages. Prefer “build passed / tests ran / feature listed / smoke steps exercised” over marketing metrics.</p>
+              <p>On-disk contracts are STATUS.md, BUILD_VERIFICATION.md, CHANGELOG, CI (<code>.github/workflows/ci.yml</code> + Catch2 / <code>ctest</code> ×83), <a href="https://github.com/joshband/GenerativeMIDI/blob/master/docs/qa/QA_FINDINGS_v0.8.0.md" rel="noopener noreferrer">QA findings</a>, and the manual <a href="https://github.com/joshband/GenerativeMIDI/blob/master/docs/user/SMOKE_CHECKLIST.md" rel="noopener noreferrer">SMOKE_CHECKLIST</a> — not invented coverage percentages. Prefer “build passed / tests ran / feature listed / smoke steps exercised” over marketing metrics.</p>
             </details>
           </li>
         </ul>
@@ -166,11 +166,11 @@
               </tr>
               <tr>
                 <td><a href="https://github.com/joshband/GenerativeMIDI/blob/master/.github/workflows/ci.yml" rel="noopener noreferrer">.github/workflows/ci.yml<span class="visually-hidden"> on GitHub</span></a></td>
-                <td><strong class="plain">The recipe for the automatic build-and-test robot.</strong> Canonical CI: four jobs — macOS plugin build + <code>ctest</code> (78) + pluginval VST3; iOS AUv3 build; Windows VST3 build + <code>ctest</code> + pluginval; Linux VST3 build + <code>ctest</code> + pluginval</td>
+                <td><strong class="plain">The recipe for the automatic build-and-test robot.</strong> Canonical CI: four jobs — macOS plugin build + <code>ctest</code> (83) + pluginval VST3; iOS AUv3 build; Windows VST3 build + <code>ctest</code> + pluginval; Linux VST3 build + <code>ctest</code> + pluginval</td>
               </tr>
               <tr>
                 <td><a href="https://github.com/joshband/GenerativeMIDI/blob/master/Tests/EngineTests.cpp" rel="noopener noreferrer">Tests/EngineTests.cpp<span class="visually-hidden"> on GitHub</span></a></td>
-                <td><strong class="plain">Automated checks of the note-making logic.</strong> Catch2 suite (51 cases): engines, mapping, migration, clock, factory round-trip, import hardening, ModLfo and modulation router, Markov / L-System / cellular controls, polyrhythm rate and persistence, piano synth, harmony parts, MIDI activity log</td>
+                <td><strong class="plain">Automated checks of the note-making logic.</strong> Catch2 suite (56 cases): engines, mapping, migration, clock, factory round-trip, import hardening, ModLfo and modulation router, Markov / L-System / cellular controls, polyrhythm rate and persistence, piano synth, harmony parts, MIDI activity log</td>
               </tr>
               <tr>
                 <td><a href="https://github.com/joshband/GenerativeMIDI/blob/master/Tests/HostSmokeTests.cpp" rel="noopener noreferrer">Tests/HostSmokeTests.cpp<span class="visually-hidden"> on GitHub</span></a></td>
