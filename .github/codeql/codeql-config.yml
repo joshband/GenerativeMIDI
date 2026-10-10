@@ -1,0 +1,6 @@
+name: GenerativeMIDI CodeQL config
+# Third-party code is not ours to fix: scan only first-party sources.
+paths-ignore:
+  - JUCE
+  - art
+  - build
