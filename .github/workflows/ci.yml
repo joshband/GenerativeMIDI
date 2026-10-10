@@ -375,3 +375,145 @@ jobs:
           build/GenerativeMIDI_artefacts/Release/Standalone/**
         if-no-files-found: error
         retention-days: 14
+
+  sanitize-asan:
+    name: Sanitizers (ASan+UBSan)
+    needs: changes
+    # Runs on pull requests too (see docs/developer/CI.md for measured runtime).
+    if: needs.changes.outputs.code == 'true'
+    runs-on: ubuntu-22.04
+    timeout-minutes: 45
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        submodules: recursive
+
+    - name: Install build dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y --no-install-recommends \
+          build-essential \
+          cmake \
+          pkg-config \
+          libasound2-dev \
+          libfreetype6-dev \
+          libfontconfig1-dev \
+          libx11-dev \
+          libxcomposite-dev \
+          libxcursor-dev \
+          libxext-dev \
+          libxinerama-dev \
+          libxrandr-dev \
+          libxrender-dev \
+          libglu1-mesa-dev \
+          libjack-jackd2-dev \
+          ccache
+
+    - name: Install JUCE
+      run: |
+        git clone --depth 1 --branch "${JUCE_VERSION}" https://github.com/juce-framework/JUCE.git JUCE
+
+    - name: Cache ccache objects
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: ~/.cache/ccache
+        key: ccache-linux-asan-${{ github.sha }}
+        restore-keys: ccache-linux-asan-
+
+    - name: Configure
+      run: |
+        cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug \
+          -DGENMIDI_SANITIZE=address,undefined \
+          -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+
+    # Only the two Catch2 executables: no VST3/Standalone wrappers are needed.
+    - name: Build tests
+      run: |
+        cmake --build build --target GenerativeMIDITests GenerativeMIDIHostSmokeTests -j"$(nproc)"
+        ccache --show-stats
+
+    - name: Run unit tests
+      env:
+        ASAN_OPTIONS: detect_leaks=1:strict_string_checks=1:detect_stack_use_after_return=1
+        UBSAN_OPTIONS: print_stacktrace=1:halt_on_error=1
+        TSAN_OPTIONS: halt_on_error=0:second_deadlock_stack=1
+      run: |
+        cd build
+        ctest --output-on-failure
+
+  sanitize-tsan:
+    name: Sanitizers (TSan)
+    needs: changes
+    # Not on pull requests: push to main/master, weekly, and manual dispatch.
+    if: needs.changes.outputs.code == 'true' && github.event_name != 'pull_request'
+    runs-on: ubuntu-22.04
+    timeout-minutes: 45
+    # NON-REQUIRED / advisory: continue-on-error keeps a TSan finding from failing the run.
+    # TSan legitimately flags the Polyrhythm data race until fix/polyrhythm-thread-safety
+    # lands. Once it does, remove the next line (and consider requiring this check).
+    continue-on-error: true
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        submodules: recursive
+
+    - name: Install build dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y --no-install-recommends \
+          build-essential \
+          cmake \
+          pkg-config \
+          libasound2-dev \
+          libfreetype6-dev \
+          libfontconfig1-dev \
+          libx11-dev \
+          libxcomposite-dev \
+          libxcursor-dev \
+          libxext-dev \
+          libxinerama-dev \
+          libxrandr-dev \
+          libxrender-dev \
+          libglu1-mesa-dev \
+          libjack-jackd2-dev \
+          ccache
+
+    - name: Install JUCE
+      run: |
+        git clone --depth 1 --branch "${JUCE_VERSION}" https://github.com/juce-framework/JUCE.git JUCE
+
+    - name: Cache ccache objects
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: ~/.cache/ccache
+        key: ccache-linux-tsan-${{ github.sha }}
+        restore-keys: ccache-linux-tsan-
+
+    # Newer runner kernels use high ASLR entropy that breaks TSan's shadow memory mapping.
+    - name: Lower ASLR entropy for TSan
+      run: sudo sysctl vm.mmap_rnd_bits=28
+
+    - name: Configure
+      run: |
+        cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug \
+          -DGENMIDI_SANITIZE=thread \
+          -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+
+    # Only the two Catch2 executables: no VST3/Standalone wrappers are needed.
+    - name: Build tests
+      run: |
+        cmake --build build --target GenerativeMIDITests GenerativeMIDIHostSmokeTests -j"$(nproc)"
+        ccache --show-stats
+
+    - name: Run unit tests
+      env:
+        ASAN_OPTIONS: detect_leaks=1:strict_string_checks=1:detect_stack_use_after_return=1
+        UBSAN_OPTIONS: print_stacktrace=1:halt_on_error=1
+        TSAN_OPTIONS: halt_on_error=0:second_deadlock_stack=1
+      run: |
+        cd build
+        ctest --output-on-failure
