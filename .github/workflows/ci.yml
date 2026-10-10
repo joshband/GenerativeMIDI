@@ -115,6 +115,9 @@ jobs:
     - name: Generate Xcode Project
       run: |
         mkdir -p build_ios
+        # Collapsible log group; the trap closes it even if the command fails.
+        echo "::group::Configure (Xcode, iOS)"
+        trap 'echo "::endgroup::"' EXIT
         cd build_ios
         cmake .. -G Xcode \
           -DCMAKE_SYSTEM_NAME=iOS \
@@ -123,6 +126,8 @@ jobs:
 
     - name: Build for iOS
       run: |
+        echo "::group::xcodebuild (iOS AUv3)"
+        trap 'echo "::endgroup::"' EXIT
         cd build_ios
         set -o pipefail
         # -quiet prints only warnings and errors, not every compiler command line.
@@ -186,6 +191,9 @@ jobs:
 
     - name: Build Plugins
       run: |
+        # Collapsible log group; the trap closes it even if the build fails.
+        echo "::group::Configure and build (macOS)"
+        trap 'echo "::endgroup::"' EXIT
         set -o pipefail
         mkdir -p build
         cd build
@@ -215,6 +223,7 @@ jobs:
         key: ccache-macos-${{ github.sha }}
 
     - name: Run unit tests
+      shell: bash
       run: |
         cd build
         ctest --output-on-failure -C Release
@@ -302,11 +311,19 @@ jobs:
     # No debug-info flag: the Release flags carry no /Zi, and Windows has no ccache here yet
     # (CMAKE_MSVC_DEBUG_INFORMATION_FORMAT would also be ignored: cmake_minimum_required is 3.15).
     - name: Configure
-      run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      shell: bash
+      run: |
+        echo "::group::Configure (Windows)"
+        trap 'echo "::endgroup::"' EXIT
+        cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
 
     - name: Build Plugins
       shell: bash
-      run: cmake --build build --config Release 2>&1 | tee build.log
+      run: |
+        echo "::group::Build (Windows)"
+        trap 'echo "::endgroup::"' EXIT
+        set -o pipefail
+        cmake --build build --config Release 2>&1 | tee build.log
 
     - name: Summarize compiler warnings
       if: always()
@@ -314,6 +331,7 @@ jobs:
       run: bash .github/scripts/summarize-warnings.sh build.log "Windows"
 
     - name: Run unit tests
+      shell: bash
       run: |
         cd build
         ctest --output-on-failure -C Release
@@ -408,12 +426,24 @@ jobs:
 
     - name: Configure
       run: |
+        echo "::group::Configure (Linux)"
+        trap 'echo "::endgroup::"' EXIT
         mkdir -p build
+        # -flto=auto: JUCE's juce_recommended_lto_flags adds a bare -flto under GCC, which
+        # links with serial LTRANS ("lto-wrapper: warning: using serial compilation of N
+        # LTRANS jobs"). A prior -flto=auto makes lto-wrapper run LTRANS in parallel.
+        # Passed at compile and link time (the link is where LTRANS runs); Linux Release only.
         cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release \
-          -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+          -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
+          -DCMAKE_CXX_FLAGS=-flto=auto \
+          -DCMAKE_EXE_LINKER_FLAGS=-flto=auto \
+          -DCMAKE_SHARED_LINKER_FLAGS=-flto=auto \
+          -DCMAKE_MODULE_LINKER_FLAGS=-flto=auto
 
     - name: Build Plugins
       run: |
+        echo "::group::Build (Linux)"
+        trap 'echo "::endgroup::"' EXIT
         set -o pipefail
         cmake --build build --config Release -j"$(nproc)" 2>&1 | tee build.log
         ccache --show-stats
@@ -431,6 +461,7 @@ jobs:
         key: ccache-linux-release-${{ github.sha }}
 
     - name: Run unit tests
+      shell: bash
       run: |
         cd build
         ctest --output-on-failure -C Release
@@ -526,6 +557,8 @@ jobs:
 
     - name: Configure
       run: |
+        echo "::group::Configure (ASan+UBSan)"
+        trap 'echo "::endgroup::"' EXIT
         cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug \
           -DGENMIDI_SANITIZE=address,undefined \
           -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
@@ -533,6 +566,8 @@ jobs:
     # Only the two Catch2 executables: no VST3/Standalone wrappers are needed.
     - name: Build tests
       run: |
+        echo "::group::Build tests (ASan+UBSan)"
+        trap 'echo "::endgroup::"' EXIT
         set -o pipefail
         cmake --build build --target GenerativeMIDITests GenerativeMIDIHostSmokeTests -j"$(nproc)" 2>&1 | tee build.log
         ccache --show-stats
@@ -564,10 +599,8 @@ jobs:
     if: needs.changes.outputs.code == 'true' && needs.changes.outputs.platform == 'true'
     runs-on: ubuntu-22.04
     timeout-minutes: 45
-    # NON-REQUIRED / advisory: continue-on-error keeps a TSan finding from failing the run.
-    # TSan legitimately flags the Polyrhythm data race until fix/polyrhythm-thread-safety
-    # lands. Once it does, remove the next line (and consider requiring this check).
-    continue-on-error: true
+    # Blocking: any TSan report other than the known JUCE lock-order-inversion false positives
+    # (GCC 11 libtsan) fails the job; those are filtered in the "Run unit tests" step below.
 
     steps:
     - name: Checkout code
@@ -616,6 +649,8 @@ jobs:
 
     - name: Configure
       run: |
+        echo "::group::Configure (TSan)"
+        trap 'echo "::endgroup::"' EXIT
         cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug \
           -DGENMIDI_SANITIZE=thread \
           -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
@@ -623,6 +658,8 @@ jobs:
     # Only the two Catch2 executables: no VST3/Standalone wrappers are needed.
     - name: Build tests
       run: |
+        echo "::group::Build tests (TSan)"
+        trap 'echo "::endgroup::"' EXIT
         set -o pipefail
         cmake --build build --target GenerativeMIDITests GenerativeMIDIHostSmokeTests -j"$(nproc)" 2>&1 | tee build.log
         ccache --show-stats

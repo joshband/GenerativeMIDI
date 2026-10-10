@@ -14,7 +14,7 @@ Workflows:
 | **Build macOS Plugins** | `macos-latest` | yes (VST3 + tests only) | yes (AU / AUv3 / VST3 / Standalone) | Ninja, `ctest`, **pluginval** on VST3, ccache |
 | **Build Linux VST3** | `ubuntu-22.04` | yes | yes | Ninja, VST3 + Standalone, `ctest`, **pluginval** on VST3, ccache |
 | **Sanitizers (ASan+UBSan)** | `ubuntu-22.04` | yes | yes | Debug build of the two Catch2 executables with `address,undefined`, then `ctest` |
-| **Sanitizers (TSan)** | `ubuntu-22.04` | `full-ci` / build files | yes | Same with `thread`. **Advisory** (`continue-on-error`) |
+| **Sanitizers (TSan)** | `ubuntu-22.04` | `full-ci` / build files | yes | Same with `thread`. **Blocking** (no `continue-on-error`) |
 | **Build Windows VST3** | `windows-2022` | `full-ci` / build files | yes | VST3 + Standalone (Ninja + MSVC), `ctest`, **pluginval** on VST3 |
 | **Build iOS/iPadOS AUv3** | `macos-latest` | `full-ci` / build files | yes | CMake iOS (Xcode generator) + `xcodebuild` AUv3; uploads `.appex` / `.app` |
 
@@ -61,6 +61,14 @@ Docs-only PRs (`docs/**`, `*.md`, `LICENSE`, and repo metadata: `.github/dependa
 
 Each build step tees its output to `build.log`, and a `Summarize compiler warnings` step (`.github/scripts/summarize-warnings.sh`) turns that into a table on the job summary page plus inline annotations for the first 50 unique warnings. Warnings from JUCE, the `art` submodule and fetched dependencies are excluded, duplicates (the same header compiled into several targets) are collapsed, and the step never fails the job. The iOS build runs `xcodebuild -quiet`, which prints only warnings and errors instead of every compiler command line.
 
+### Log groups
+
+Noisy configure and build output in the build jobs is wrapped in collapsible `::group::` / `::endgroup::` blocks. Each `run:` script closes its group with `trap 'echo "::endgroup::"' EXIT`, so the group also closes when the command fails. The `Summarize compiler warnings` steps and the runner's error line are outside any group, so they stay visible. `ctest` steps are not grouped, so a failing test's output is visible without expanding anything (the TSan test step's `::error::` annotation included).
+
+### Linux LTO and parallel LTRANS
+
+JUCE's `juce_recommended_lto_flags` (linked PUBLIC from `CMakeLists.txt`) adds a bare `-flto` for GCC in Release, so `lto-wrapper` linked with serial LTRANS and warned `using serial compilation of N LTRANS jobs`. The Linux Release configure line in `ci.yml` therefore passes `-flto=auto` in `CMAKE_CXX_FLAGS` and in the EXE/SHARED/MODULE linker flags. These come before the target's own options on the command line, and a later plain `-flto` does not reset the parallelism chosen by an earlier `-flto=auto`, so LTRANS runs in parallel (one job per core). macOS (Clang/ThinLTO) and Windows (MSVC) are untouched; the sanitizer builds are Debug and do not use LTO.
+
 ### Draft PRs
 
 Draft pull requests run no jobs (the `Detect code changes` and `CodeQL scope` jobs are skipped, which skips everything that depends on them). Open a PR as a draft while iterating and click "Ready for review" to start CI; the `ready_for_review` trigger runs the checks at that point. Skipped jobs still satisfy required checks, but GitHub will not merge a draft anyway.
@@ -72,7 +80,7 @@ The branch ruleset "Protect master" currently requires **Build macOS Plugins**. 
 - **Build Linux VST3**: fast and stable now that it runs on PRs.
 - **Sanitizers (ASan+UBSan)**: passes cleanly today.
 
-Do not require **Sanitizers (TSan)** until the Polyrhythm thread-safety fix (`fix/polyrhythm-thread-safety`) has landed and the job has been green; then delete `continue-on-error: true` from that job. Do not require the CodeQL checks until the first scans have been triaged.
+**Recommended required checks** for ruleset "Protect master" (owner action): `Build macOS Plugins`, `Build Linux VST3` and `Sanitizers (ASan+UBSan)`. Consider **Sanitizers (TSan)** later, once it has proven stable now that it is blocking (it only runs on `full-ci` / platform changes / master pushes, so skipped runs satisfy a required check). Do not require the CodeQL checks until the first scans have been triaged.
 
 Pinned toolchain:
 
@@ -124,7 +132,7 @@ cmake --build build-tsan --target GenerativeMIDITests GenerativeMIDIHostSmokeTes
 (cd build-tsan && ctest --output-on-failure)
 ```
 
-TSan notes: libtsan from GCC 11 reports false positives entirely inside JUCE's `Timer::TimerThread` / `WaitableEvent` ("double lock of a mutex" and lock-order-inversion). The TSan job sets `TSAN_OPTIONS=report_mutex_bugs=0:exitcode=0` and then fails only if the log contains a `WARNING: ThreadSanitizer` line that is not a lock-order-inversion, so data races still fail the step. The job is also `continue-on-error: true` (advisory) until the Polyrhythm thread-safety fix lands; remove that line then and consider requiring it. Locally on macOS Apple Clang does not produce the false positives.
+TSan notes: libtsan from GCC 11 reports false positives entirely inside JUCE's `Timer::TimerThread` / `WaitableEvent` ("double lock of a mutex" and lock-order-inversion). The TSan job sets `TSAN_OPTIONS=report_mutex_bugs=0:exitcode=0` and then fails only if the log contains a `WARNING: ThreadSanitizer` line that is not a lock-order-inversion, so data races still fail the step. The job is blocking: a TSan finding fails it. Locally on macOS Apple Clang does not produce the false positives.
 
 Works with Apple Clang on macOS. On Linux, CI also sets `ASAN_OPTIONS=detect_leaks=1:...`; LeakSanitizer is not supported on macOS. On Ubuntu runners TSan needs `sudo sysctl vm.mmap_rnd_bits=28` (done in the job).
 
@@ -154,6 +162,15 @@ Logs upload as `pluginval-logs-{macOS,Windows,Linux}` (14-day retention) (warn i
 - **iOS:** `AUv3`
 - **macOS:** `AU`, `AUv3`, `VST3`, `Standalone`
 - **Windows / Linux:** `VST3`, `Standalone`
+
+## Known third-party log notices
+
+These are expected and not actionable here:
+
+- **iOS (Xcode generator):** libtool `has no symbols` for `juce_audio_processors_headless_ara.o` and `juce_audio_processors_headless_lv2_libs.o`. JUCE-internal translation units that are empty on this configuration.
+- **iOS:** `CMake PostBuild Rules` notes from the Xcode generator.
+- **TSan:** two `lock-order-inversion` reports inside JUCE (`juce_SharedCode_posix.h`). False positives of GCC 11 libtsan; filtered in the test step (see Sanitizers).
+- **Windows:** the annotation `Node.js 20 is deprecated ... forced to run on Node.js 24` for `ilammy/msvc-dev-cmd`. The pinned `v1.13.0` is the latest release and still declares node20; GitHub forces node24 and it works. Revisit when upstream releases a node24 version (Dependabot bumps the pin).
 
 ## Known gaps / watch-outs
 
