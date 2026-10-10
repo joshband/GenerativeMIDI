@@ -372,8 +372,8 @@ jobs:
       uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
         path: ~/.cache/ccache
-        key: ccache-linux-${{ github.sha }}
-        restore-keys: ccache-linux-
+        key: ccache-linux-release-${{ github.sha }}
+        restore-keys: ccache-linux-release-
 
     - name: Configure
       run: |
@@ -391,7 +391,7 @@ jobs:
       uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
         path: ~/.cache/ccache
-        key: ccache-linux-${{ github.sha }}
+        key: ccache-linux-release-${{ github.sha }}
 
     - name: Run unit tests
       run: |
