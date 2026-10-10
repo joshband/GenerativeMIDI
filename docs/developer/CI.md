@@ -18,6 +18,8 @@ Workflows:
 | **Build Windows VST3** | `windows-2022` | no | yes | VST3 + Standalone (VS 2022), `ctest`, **pluginval** on VST3 |
 | **Build iOS/iPadOS AUv3** | `macos-latest` | no | yes | CMake iOS + `xcodebuild` AUv3; uploads `.appex` / `.app` |
 
+Measured runtimes (GitHub-hosted runners, warm ccache unless noted): macOS ~3-5 min, Linux VST3 ~3-7 min (first run with a cold cache: ~9 min), ASan+UBSan ~1.5 min warm (~10 min cold), TSan ~7 min cold (its cache is only saved when the job succeeds), CodeQL c-cpp ~15 min, CodeQL actions <1 min. ASan+UBSan stays on pull requests because the warm path is short.
+
 The weekly schedule is Monday 06:17 UTC. Runs on master are never cancelled; a new push to a PR cancels the superseded run.
 
 CodeQL (codeql.yml) runs `CodeQL (c-cpp)` (manual build: `cmake` on Ubuntu, targets `GenerativeMIDI` and `GenerativeMIDITests`, no ccache so extraction sees every compile) and `CodeQL (actions)` (scans the workflow files) on pull requests, pushes to master, weekly (Wednesday 05:41 UTC) and manual dispatch. JUCE, `art` and `build` are excluded via `.github/codeql/codeql-config.yml`. Results appear under Security > Code scanning.
@@ -60,6 +62,8 @@ cmake -S . -B build-tsan -DCMAKE_BUILD_TYPE=Debug -DGENMIDI_SANITIZE=thread
 cmake --build build-tsan --target GenerativeMIDITests GenerativeMIDIHostSmokeTests -j
 (cd build-tsan && ctest --output-on-failure)
 ```
+
+TSan notes: libtsan from GCC 11 reports false positives entirely inside JUCE's `Timer::TimerThread` / `WaitableEvent` ("double lock of a mutex" and lock-order-inversion). The TSan job sets `TSAN_OPTIONS=report_mutex_bugs=0:exitcode=0` and then fails only if the log contains a `WARNING: ThreadSanitizer` line that is not a lock-order-inversion, so data races still fail the step. The job is also `continue-on-error: true` (advisory) until the Polyrhythm thread-safety fix lands; remove that line then and consider requiring it. Locally on macOS Apple Clang does not produce the false positives.
 
 Works with Apple Clang on macOS. On Linux, CI also sets `ASAN_OPTIONS=detect_leaks=1:...`; LeakSanitizer is not supported on macOS. On Ubuntu runners TSan needs `sudo sysctl vm.mmap_rnd_bits=28` (done in the job).
 
