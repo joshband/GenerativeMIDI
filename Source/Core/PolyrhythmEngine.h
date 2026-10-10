@@ -11,6 +11,9 @@
 #pragma once
 
 #include <juce_audio_processors/juce_audio_processors.h>
+#include <array>
+#include <atomic>
+#include <memory>
 #include <vector>
 
 struct PolyrhythmLayer
@@ -27,9 +30,6 @@ struct PolyrhythmLayer
     std::vector<float> velocities;
     std::vector<int> pitches;   // MIDI note numbers
 
-    int currentStep = 0;
-    int tickCounter = 0;        // Accumulator for division rate scaling
-
     void resize(int newLength)
     {
         length = newLength;
@@ -42,14 +42,34 @@ struct PolyrhythmLayer
 class PolyrhythmEngine
 {
 public:
-    PolyrhythmEngine();
-    ~PolyrhythmEngine() = default;
+    /**
+     * Thread model
+     * ------------
+     * Layer configuration is an immutable Snapshot. Message/host threads never edit a
+     * published snapshot: every mutator (addLayer, setStep, loadFromValueTree, ...) copies
+     * the current one, edits the copy and publishes it with an atomic pointer swap
+     * (serialised by a writer-only lock the audio thread never takes). The audio thread
+     * (processTick / shouldEmitOnThisTick / advanceStep) pins the current snapshot with a
+     * single hazard pointer, only reads it, and never allocates, locks or frees. Replaced
+     * snapshots are retired and freed later on a writer thread, once no longer pinned.
+     * Live playback counters (step, tick) live outside the snapshot as atomics.
+     */
+    static constexpr int kMaxLayers = 32;
 
-    // Layer management
+    PolyrhythmEngine();
+    ~PolyrhythmEngine();
+
+    // Layer management (message thread). Returns -1 if kMaxLayers is reached.
     int addLayer();
     void removeLayer(int layerIndex);
-    PolyrhythmLayer* getLayer(int layerIndex);
-    int getNumLayers() const { return layers.size(); }
+    /** Read-only view of the current snapshot. Valid until the next mutation of the engine;
+        use on the message thread only, and do not hold across edits. */
+    const PolyrhythmLayer* getLayer(int layerIndex) const;
+    int getNumLayers() const;
+    /** Make layer `layerIndex` audible if it has no active steps (seeds a quarter pattern). */
+    void ensureLayerAudible(int layerIndex);
+    /** Current playback step of a layer (safe from any thread). */
+    int getCurrentStep(int layerIndex) const;
 
     // Layer configuration
     void setLayerDivision(int layerIndex, int division);
@@ -66,6 +86,28 @@ public:
      */
     bool shouldEmitOnThisTick(int layerIndex, int clockSubdivision);
     void advanceStep(int layerIndex);
+
+    /**
+     * Audio-thread entry point: one clock tick for every enabled layer. For each layer
+     * that is due, calls onEmit(const PolyrhythmLayer&, int step) then advances it.
+     * Lock-free, allocation-free.
+     */
+    template <typename EmitFn>
+    void processTick(int clockSubdivision, EmitFn&& onEmit)
+    {
+        const Snapshot* snap = pin();
+        applyPendingReset(*snap);
+        const int n = static_cast<int>(snap->layers.size());
+        for (int i = 0; i < n; ++i)
+        {
+            const auto& layer = snap->layers[static_cast<size_t>(i)];
+            if (!layer.enabled || layer.length <= 0 || !tickDue(i, layer, clockSubdivision))
+                continue;
+            onEmit(layer, play[static_cast<size_t>(i)].step.load(std::memory_order_relaxed) % layer.length);
+            stepForward(i, layer);
+        }
+        unpin();
+    }
 
     // Pattern editing
     void setStep(int layerIndex, int stepIndex, bool active, float velocity = 0.8f, int pitch = 60);
@@ -91,7 +133,36 @@ public:
     void loadFromValueTree(const juce::ValueTree& tree);
 
 private:
-    std::vector<PolyrhythmLayer> layers;
+    struct Snapshot
+    {
+        std::vector<PolyrhythmLayer> layers;
+        unsigned loadId = 0; // bumped when playback positions must restart (load, remove)
+    };
+
+    struct PlayState
+    {
+        std::atomic<int> step { 0 };
+        std::atomic<int> tick { 0 };
+    };
+
+    const Snapshot* pin() noexcept;
+    void unpin() noexcept { hazard.store(nullptr, std::memory_order_seq_cst); }
+    void applyPendingReset(const Snapshot& snap) noexcept;
+    bool tickDue(int index, const PolyrhythmLayer& layer, int clockSubdivision) noexcept;
+    void stepForward(int index, const PolyrhythmLayer& layer) noexcept;
+    void resetPlayState(int index, const PolyrhythmLayer& layer) noexcept;
+
+    /** Copy current snapshot, let fn edit it, publish. fn returns false to abort. */
+    template <typename Fn> bool mutate(Fn&& fn);
+    template <typename Fn> void editLayer(int layerIndex, Fn&& fn);
+    void publish(std::unique_ptr<Snapshot> next);
+
+    std::atomic<const Snapshot*> current { nullptr };
+    std::atomic<const Snapshot*> hazard { nullptr };       // audio thread's pinned snapshot
+    std::vector<std::unique_ptr<const Snapshot>> retired;  // guarded by writeLock
+    mutable juce::CriticalSection writeLock;               // writers only, never the audio thread
+    std::array<PlayState, kMaxLayers> play;
+    unsigned appliedLoadId = 0;                            // audio thread only
     int timeSignatureNum = 4;
     int timeSignatureDenom = 4;
     double tempo = 120.0;

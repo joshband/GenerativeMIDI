@@ -19,6 +19,10 @@
 #include "Modulation/ModulationDestination.h"
 #include "Modulation/ModulationRouter.h"
 
+#include <atomic>
+#include <thread>
+#include <vector>
+
 TEST_CASE("EuclideanEngine pulse count matches requested pulses", "[euclidean]")
 {
     EuclideanEngine engine;
@@ -856,6 +860,91 @@ TEST_CASE("migrateApvtsStateIfNeeded rewrites generatorType PARAM", "[mapping][m
     GeneratorTypeMapping::migrateApvtsStateIfNeeded(state3, "1.2");
     REQUIRE((float) state3.getChildWithProperty("id", "generatorType").getProperty("value")
             == Catch::Approx(1.0f));
+}
+
+TEST_CASE("PolyrhythmEngine processTick emits and advances like the per-layer API", "[polyrhythm]")
+{
+    PolyrhythmEngine engine;
+    engine.setLayerDivision(0, 16); // every tick
+    engine.setLayerLength(0, 4);
+    engine.resetLayer(0);
+
+    std::vector<int> steps;
+    for (int tick = 0; tick < 9; ++tick)
+        engine.processTick(16, [&](const PolyrhythmLayer& layer, int step)
+        {
+            REQUIRE(layer.length == 4);
+            steps.push_back(step);
+        });
+
+    REQUIRE(steps == std::vector<int> { 0, 1, 2, 3, 0, 1, 2, 3, 0 });
+    REQUIRE(engine.getCurrentStep(0) == 1);
+
+    engine.setLayerEnabled(0, false);
+    int emitted = 0;
+    engine.processTick(16, [&](const PolyrhythmLayer&, int) { ++emitted; });
+    REQUIRE(emitted == 0);
+}
+
+TEST_CASE("PolyrhythmEngine caps layers and restarts playback after a load", "[polyrhythm]")
+{
+    PolyrhythmEngine engine;
+    while (engine.getNumLayers() < PolyrhythmEngine::kMaxLayers)
+        REQUIRE(engine.addLayer() == engine.getNumLayers() - 1);
+    REQUIRE(engine.addLayer() == -1);
+    REQUIRE(engine.getNumLayers() == PolyrhythmEngine::kMaxLayers);
+
+    engine.setLayerDivision(0, 16);
+    engine.setLayerLength(0, 8);
+    engine.setLayerPhase(0, 0.5f);
+    const auto tree = engine.toValueTree();
+    engine.processTick(16, [](const PolyrhythmLayer&, int) {});
+    engine.processTick(16, [](const PolyrhythmLayer&, int) {});
+
+    engine.loadFromValueTree(tree);
+    int firstStep = -1;
+    engine.processTick(16, [&](const PolyrhythmLayer&, int step) { if (firstStep < 0) firstStep = step; });
+    REQUIRE(firstStep == 4); // phase 0.5 of 8 steps
+}
+
+TEST_CASE("PolyrhythmEngine tolerates concurrent edits while ticking", "[polyrhythm][threads]")
+{
+    // Audio-style reader (processTick) against message-thread writers. Meaningful under
+    // -fsanitize=thread/address; otherwise checks invariants only.
+    PolyrhythmEngine engine;
+    std::atomic<bool> done { false };
+    std::atomic<int> violations { 0 };
+
+    std::thread audio([&]
+    {
+        for (int i = 0; i < 200000; ++i)
+            engine.processTick(16, [&](const PolyrhythmLayer& layer, int step)
+            {
+                if (step < 0 || step >= layer.length
+                    || layer.pattern.size() != static_cast<size_t>(layer.length)
+                    || layer.pitches.size() != static_cast<size_t>(layer.length))
+                    ++violations;
+            });
+        done = true;
+    });
+
+    juce::Random rng(99);
+    int it = 0;
+    while (!done.load())
+    {
+        const int layer = rng.nextInt(juce::jmax(1, engine.getNumLayers()));
+        switch (it++ % 6)
+        {
+            case 0: engine.addLayer(); break;
+            case 1: if (engine.getNumLayers() > 1) engine.removeLayer(0); break;
+            case 2: engine.setLayerLength(layer, 1 + rng.nextInt(128)); break;
+            case 3: engine.setStep(layer, rng.nextInt(8), rng.nextBool(), 0.5f, 60); break;
+            case 4: engine.loadFromValueTree(engine.toValueTree()); break;
+            case 5: engine.setLayerDivision(layer, 1 + rng.nextInt(16)); break;
+        }
+    }
+    audio.join();
+    REQUIRE(violations.load() == 0);
 }
 
 TEST_CASE("PolyrhythmEngine division rate diverges over ticks", "[polyrhythm]")
