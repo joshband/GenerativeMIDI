@@ -250,8 +250,16 @@ jobs:
       run: |
         git clone --depth 1 --branch "${JUCE_VERSION}" https://github.com/juce-framework/JUCE.git JUCE
 
+    # Ninja + MSVC needs the VS developer environment on PATH (cl.exe, link.exe, rc.exe, mt.exe).
+    - name: Set up MSVC developer environment
+      uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756 # v1.13.0
+      with:
+        arch: x64
+
+    # No debug-info flag: the Release flags carry no /Zi, and Windows has no ccache here yet
+    # (CMAKE_MSVC_DEBUG_INFORMATION_FORMAT would also be ignored: cmake_minimum_required is 3.15).
     - name: Configure
-      run: cmake -S . -B build -G "Visual Studio 17 2022" -A x64
+      run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
 
     - name: Build Plugins
       run: cmake --build build --config Release
