@@ -48,7 +48,10 @@ GenerativeMIDIProcessor::GenerativeMIDIProcessor()
 
     // Setup clock manager callback
     clockManager.onSubdivisionHit = [this](int subdivision) {
-        onSubdivisionHit(subdivision);
+        onSubdivisionHit(subdivision, 0);
+    };
+    clockManager.onSubdivisionHitAt = [this](int subdivision, int sampleOffset) {
+        onSubdivisionHit(subdivision, sampleOffset);
     };
 }
 
@@ -510,6 +513,20 @@ void GenerativeMIDIProcessor::processBlock(juce::AudioBuffer<float>& buffer, juc
     {
         eventScheduler.centrePitchBend(midiMessages, 0, &midiActivityLog);
     }
+    if (shouldAdvance && !wasAdvancing)
+    {
+        // Play edge: restart the grid and the step counter so bar-aligned parts line up with
+        // the host bar. With a host ppq the grid starts at that song position; without one
+        // (standalone free-run) it starts at the top.
+        double startSixteenths = 0.0;
+        if (auto* playHead = getPlayHead())
+            if (auto position = playHead->getPosition())
+                if (auto ppq = position->getPpqPosition())
+                    startSixteenths = juce::jmax(0.0, *ppq * 4.0);
+
+        clockManager.restart(startSixteenths);
+        lastSubdivisionStep = static_cast<int>(std::ceil(startSixteenths - 1.0e-6));
+    }
     wasAdvancing = shouldAdvance;
     lastGeneratorType = generatorNow;
     lastPitchbendEnabled = bendEnabledNow;
@@ -664,9 +681,12 @@ void GenerativeMIDIProcessor::scheduleExpressionSweep(int64_t noteOn, int64_t no
     }
 }
 
-void GenerativeMIDIProcessor::onSubdivisionHit(int subdivision)
+void GenerativeMIDIProcessor::onSubdivisionHit(int subdivision, int sampleOffset)
 {
     juce::ignoreUnused(subdivision);
+
+    // Where this step falls on the timeline: block start plus its offset inside the block.
+    const int64_t stepSample = currentSamplePosition + static_cast<int64_t>(sampleOffset);
 
     // Update scale quantizer from parameters
     auto scaleRoot = static_cast<int>(parameters.getRawParameterValue(PARAM_SCALE_ROOT)->load());
@@ -758,7 +778,7 @@ void GenerativeMIDIProcessor::onSubdivisionHit(int subdivision)
         {
             const int slotIndex = juce::jlimit(0, 15, midiChannel - 1);
             auto& slot = melodyVoices[slotIndex];
-            int64_t start = currentSamplePosition + static_cast<int64_t>(timingOffset);
+            int64_t start = stepSample + static_cast<int64_t>(timingOffset);
             if (slot.active && slot.offSample > start)
             {
                 int64_t offAt = start - 1;
@@ -775,11 +795,11 @@ void GenerativeMIDIProcessor::onSubdivisionHit(int subdivision)
             }
         }
 
-        const int64_t noteOnSample = currentSamplePosition + static_cast<int64_t>(timingOffset);
+        const int64_t noteOnSample = stepSample + static_cast<int64_t>(timingOffset);
 
         const int64_t noteOffSample = NoteSchedulerHelpers::scheduleGeneratedNote(
             eventScheduler, ratchetEngine, gateLengthController,
-            pitch, velocity, midiChannel, currentSamplePosition,
+            pitch, velocity, midiChannel, stepSample,
             timingOffset, samplesPerStep, useRatcheting);
 
         if (monoVoice)
@@ -970,10 +990,10 @@ void GenerativeMIDIProcessor::onSubdivisionHit(int subdivision)
             break;
     }
 
-    scheduleRoleParts(harmonyStep, midiChannel, samplesPerStep, velocityMin, velocityMax);
+    scheduleRoleParts(stepSample, harmonyStep, midiChannel, samplesPerStep, velocityMin, velocityMax);
 }
 
-void GenerativeMIDIProcessor::scheduleRoleParts(int step, int melodyChannel, int samplesPerStep,
+void GenerativeMIDIProcessor::scheduleRoleParts(int64_t stepSample, int step, int melodyChannel, int samplesPerStep,
                                                 float velocityMin, float velocityMax)
 {
     const int partCount = juce::jlimit(
@@ -1008,7 +1028,7 @@ void GenerativeMIDIProcessor::scheduleRoleParts(int step, int melodyChannel, int
     const float span = velocityMax - velocityMin;
     const int timingOffset = swingEngine.calculateTotalTimingOffset(
         step, samplesPerStep, clockManager.getSampleRate());
-    const int64_t noteOnSample = currentSamplePosition + static_cast<int64_t>(timingOffset);
+    const int64_t noteOnSample = stepSample + static_cast<int64_t>(timingOffset);
     const int duration = juce::jmax(1, gateLengthController.calculateGateLengthSamples(samplesPerStep));
 
     auto play = [&](int pitch, float velocity, int channel)

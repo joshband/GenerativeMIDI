@@ -202,11 +202,11 @@ private:
 
     // Helper methods
     void processGenerativeOutput(juce::MidiBuffer& midiMessages, int numSamples);
-    void onSubdivisionHit(int subdivision);
+    void onSubdivisionHit(int subdivision, int sampleOffset = 0);
     bool continuousExpressionActive() const;
     void emitContinuousExpression(int64_t sampleTime);
     void scheduleExpressionSweep(int64_t noteOn, int64_t noteOff);
-    void scheduleRoleParts(int step, int melodyChannel, int samplesPerStep,
+    void scheduleRoleParts(int64_t stepSample, int step, int melodyChannel, int samplesPerStep,
                            float velocityMin, float velocityMax);
     ModulationRouter::Frame readModFrame(float lfo, float sampleHold) const;
 

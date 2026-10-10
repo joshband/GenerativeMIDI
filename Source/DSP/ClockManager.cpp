@@ -44,30 +44,46 @@ void ClockManager::reset()
     currentSample = 0;
     subdivisionCounter = 0;
     midiClockCounter = 0;
+    samplesToNextSixteenth = 0.0;
+}
+
+void ClockManager::restart(double positionInSixteenths)
+{
+    const double position = juce::jmax(0.0, positionInSixteenths);
+    const double samplesPerSixteenth = getSamplesPerSubdivision(16);
+
+    reset();
+    currentSample = static_cast<int64_t>(std::llround(position * samplesPerSixteenth));
+
+    const double fraction = position - std::floor(position);
+    samplesToNextSixteenth = fraction < 1.0e-6 ? 0.0 : (1.0 - fraction) * samplesPerSixteenth;
 }
 
 void ClockManager::advance(int numSamples)
 {
-    if (!playing || externalSync)
+    if (!playing || externalSync || numSamples <= 0)
         return;
 
-    int64_t previousSample = currentSample;
-    currentSample += numSamples;
+    // Walk the sixteenth grid through this block and tell the listener where in the
+    // block each hit falls. The fractional remainder carries over, so the grid stays
+    // exact (no per-block rounding drift) and a tempo change takes effect on the next step.
+    const double samplesPerSixteenth = getSamplesPerSubdivision(16);
+    double cursor = samplesToNextSixteenth;
 
-    // Check for subdivision hits
-    double samplesPerSixteenth = getSamplesPerSubdivision(16);
-
-    int previousSubdivision = static_cast<int>(previousSample / samplesPerSixteenth);
-    int currentSubdivision = static_cast<int>(currentSample / samplesPerSixteenth);
-
-    if (currentSubdivision > previousSubdivision && onSubdivisionHit)
+    while (cursor < static_cast<double>(numSamples))
     {
-        // Fire callback for each subdivision crossed
-        for (int sub = previousSubdivision + 1; sub <= currentSubdivision; ++sub)
-        {
+        const int offset = juce::jlimit(0, numSamples - 1, static_cast<int>(std::llround(cursor)));
+
+        if (onSubdivisionHitAt)
+            onSubdivisionHitAt(16, offset);
+        else if (onSubdivisionHit)
             onSubdivisionHit(16); // 16th note subdivision
-        }
+
+        cursor += samplesPerSixteenth;
     }
+
+    samplesToNextSixteenth = cursor - static_cast<double>(numSamples);
+    currentSample += numSamples;
 }
 
 double ClockManager::getPositionInBeats() const
@@ -97,11 +113,10 @@ double ClockManager::getSamplesPerSubdivision(int subdivision) const
     return getSamplesPerBeat() / (subdivision / 4.0);
 }
 
-int ClockManager::quantizeToSubdivision(int subdivision) const
+int64_t ClockManager::quantizeToSubdivision(int subdivision) const
 {
     double samplesPerSub = getSamplesPerSubdivision(subdivision);
-    int quantized = static_cast<int>(std::round(currentSample / samplesPerSub) * samplesPerSub);
-    return quantized;
+    return static_cast<int64_t>(std::llround(std::round(static_cast<double>(currentSample) / samplesPerSub) * samplesPerSub));
 }
 
 bool ClockManager::isOnSubdivision(int subdivision) const

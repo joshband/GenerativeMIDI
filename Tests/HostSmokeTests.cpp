@@ -18,6 +18,7 @@
 #include "Core/GeneratorTypeMapping.h"
 #include "Core/PolyrhythmEngine.h"
 
+#include <cmath>
 #include <map>
 #include <set>
 
@@ -29,12 +30,15 @@ class FakePlayHead final : public juce::AudioPlayHead
 public:
     bool playing = false;
     double bpm = 120.0;
+    juce::Optional<double> ppq; // host position in quarter notes, when the test sets one
 
     juce::Optional<PositionInfo> getPosition() const override
     {
         PositionInfo info;
         info.setIsPlaying(playing);
         info.setBpm(bpm);
+        if (ppq.hasValue())
+            info.setPpqPosition(*ppq);
         return info;
     }
 };
@@ -1076,6 +1080,217 @@ TEST_CASE("releaseResources releases notes on the next block", "[host][scheduler
 
     REQUIRE(analyseStream(notesOf(events)).stillSounding == 0);
     REQUIRE(lastPitchWheel(events, 1) == 8192);
+
+    processor.releaseResources();
+    processor.setPlayHead(nullptr);
+}
+
+//==============================================================================
+// Realtime MIDI correctness: sample-accurate timing
+
+TEST_CASE("ClockManager reports the in-block sample offset of every sixteenth",
+          "[clock][timing][regression]")
+{
+    constexpr double sampleRate = 48000.0;
+    constexpr int blockSize = 1024;
+    constexpr double samplesPerSixteenth = 6000.0; // 120 bpm
+
+    ClockManager clock;
+    clock.setSampleRate(sampleRate);
+    clock.setTempo(120.0);
+    clock.start();
+
+    std::vector<int64_t> hits;
+    std::set<int> offsets;
+    int64_t blockStart = 0;
+    clock.onSubdivisionHitAt = [&](int subdivision, int offset)
+    {
+        REQUIRE(subdivision == 16);
+        REQUIRE(offset >= 0);
+        REQUIRE(offset < blockSize);
+        offsets.insert(offset);
+        hits.push_back(blockStart + offset);
+    };
+
+    for (int block = 0; block < 100; ++block)
+    {
+        blockStart = static_cast<int64_t>(block) * blockSize;
+        clock.advance(blockSize);
+    }
+
+    REQUIRE(hits.size() >= 15);
+    for (size_t k = 0; k < hits.size(); ++k)
+    {
+        INFO("hit " << k);
+        REQUIRE(std::abs(static_cast<double>(hits[k]) - static_cast<double>(k) * samplesPerSixteenth) <= 1.0);
+    }
+    // 6000 is not a multiple of 1024: offsets must differ from block to block.
+    REQUIRE(offsets.size() > 4);
+}
+
+TEST_CASE("ClockManager restart rewinds the grid and can start mid-bar", "[clock][timing][regression]")
+{
+    ClockManager clock;
+    clock.setSampleRate(48000.0);
+    clock.setTempo(120.0);
+    clock.start();
+
+    int64_t blockStart = 0;
+    std::vector<int64_t> hits;
+    clock.onSubdivisionHitAt = [&](int, int offset) { hits.push_back(blockStart + offset); };
+
+    for (int block = 0; block < 10; ++block)
+    {
+        blockStart = static_cast<int64_t>(block) * 1024;
+        clock.advance(1024);
+    }
+    REQUIRE(hits.size() >= 2);
+
+    // Play edge: the next block starts a fresh grid whose first step lands on sample 0.
+    hits.clear();
+    clock.restart();
+    blockStart = 0;
+    clock.advance(1024);
+    REQUIRE(hits.size() == 1);
+    REQUIRE(hits[0] == 0);
+    REQUIRE(clock.getPositionInSamples() == 1024);
+
+    // Starting 2.4 sixteenths into the song: the next sixteenth is 0.6 * 6000 = 3600 samples away.
+    hits.clear();
+    clock.restart(2.4);
+    blockStart = 0;
+    for (int block = 0; block < 5; ++block)
+    {
+        blockStart = static_cast<int64_t>(block) * 1024;
+        clock.advance(1024);
+    }
+    REQUIRE_FALSE(hits.empty());
+    REQUIRE(std::abs(static_cast<double>(hits[0]) - 3600.0) <= 1.0);
+}
+
+TEST_CASE("ClockManager sample position does not truncate to 32 bits", "[clock][timing][regression]")
+{
+    ClockManager clock;
+    clock.start();
+    for (int i = 0; i < 40; ++i)
+        clock.advance(100000000); // 4e9 samples in total, past INT32_MAX
+    REQUIRE(clock.getPositionInSamples() == static_cast<int64_t>(4000000000LL));
+}
+
+TEST_CASE("Generated notes land on the host's 16th grid inside the block",
+          "[host][timing][regression]")
+{
+    juce::ScopedJuceInitialiser_GUI juceInit;
+    constexpr int blockSize = 1024;
+    constexpr double samplesPerSixteenth = 6000.0;
+
+    GenerativeMIDIProcessor processor;
+    FakePlayHead playHead;
+    playHead.playing = true;
+    playHead.bpm = 120.0;
+    processor.setPlayHead(&playHead);
+    processor.prepareToPlay(48000.0, blockSize);
+    configureDenseEuclidean(processor);
+    setFloatParam(processor, "tempo", 120.0f);
+    setFloatParam(processor, "swingAmount", 0.0f);
+    setFloatParam(processor, "timingHumanize", 0.0f);
+    setFloatParam(processor, "gateLength", 0.5f);
+    setChoiceParam(processor, "voiceMode", 0);
+    setChoiceParam(processor, "partCount", 0);
+
+    std::vector<TimedNote> notes;
+    std::set<int> offsetsInBlock;
+    collectNotes(processor, 120, blockSize, notes);
+    int ons = 0;
+    for (const auto& n : notes)
+    {
+        if (!n.on)
+            continue;
+        const double ideal = std::round(static_cast<double>(n.sample) / samplesPerSixteenth) * samplesPerSixteenth;
+        INFO("note-on at " << n.sample);
+        REQUIRE(std::abs(static_cast<double>(n.sample) - ideal) <= 1.0);
+        offsetsInBlock.insert(static_cast<int>(n.sample % blockSize));
+        ++ons;
+    }
+    REQUIRE(ons >= 15);
+    REQUIRE(offsetsInBlock.size() > 4); // not all stamped at the block start
+
+    processor.releaseResources();
+    processor.setPlayHead(nullptr);
+}
+
+TEST_CASE("A play edge restarts the step counter and the grid", "[host][timing][regression]")
+{
+    juce::ScopedJuceInitialiser_GUI juceInit;
+    constexpr int blockSize = 1024;
+
+    GenerativeMIDIProcessor processor;
+    FakePlayHead playHead;
+    playHead.playing = true;
+    playHead.bpm = 120.0;
+    processor.setPlayHead(&playHead);
+    processor.prepareToPlay(48000.0, blockSize);
+    configureDenseEuclidean(processor);
+    setFloatParam(processor, "tempo", 120.0f);
+    setFloatParam(processor, "swingAmount", 0.0f);
+    setFloatParam(processor, "timingHumanize", 0.0f);
+    setChoiceParam(processor, "partCount", 0);
+
+    std::vector<TimedNote> scratch;
+    collectNotes(processor, 13, blockSize, scratch); // ends mid-grid, step counter well past 0
+    REQUIRE(processor.getCurrentStep() >= 2);
+
+    playHead.playing = false;
+    collectNotes(processor, 3, blockSize, scratch);
+
+    playHead.playing = true;
+    std::vector<TimedNote> restarted;
+    collectNotes(processor, 1, blockSize, restarted);
+
+    bool firstOnAtZero = false;
+    for (const auto& n : restarted)
+        if (n.on)
+        {
+            firstOnAtZero = (n.sample == 0);
+            break;
+        }
+    REQUIRE(firstOnAtZero);       // the grid restarted on the play edge
+    REQUIRE(processor.getCurrentStep() == 1); // and so did the step counter
+    processor.releaseResources();
+    processor.setPlayHead(nullptr);
+}
+
+TEST_CASE("Bar-aligned chords follow the host bar when playback starts mid-bar",
+          "[host][timing][regression]")
+{
+    juce::ScopedJuceInitialiser_GUI juceInit;
+    constexpr int blockSize = 1024;
+
+    GenerativeMIDIProcessor processor;
+    FakePlayHead playHead;
+    playHead.playing = true;
+    playHead.bpm = 120.0;
+    playHead.ppq = 3.9; // 0.1 beat (= 2400 samples) before the next bar
+    processor.setPlayHead(&playHead);
+    processor.prepareToPlay(48000.0, blockSize);
+    configureDenseEuclidean(processor);
+    setFloatParam(processor, "tempo", 120.0f);
+    setFloatParam(processor, "swingAmount", 0.0f);
+    setFloatParam(processor, "timingHumanize", 0.0f);
+    setChoiceParam(processor, "partCount", 2); // melody + root + bar chord
+
+    std::vector<TimedNote> notes;
+    collectNotes(processor, 12, blockSize, notes);
+
+    int64_t chordSample = -1;
+    for (const auto& n : notes)
+        if (n.on && n.channel == 3)
+        {
+            chordSample = n.sample;
+            break;
+        }
+    REQUIRE(chordSample >= 0);
+    REQUIRE(std::abs(static_cast<double>(chordSample) - 2400.0) <= 1.0);
 
     processor.releaseResources();
     processor.setPlayHead(nullptr);

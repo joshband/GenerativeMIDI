@@ -34,6 +34,11 @@ public:
     void start();
     void stop();
     void reset();
+
+    /** Play edge: rewind the clock so the next sixteenth lands exactly where the grid says.
+        `positionInSixteenths` is the song position (0 = start). If it is not on a
+        sixteenth, the first hit is delayed to the next boundary. */
+    void restart(double positionInSixteenths = 0.0);
     bool isPlaying() const { return playing; }
 
     // Time advancement
@@ -42,18 +47,23 @@ public:
     // Position queries
     double getPositionInBeats() const;
     double getPositionInBars() const;
-    int getPositionInSamples() const { return currentSample; }
+    int64_t getPositionInSamples() const { return currentSample; }
 
     // Subdivision timing
     double getSamplesPerBeat() const;
     double getSamplesPerBar() const;
     double getSamplesPerSubdivision(int subdivision) const;
 
-    // Callbacks for subdivision hits
+    // Callbacks for subdivision hits.
+    // onSubdivisionHitAt receives the sample offset of the hit inside the block being
+    // advanced (0..numSamples-1). When it is set, advance() uses it instead of
+    // onSubdivisionHit; onSubdivisionHit remains the callback for MIDI-clock sync,
+    // which has no sample offset.
     std::function<void(int subdivision)> onSubdivisionHit;
+    std::function<void(int subdivision, int sampleOffset)> onSubdivisionHitAt;
 
     // Quantization
-    int quantizeToSubdivision(int subdivision) const;
+    int64_t quantizeToSubdivision(int subdivision) const;
     bool isOnSubdivision(int subdivision) const;
 
     // MIDI clock sync
@@ -70,6 +80,7 @@ private:
     bool playing = false;
     int64_t currentSample = 0;
     int subdivisionCounter = 0;
+    double samplesToNextSixteenth = 0.0; // distance from the start of the next block; 0 = hit at its first sample
 
     // External sync
     bool externalSync = false;
