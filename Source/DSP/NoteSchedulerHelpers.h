@@ -48,7 +48,8 @@ namespace NoteSchedulerHelpers
             scheduler.scheduleNoteOn(pitch, ratchetVelocity, midiChannel,
                                      baseSample + ratchetTimingOffset);
 
-            const int noteDuration = gateLengthController.calculateGateLengthSamples(samplesPerStep);
+            // At least one sample: the off must never share a sample with (and so precede) its own on.
+            const int noteDuration = juce::jmax(1, gateLengthController.calculateGateLengthSamples(samplesPerStep));
             const int64_t offSample = baseSample + ratchetTimingOffset + noteDuration;
             scheduler.scheduleNoteOff(pitch, midiChannel, offSample);
             if (offSample > latestOff)

@@ -738,6 +738,8 @@ void GenerativeMIDIProcessor::onSubdivisionHit(int subdivision)
                     offAt = currentSamplePosition;
                     ++timingOffset;
                 }
+                // Drop the stolen note's own later events so they cannot cut a retriggered pitch.
+                eventScheduler.cancelNoteEventsAfter(slot.pitch, midiChannel, offAt);
                 eventScheduler.scheduleNoteOff(slot.pitch, midiChannel, offAt);
             }
         }

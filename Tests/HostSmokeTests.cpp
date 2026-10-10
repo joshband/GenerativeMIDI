@@ -18,6 +18,7 @@
 #include "Core/GeneratorTypeMapping.h"
 #include "Core/PolyrhythmEngine.h"
 
+#include <map>
 #include <set>
 
 namespace
@@ -645,5 +646,150 @@ TEST_CASE("Inverted pitch range is ordered instead of dividing by zero", "[host]
         juce::ignoreUnused(velocity);
         REQUIRE(note >= 60);
         REQUIRE(note <= 61);
+    }
+}
+
+//==============================================================================
+// Realtime MIDI correctness: note-off / note-on ordering
+
+namespace
+{
+struct StreamReport
+{
+    int ons = 0;
+    int offs = 0;
+    int onWhileSounding = 0;   // a note-on with no preceding note-off for that pitch/channel
+    int orphanOffs = 0;        // a note-off for a pitch/channel that was not sounding
+    int zeroLength = 0;        // a note closed on the very sample it opened
+    int stillSounding = 0;     // notes never closed by the end of the stream
+    std::map<std::pair<int, int>, int64_t> lastLength; // (channel, note) -> length of the last closed note
+};
+
+/** Replays a note stream (in emitted order) and reports ordering / balance violations. */
+StreamReport analyseStream(const std::vector<TimedNote>& stream)
+{
+    StreamReport report;
+    std::map<std::pair<int, int>, int64_t> sounding; // (channel, note) -> note-on sample
+    for (const auto& event : stream)
+    {
+        const auto key = std::make_pair(event.channel, event.note);
+        if (event.on)
+        {
+            ++report.ons;
+            if (sounding.count(key) != 0)
+                ++report.onWhileSounding;
+            sounding[key] = event.sample;
+        }
+        else
+        {
+            ++report.offs;
+            const auto it = sounding.find(key);
+            if (it == sounding.end())
+            {
+                ++report.orphanOffs;
+                continue;
+            }
+            if (event.sample <= it->second)
+                ++report.zeroLength;
+            report.lastLength[key] = event.sample - it->second;
+            sounding.erase(it);
+        }
+    }
+    report.stillSounding = static_cast<int>(sounding.size());
+    return report;
+}
+
+std::vector<TimedNote> drainScheduler(EventScheduler& scheduler, int64_t totalSamples, int blockSize)
+{
+    std::vector<TimedNote> out;
+    for (int64_t start = 0; start < totalSamples; start += blockSize)
+    {
+        juce::MidiBuffer midi;
+        scheduler.processEvents(start, midi, blockSize);
+        for (const auto metadata : midi)
+        {
+            const auto message = metadata.getMessage();
+            if (!message.isNoteOn() && !message.isNoteOff())
+                continue;
+            out.push_back({ start + metadata.samplePosition, message.getChannel(),
+                            message.getNoteNumber(), message.isNoteOn() });
+        }
+    }
+    return out;
+}
+} // namespace
+
+TEST_CASE("Same-pitch notes keep a note-off before every retrigger at gate 1.0 and 2.0",
+          "[scheduler][regression]")
+{
+    constexpr int step = 3000;
+    for (const float gate : { 1.0f, 2.0f })
+    {
+        INFO("gate " << gate);
+        EventScheduler scheduler;
+        scheduler.prepare(256);
+        const int duration = static_cast<int>(step * gate);
+        for (int i = 0; i < 4; ++i)
+            scheduler.scheduleNote(60, 0.8f, 1, static_cast<int64_t>(i) * step, duration);
+
+        const auto stream = drainScheduler(scheduler, 12 * step, 512);
+        const auto report = analyseStream(stream);
+
+        REQUIRE(report.ons == 4);
+        REQUIRE(report.onWhileSounding == 0);
+        REQUIRE(report.orphanOffs == 0);
+        REQUIRE(report.zeroLength == 0);
+        REQUIRE(report.stillSounding == 0);
+        // The newest note is never cut short by an older note's late note-off.
+        REQUIRE(report.lastLength.at({ 1, 60 }) >= duration);
+    }
+}
+
+TEST_CASE("Generated repeated pitches never overlap, vanish or leave a stuck note",
+          "[host][scheduler][regression]")
+{
+    juce::ScopedJuceInitialiser_GUI juceInit;
+    constexpr int blockSize = 512;
+
+    for (const int voiceIndex : { 0, 1 }) // Poly, Mono
+    {
+        for (const float gate : { 1.0f, 2.0f })
+        {
+            INFO("voice " << voiceIndex << " gate " << gate);
+            GenerativeMIDIProcessor processor;
+            FakePlayHead playHead;
+            playHead.playing = true;
+            playHead.bpm = 240.0;
+            processor.setPlayHead(&playHead);
+            processor.prepareToPlay(48000.0, blockSize);
+            configureDenseEuclidean(processor);
+            setFloatParam(processor, "gateLength", gate);
+            setFloatParam(processor, "swingAmount", 0.0f);
+            setFloatParam(processor, "timingHumanize", 0.0f);
+            setIntParam(processor, "pitchMin", 60);
+            setIntParam(processor, "pitchMax", 60);
+            setChoiceParam(processor, "voiceMode", voiceIndex);
+            setChoiceParam(processor, "partCount", 0);
+            setIntParam(processor, "midiChannel", 1);
+
+            std::vector<TimedNote> stream;
+            collectNotes(processor, 40, blockSize, stream);
+            setFloatParam(processor, "noteDensity", 0.0f); // let the pending note-offs drain
+            std::vector<TimedNote> tail;
+            collectNotes(processor, 40, blockSize, tail);
+            for (auto& event : tail)
+                event.sample += 40 * blockSize; // collectNotes timestamps restart at zero
+            stream.insert(stream.end(), tail.begin(), tail.end());
+
+            const auto report = analyseStream(stream);
+            REQUIRE(report.ons > 4);
+            REQUIRE(report.onWhileSounding == 0);
+            REQUIRE(report.orphanOffs == 0);
+            REQUIRE(report.zeroLength == 0);
+            REQUIRE(report.stillSounding == 0);
+
+            processor.releaseResources();
+            processor.setPlayHead(nullptr);
+        }
     }
 }

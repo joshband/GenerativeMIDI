@@ -39,19 +39,21 @@ void EventScheduler::scheduleNoteOn(int note, float velocity, int channel, int64
     auto message = juce::MidiMessage::noteOn(channel, note,
         // Velocity 0 is a note-off to most receivers, so a note-on is never below 1.
         static_cast<juce::uint8>(juce::jmax(1, juce::roundToInt(juce::jlimit(0.0f, 1.0f, velocity) * 127.0f))));
-    scheduleEvent(message, sampleTime, 10); // Higher priority for note-ons
+    scheduleEvent(message, sampleTime, kPriorityNoteOn);
 }
 
 void EventScheduler::scheduleNoteOff(int note, int channel, int64_t sampleTime)
 {
     auto message = juce::MidiMessage::noteOff(channel, note);
-    scheduleEvent(message, sampleTime, 5); // Lower priority for note-offs
+    // Fires before a note-on at the same sample so a retrigger is never swallowed.
+    scheduleEvent(message, sampleTime, kPriorityNoteOff);
 }
 
 void EventScheduler::scheduleNote(int note, float velocity, int channel, int64_t startSample, int64_t duration)
 {
     scheduleNoteOn(note, velocity, channel, startSample);
-    scheduleNoteOff(note, channel, startSample + duration);
+    // A zero-length note would put the off ahead of its own on at the same sample.
+    scheduleNoteOff(note, channel, startSample + juce::jmax<int64_t>(1, duration));
 }
 
 void EventScheduler::scheduleAftertouch(int note, float pressure, int channel, int64_t sampleTime)
@@ -92,10 +94,7 @@ void EventScheduler::processEvents(int64_t currentSample, juce::MidiBuffer& outp
             int sampleOffset = static_cast<int>(event.scheduledSample - currentSample);
             sampleOffset = juce::jlimit(0, bufferSize - 1, sampleOffset);
 
-            outputBuffer.addEvent(event.message, sampleOffset);
-
-            if (activityLog != nullptr)
-                activityLog->tryPushFromMessage(event.message);
+            emitEvent(event.message, sampleOffset, outputBuffer, activityLog);
 
             std::pop_heap(eventStorage.begin(), eventStorage.end());
             eventStorage.pop_back();
@@ -105,6 +104,66 @@ void EventScheduler::processEvents(int64_t currentSample, juce::MidiBuffer& outp
             break;
         }
     }
+}
+
+void EventScheduler::emitEvent(const juce::MidiMessage& message, int sampleOffset,
+                               juce::MidiBuffer& outputBuffer, MidiActivityLog* activityLog)
+{
+    const bool isOn = message.isNoteOn();
+    const bool isOff = !isOn && message.isNoteOff();
+
+    if (isOn || isOff)
+    {
+        const int ch = juce::jlimit(1, 16, message.getChannel()) - 1;
+        const int note = message.getNoteNumber() & 127;
+        auto& depth = noteDepth[ch][note];
+
+        if (isOn)
+        {
+            if (depth > 0)
+            {
+                // Same pitch still sounding: release it first so the new note is heard.
+                const auto release = juce::MidiMessage::noteOff(ch + 1, note);
+                outputBuffer.addEvent(release, sampleOffset);
+                if (activityLog != nullptr)
+                    activityLog->tryPushFromMessage(release);
+            }
+            if (depth < 255)
+                ++depth;
+        }
+        else
+        {
+            if (depth == 0)
+                return; // stale off for a note that was already released
+            --depth;
+            if (depth > 0)
+                return; // an older note's late off must not cut the retriggered note
+        }
+    }
+
+    outputBuffer.addEvent(message, sampleOffset);
+    if (activityLog != nullptr)
+        activityLog->tryPushFromMessage(message);
+}
+
+void EventScheduler::cancelNoteEventsAfter(int note, int channel, int64_t afterSample)
+{
+    size_t write = 0;
+    for (size_t read = 0; read < eventStorage.size(); ++read)
+    {
+        const auto& m = eventStorage[read].message;
+        const bool match = eventStorage[read].scheduledSample > afterSample
+                           && (m.isNoteOn() || m.isNoteOff())
+                           && m.getChannel() == channel && m.getNoteNumber() == note;
+        if (!match)
+        {
+            if (write != read)
+                eventStorage[write] = std::move(eventStorage[read]);
+            ++write;
+        }
+    }
+    eventStorage.resize(write);
+    std::make_heap(eventStorage.begin(), eventStorage.end());
 }
 
 void EventScheduler::clearAll()
