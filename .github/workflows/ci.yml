@@ -123,7 +123,7 @@ jobs:
 
     - name: Upload Artifacts
       if: github.event_name != 'pull_request'
-      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
       with:
         name: GenerativeMIDI-iOS
         # AUv3 product is an .appex (may also emit a host .app depending on JUCE/Xcode).
@@ -231,7 +231,7 @@ jobs:
 
     - name: Upload pluginval logs
       if: always()
-      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
       with:
         name: pluginval-logs-macOS
         path: pluginval-logs/
@@ -240,7 +240,7 @@ jobs:
 
     - name: Upload Artifacts
       if: github.event_name != 'pull_request'
-      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
       with:
         name: GenerativeMIDI-macOS
         path: build/GenerativeMIDI_artefacts/Release/**/*
@@ -309,7 +309,7 @@ jobs:
 
     - name: Upload pluginval logs
       if: always()
-      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
       with:
         name: pluginval-logs-Windows
         path: pluginval-logs/
@@ -318,7 +318,7 @@ jobs:
 
     - name: Upload Artifacts
       if: github.event_name != 'pull_request'
-      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
       with:
         name: GenerativeMIDI-Windows
         path: |
@@ -420,7 +420,7 @@ jobs:
 
     - name: Upload pluginval logs
       if: always()
-      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
       with:
         name: pluginval-logs-Linux
         path: pluginval-logs/
@@ -429,7 +429,7 @@ jobs:
 
     - name: Upload Artifacts
       if: github.event_name != 'pull_request'
-      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
       with:
         name: GenerativeMIDI-Linux
         path: |
