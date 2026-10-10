@@ -133,9 +133,9 @@ public:
                          float sliderPos, float rotaryStartAngle, float rotaryEndAngle,
                          juce::Slider& slider) override
     {
-        auto radius = juce::jmin(width / 2, height / 2) - 8.0f;
-        auto centreX = x + width * 0.5f;
-        auto centreY = y + height * 0.5f;
+        auto radius = static_cast<float>(juce::jmin(width / 2, height / 2)) - 8.0f;
+        auto centreX = static_cast<float>(x) + static_cast<float>(width) * 0.5f;
+        auto centreY = static_cast<float>(y) + static_cast<float>(height) * 0.5f;
         auto angle = rotaryStartAngle + sliderPos * (rotaryEndAngle - rotaryStartAngle);
 
         if (false && knobOrnate.isValid())
@@ -273,8 +273,8 @@ public:
     }
 
     void drawLinearSlider(juce::Graphics& g, int x, int y, int width, int height,
-                         float sliderPos, float minSliderPos, float maxSliderPos,
-                         const juce::Slider::SliderStyle style, juce::Slider& slider) override
+                         float sliderPos, float /*minSliderPos*/, float /*maxSliderPos*/,
+                         const juce::Slider::SliderStyle /*style*/, juce::Slider& slider) override
     {
         // For vertical sliders with loaded rail image, use image-based rendering
         if (false && !slider.isHorizontal() && sliderVerticalRail.isValid())
@@ -302,20 +302,20 @@ public:
             g.fillRoundedRectangle(energyFill, 2.0f);
 
             // Round cyan thumb (matches knob needle language)
-            drawRoundCyanThumb(g, { x + width * 0.5f, sliderPos }, 14.0f,
+            drawRoundCyanThumb(g, { static_cast<float>(x) + static_cast<float>(width) * 0.5f, sliderPos }, 14.0f,
                                slider.findColour(juce::Slider::thumbColourId));
             return;
         }
 
         // Fallback to procedural rendering for horizontal sliders or if images not loaded
-        auto trackWidth = juce::jmin(10.0f, slider.isHorizontal() ? height * 0.3f : width * 0.3f);
+        auto trackWidth = juce::jmin(10.0f, slider.isHorizontal() ? static_cast<float>(height) * 0.3f : static_cast<float>(width) * 0.3f);
 
         juce::Rectangle<float> track;
         if (slider.isHorizontal())
-            track = { static_cast<float>(x), y + (height - trackWidth) * 0.5f,
+            track = { static_cast<float>(x), static_cast<float>(y) + (static_cast<float>(height) - trackWidth) * 0.5f,
                      static_cast<float>(width), trackWidth };
         else
-            track = { x + (width - trackWidth) * 0.5f, static_cast<float>(y),
+            track = { static_cast<float>(x) + (static_cast<float>(width) - trackWidth) * 0.5f, static_cast<float>(y),
                      trackWidth, static_cast<float>(height) };
 
         // Brass channel background
@@ -333,7 +333,7 @@ public:
         // Amber energy fill (from min to current value)
         juce::Rectangle<float> valueFill;
         if (slider.isHorizontal())
-            valueFill = { track.getX(), track.getY(), sliderPos - x, track.getHeight() };
+            valueFill = { track.getX(), track.getY(), sliderPos - static_cast<float>(x), track.getHeight() };
         else
             valueFill = { track.getX(), sliderPos, track.getWidth(), track.getBottom() - sliderPos };
 
@@ -352,9 +352,9 @@ public:
         // Round cyan thumb — unified with knob needle accent
         juce::Point<float> thumbPos;
         if (slider.isHorizontal())
-            thumbPos = { sliderPos, y + height * 0.5f };
+            thumbPos = { sliderPos, static_cast<float>(y) + static_cast<float>(height) * 0.5f };
         else
-            thumbPos = { x + width * 0.5f, sliderPos };
+            thumbPos = { static_cast<float>(x) + static_cast<float>(width) * 0.5f, sliderPos };
 
         const float thumbR = (slider.isMouseOverOrDragging() || slider.isMouseButtonDown()) ? 16.0f : 13.0f;
         drawRoundCyanThumb(g, thumbPos, thumbR, slider.findColour(juce::Slider::thumbColourId));

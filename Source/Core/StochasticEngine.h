@@ -34,14 +34,14 @@ public:
     void setGeneratorType(GeneratorType type) { generatorType = type; }
     void setDensity(float density) { noteDensity = std::clamp(density, 0.0f, 1.0f); }
     void setStepSize(float size) { stepSize = std::clamp(size, 0.01f, 1.0f); }
-    void setMomentum(float momentum) { this->momentum = std::clamp(momentum, 0.0f, 1.0f); }
-    void setOctaves(int octaves) { this->octaves = std::clamp(octaves, 1, 8); }
+    void setMomentum(float value) { momentum = std::clamp(value, 0.0f, 1.0f); }
+    void setOctaves(int count) { octaves = std::clamp(count, 1, 8); }
     void setTimeScale(float scale) { timeScale = std::clamp(scale, 0.01f, 10.0f); }
 
     // Lorenz attractor parameters
-    void setSigma(float sigma) { this->sigma = sigma; }
-    void setRho(float rho) { this->rho = rho; }
-    void setBeta(float beta) { this->beta = beta; }
+    void setSigma(float value) { sigma = value; }
+    void setRho(float value) { rho = value; }
+    void setBeta(float value) { beta = value; }
 
     /** Fix the RNG seed. reset() (called here too) then restarts every generator and
         the Perlin permutation table from this seed, so identical inputs give identical
@@ -105,7 +105,6 @@ private:
     float sigma;              // Prandtl number (default: 10.0)
     float rho;                // Rayleigh number (default: 28.0)
     float beta;               // Geometric factor (default: 8.0/3.0)
-    float dt;                 // Integration step size
 
     // Lorenz state in attractor coordinates (double: RK4 sub-stepped)
     double lorenzX = 1.0, lorenzY = 1.0, lorenzZ = 1.0;

@@ -5,7 +5,7 @@ on:
     branches: [ main, master ]
   # No base-branch filter: stacked PRs also get the (cheap) actions scan.
   pull_request:
-    types: [opened, synchronize, reopened, labeled]
+    types: [opened, synchronize, reopened, labeled, ready_for_review]
   workflow_dispatch:
   schedule:
     - cron: "41 5 * * 3"
@@ -26,6 +26,8 @@ jobs:
   # The actions scan is cheap and runs everywhere. The matrix is built by the scope job, so no c-cpp check is created when it is not needed.
   scope:
     name: CodeQL scope
+    # Draft PRs run nothing (saves runner minutes while iterating); marking ready runs CI.
+    if: github.event_name != 'pull_request' || !github.event.pull_request.draft
     runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:

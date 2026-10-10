@@ -46,6 +46,7 @@ public:
     bool canAddBus(bool isInput) const override;
     bool canApplyBusCountChange(bool isInput, bool isAddingBuses, BusProperties& outNewBusProperties) override;
 
+    using juce::AudioProcessor::processBlock;
     void processBlock(juce::AudioBuffer<float>&, juce::MidiBuffer&) override;
 
     //==============================================================================

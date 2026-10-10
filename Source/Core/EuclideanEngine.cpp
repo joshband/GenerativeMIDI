@@ -77,7 +77,7 @@ void EuclideanEngine::rotate(int amount)
 
 void EuclideanEngine::randomize(float density)
 {
-    pulses = static_cast<int>(steps * juce::jlimit(0.0f, 1.0f, density));
+    pulses = static_cast<int>(static_cast<float>(steps) * juce::jlimit(0.0f, 1.0f, density));
     rotation = (steps > 0) ? random.nextInt(steps) : 0;
     regeneratePattern();
 }

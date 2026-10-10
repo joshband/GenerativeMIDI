@@ -138,8 +138,6 @@ private:
     std::map<int, CCModulation> ccModulations;
     NoteExpression noteExpression;
 
-    float currentPhase = 0.0f;
-
     float calculateLFO(const CCModulation& mod);
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MIDIGenerator)

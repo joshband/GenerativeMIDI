@@ -17,7 +17,6 @@ StochasticEngine::StochasticEngine()
       sigma(10.0f),
       rho(28.0f),
       beta(8.0f / 3.0f),
-      dt(0.01f),
       rng(std::random_device{}()),
       uniform01(0.0f, 1.0f),
       normalDist(0.0f, 1.0f)
@@ -109,7 +108,7 @@ int StochasticEngine::getCurrentPitch(int minPitch, int maxPitch) const
 {
     // Map current value (0.0-1.0) to pitch range
     float normalizedPitch = std::clamp(currentValue, 0.0f, 1.0f);
-    int pitch = minPitch + static_cast<int>(normalizedPitch * (maxPitch - minPitch));
+    int pitch = minPitch + static_cast<int>(normalizedPitch * static_cast<float>(maxPitch - minPitch));
     return std::clamp(pitch, 0, 127);
 }
 
@@ -178,7 +177,7 @@ void StochasticEngine::updatePerlinNoise(float deltaTime)
 
         for (int i = 0; i < octaves; ++i)
         {
-            value += perlinNoise(static_cast<float>(std::fmod(noiseTime * frequency + timeOffset, kNoisePeriod)), i * 100.0f) * amplitude;
+            value += perlinNoise(static_cast<float>(std::fmod(noiseTime * frequency + timeOffset, kNoisePeriod)), static_cast<float>(i) * 100.0f) * amplitude;
             maxValue += amplitude;
             amplitude *= persistence;
             frequency *= 2.0f;

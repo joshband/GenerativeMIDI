@@ -106,7 +106,7 @@ namespace GeneratorTypeMapping
                 const float raw = static_cast<float>(child.getProperty("value"));
                 // Denormalised choice index (JUCE 8 APVTS) or legacy normalised — prefer denorm int.
                 int index = static_cast<int>(std::lround(static_cast<double>(raw)));
-                if (raw >= 0.0f && raw <= 1.0f && raw != static_cast<float>(index))
+                if (raw >= 0.0f && raw <= 1.0f && std::abs(raw - static_cast<float>(index)) > 1.0e-6f)
                 {
                     // Normalised choice: index ≈ raw * (numChoices-1) for old 9-choice list
                     index = static_cast<int>(std::lround(static_cast<double>(raw) * 8.0));

@@ -316,16 +316,16 @@ int GenerativeMIDIProcessor::getCurrentProgram()
     return 0;
 }
 
-void GenerativeMIDIProcessor::setCurrentProgram(int index)
+void GenerativeMIDIProcessor::setCurrentProgram(int /*index*/)
 {
 }
 
-const juce::String GenerativeMIDIProcessor::getProgramName(int index)
+const juce::String GenerativeMIDIProcessor::getProgramName(int /*index*/)
 {
     return {};
 }
 
-void GenerativeMIDIProcessor::changeProgramName(int index, const juce::String& newName)
+void GenerativeMIDIProcessor::changeProgramName(int /*index*/, const juce::String& /*newName*/)
 {
 }
 
@@ -472,9 +472,9 @@ void GenerativeMIDIProcessor::processBlock(juce::AudioBuffer<float>& buffer, juc
     bool shouldAdvance = true;
     if (wrapperType != wrapperType_Standalone)
     {
-        if (auto* playHead = getPlayHead())
+        if (auto* hostPlayHead = getPlayHead())
         {
-            if (auto position = playHead->getPosition())
+            if (auto position = hostPlayHead->getPosition())
                 shouldAdvance = position->getIsPlaying();
         }
     }
@@ -507,8 +507,8 @@ void GenerativeMIDIProcessor::processBlock(juce::AudioBuffer<float>& buffer, juc
         // the host bar. With a host ppq the grid starts at that song position; without one
         // (standalone free-run) it starts at the top.
         double startSixteenths = 0.0;
-        if (auto* playHead = getPlayHead())
-            if (auto position = playHead->getPosition())
+        if (auto* hostPlayHead = getPlayHead())
+            if (auto position = hostPlayHead->getPosition())
                 if (auto ppq = position->getPpqPosition())
                     startSixteenths = juce::jmax(0.0, *ppq * 4.0);
 
@@ -555,7 +555,7 @@ void GenerativeMIDIProcessor::processBlock(juce::AudioBuffer<float>& buffer, juc
     currentSamplePosition += buffer.getNumSamples();
 }
 
-void GenerativeMIDIProcessor::processGenerativeOutput(juce::MidiBuffer& midiMessages, int numSamples)
+void GenerativeMIDIProcessor::processGenerativeOutput(juce::MidiBuffer& /*midiMessages*/, int /*numSamples*/)
 {
     // This method is called to generate MIDI events based on current settings
     // Events are generated in onSubdivisionHit callback

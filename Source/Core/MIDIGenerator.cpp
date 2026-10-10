@@ -186,7 +186,7 @@ void MIDIGenerator::updateCCModulation(double sampleRate, int numSamples)
             continue;
 
         // Update phase
-        float phaseIncrement = (mod.rate * numSamples) / static_cast<float>(sampleRate);
+        float phaseIncrement = (mod.rate * static_cast<float>(numSamples)) / static_cast<float>(sampleRate);
         mod.phase = std::fmod(mod.phase + phaseIncrement, 1.0f);
 
         // Calculate modulation value
@@ -246,7 +246,7 @@ int MIDIGenerator::floatToMidiValue(float value)
 
 float MIDIGenerator::midiValueToFloat(int value)
 {
-    return juce::jlimit(0, 127, value) / 127.0f;
+    return static_cast<float>(juce::jlimit(0, 127, value)) / 127.0f;
 }
 
 float MIDIGenerator::calculateLFO(const CCModulation& mod)
