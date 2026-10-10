@@ -55,7 +55,7 @@ CodeQL (codeql.yml) first runs `CodeQL scope`, which builds the analysis matrix.
 
 ### Docs-only skip
 
-Docs-only PRs (`docs/**`, `*.md`, `LICENSE`, `.github/dependabot.yml`) skip the build jobs. The skip is a job-level `if`, so skipped jobs report as skipped and still satisfy required status checks (a `paths-ignore` filter would leave required checks pending forever). Anything else under `.github/` counts as code (and as a build-file change that runs the full matrix).
+Docs-only PRs (`docs/**`, `*.md`, `LICENSE`, `.github/dependabot.yml`) skip the build jobs. The skip is a job-level `if`, so skipped jobs report as skipped and still satisfy required status checks (a `paths-ignore` filter would leave required checks pending forever). Anything else under `.github/` counts as code (and as a build-file change that runs the full matrix). Exception: workflow changes in a Dependabot PR (version-pin bumps; the upload and cache-save steps do not run on PRs) do not trigger the full matrix on their own; add the `full-ci` label to force it.
 
 ### Compiler warnings in the logs
 

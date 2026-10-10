@@ -55,6 +55,7 @@ jobs:
         BASE_SHA: ${{ github.event.pull_request.base.sha }}
         HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         FULL_CI_LABEL: ${{ contains(github.event.pull_request.labels.*.name, 'full-ci') }}
+        PR_AUTHOR: ${{ github.event.pull_request.user.login }}
       run: |
         if [ "${EVENT}" != "pull_request" ]; then
           echo "code=true" >> "$GITHUB_OUTPUT"
@@ -73,6 +74,12 @@ jobs:
           esac
           case "$f" in
             .github/dependabot.yml) ;;
+            # Dependabot action bumps only change version pins; upload/cache steps do not run on
+            # pull requests, so iOS/Windows would test nothing. Add the full-ci label to force them.
+            .github/workflows/*)
+              if [ "${PR_AUTHOR}" != "dependabot[bot]" ]; then
+                platform=true; echo "platform change: $f"
+              fi ;;
             CMakeLists.txt|*/CMakeLists.txt|cmake/*|*.cmake|.github/*|.gitmodules)
               platform=true; echo "platform change: $f" ;;
           esac
