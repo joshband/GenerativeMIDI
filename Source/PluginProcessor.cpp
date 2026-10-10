@@ -21,8 +21,18 @@ int quantizeCc(float value)
 
 int quantizePitchWheel(float bendMinus1To1)
 {
-    const int bendValue = static_cast<int>((bendMinus1To1 + 1.0f) * 0.5f * 16383.0f);
+    // 0 maps to 8192 (wheel centre); must match EventScheduler::schedulePitchBend.
+    const int bendValue = juce::roundToInt((juce::jlimit(-1.0f, 1.0f, bendMinus1To1) + 1.0f) * 8192.0f);
     return juce::jlimit(0, 16383, bendValue);
+}
+
+// The pitch bend control is in semitones; the wheel's full +/-1 span is taken as 24 semitones
+// (the control's maximum). Result is the signed -1..1 value schedulePitchBend expects.
+constexpr float kBendFullScaleSemitones = 24.0f;
+
+float bendFromSemitones(float semitones)
+{
+    return juce::jlimit(-1.0f, 1.0f, semitones / kBendFullScaleSemitones);
 }
 }
 
@@ -649,9 +659,9 @@ void GenerativeMIDIProcessor::emitContinuousExpression(int64_t sampleTime)
     if (parameters.getRawParameterValue(PARAM_PITCHBEND_ENABLE)->load() > 0.5f)
     {
         const float range = parameters.getRawParameterValue(PARAM_PITCHBEND_RANGE)->load();
-        float bendNorm = juce::jlimit(0.0f, 1.0f, range / 24.0f);
+        float bendNorm = bendFromSemitones(range);
         const float delta = mix.bendRouted ? mix.bendDelta : (lfoEnabled ? lfo * depth : 0.0f);
-        bendNorm = ModulationRouter::applyAdditive(bendNorm, delta, 0.0f, 1.0f);
+        bendNorm = ModulationRouter::applyAdditive(bendNorm, delta, -1.0f, 1.0f); // both directions
         const int midiValue = quantizePitchWheel(bendNorm);
         if (midiValue != lastHeldPitchBend)
         {
@@ -832,8 +842,8 @@ void GenerativeMIDIProcessor::onSubdivisionHit(int subdivision, int sampleOffset
 
         if (pitchbendEnable)
         {
-            // Map PB range (1–24 semitones) to a fraction of full MIDI bend wheel
-            const float bendNorm = juce::jlimit(0.0f, 1.0f, pitchbendRange / 24.0f);
+            // Map PB semitones (1–24) onto the signed -1..1 wheel span
+            const float bendNorm = bendFromSemitones(pitchbendRange);
             eventScheduler.schedulePitchBend(bendNorm, midiChannel, noteOnSample);
             lastHeldPitchBend = quantizePitchWheel(bendNorm);
         }

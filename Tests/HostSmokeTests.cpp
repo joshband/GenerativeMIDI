@@ -305,6 +305,8 @@ TEST_CASE("Held notes keep a static CC and pitch bend when the LFO is off", "[ho
     REQUIRE(stats.ccValues.size() == 1);
     REQUIRE(stats.pitchBendCount == stats.noteOns);
     REQUIRE(stats.bendValues.size() == 1);
+    // 12 semitones of the 24-semitone full scale = half the wheel above centre (8192 + 4096).
+    REQUIRE(*stats.bendValues.begin() == 12288);
     REQUIRE(juce::String(GeneratorTypeMapping::kPresetSchemaVersion) == "1.2");
 
     processor.releaseResources();
@@ -342,6 +344,9 @@ TEST_CASE("Held notes continuously modulate CC and pitch bend from the LFO", "[h
     REQUIRE(moving.ccValues.size() >= 2);
     REQUIRE(moving.pitchBendCount > moving.noteOns);
     REQUIRE(moving.bendValues.size() >= 2);
+    // The LFO swings the wheel on both sides of centre, over the full -1..1 span.
+    REQUIRE(*moving.bendValues.begin() < 5000);
+    REQUIRE(*moving.bendValues.rbegin() > 12288);
 
     setFloatParam(processor, "modLfoDepth", 0.0f);
     const auto identity = processBlocksCollectingExpression(processor, 200, blockSize);
@@ -350,6 +355,7 @@ TEST_CASE("Held notes continuously modulate CC and pitch bend from the LFO", "[h
     REQUIRE(identity.ccValues.size() == 1);
     REQUIRE(identity.pitchBendCount == identity.noteOns);
     REQUIRE(identity.bendValues.size() == 1);
+    REQUIRE(*identity.bendValues.begin() == 12288);
 
     processor.releaseResources();
     processor.setPlayHead(nullptr);
@@ -1294,4 +1300,51 @@ TEST_CASE("Bar-aligned chords follow the host bar when playback starts mid-bar",
 
     processor.releaseResources();
     processor.setPlayHead(nullptr);
+}
+
+//==============================================================================
+// Pitch bend scaling
+
+TEST_CASE("Pitch bend range is in semitones and the LFO can bend downwards",
+          "[host][expression][regression]")
+{
+    juce::ScopedJuceInitialiser_GUI juceInit;
+    constexpr int blockSize = 256;
+
+    auto run = [&](float rangeSemitones, bool lfo)
+    {
+        GenerativeMIDIProcessor processor;
+        FakePlayHead playHead;
+        playHead.playing = true;
+        playHead.bpm = 120.0;
+        processor.setPlayHead(&playHead);
+        processor.prepareToPlay(48000.0, blockSize);
+        configureDenseEuclidean(processor);
+        setFloatParam(processor, "tempo", 120.0f);
+        enableStaticExpression(processor);
+        setBoolParam(processor, "ccEnable", false);
+        setFloatParam(processor, "pitchbendRange", rangeSemitones);
+        if (lfo)
+        {
+            setBoolParam(processor, "modLfoEnable", true);
+            setFloatParam(processor, "modLfoRate", 6.0f);
+            setFloatParam(processor, "modLfoDepth", 0.5f);
+        }
+        const auto stats = processBlocksCollectingExpression(processor, 400, blockSize);
+        processor.releaseResources();
+        processor.setPlayHead(nullptr);
+        return stats;
+    };
+
+    // Static: 6 semitones of the 24-semitone full scale = +0.25 of the wheel.
+    const auto fixed = run(6.0f, false);
+    REQUIRE(fixed.bendValues.size() == 1);
+    REQUIRE(*fixed.bendValues.begin() == 10240);
+
+    // A small range with a 0.5-depth LFO reaches below centre (negative bend) and above it.
+    const auto modulated = run(2.0f, true);
+    REQUIRE(modulated.bendValues.size() >= 2);
+    REQUIRE(*modulated.bendValues.begin() < 7000);  // clearly below centre (negative bend)
+    REQUIRE(*modulated.bendValues.begin() >= 0);
+    REQUIRE(*modulated.bendValues.rbegin() > 9000); // and clearly above it
 }

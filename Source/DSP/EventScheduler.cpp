@@ -78,7 +78,8 @@ void EventScheduler::scheduleAftertouch(int note, float pressure, int channel, i
 void EventScheduler::schedulePitchBend(float bendAmount, int channel, int64_t sampleTime)
 {
     // Convert -1.0 to +1.0 range to 0-16383 MIDI pitch bend range
-    int bendValue = static_cast<int>((bendAmount + 1.0f) * 0.5f * 16383.0f);
+    // 0 maps to 8192, the wheel's centre (truncating 16383/2 would land one step below it).
+    int bendValue = juce::roundToInt((juce::jlimit(-1.0f, 1.0f, bendAmount) + 1.0f) * 8192.0f);
     bendValue = juce::jlimit(0, 16383, bendValue);
     auto message = juce::MidiMessage::pitchWheel(channel, bendValue);
     scheduleEvent(message, sampleTime, 8); // Medium-high priority
