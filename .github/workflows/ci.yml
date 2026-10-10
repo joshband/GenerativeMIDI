@@ -140,8 +140,10 @@ jobs:
     - name: Install ccache
       run: brew install ccache
 
-    - name: Cache ccache objects
-      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+    # Pull requests only restore (falling back to the newest master-scope cache); saving is done
+    # by the "Save ccache objects" step below on non-PR events. See docs/developer/CI.md.
+    - name: Restore ccache objects
+      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
         path: ~/Library/Caches/ccache
         key: ccache-macos-${{ github.sha }}
@@ -156,13 +158,21 @@ jobs:
         cmake --build . --config Release
         ccache --show-stats
 
+    - name: Save ccache objects
+      if: github.event_name != 'pull_request'
+      uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: ~/Library/Caches/ccache
+        key: ccache-macos-${{ github.sha }}
+
     - name: Run unit tests
       run: |
         cd build
         ctest --output-on-failure -C Release
 
-    - name: Cache pluginval download
-      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+    - name: Restore pluginval download
+      id: pluginval-cache
+      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
         path: pluginval.zip
         key: pluginval-${{ env.PLUGINVAL_VERSION }}-macOS
@@ -173,6 +183,13 @@ jobs:
         echo "${PLUGINVAL_SHA256_MACOS}  pluginval.zip" | shasum -a 256 -c -
         unzip -q pluginval.zip
         chmod +x pluginval.app/Contents/MacOS/pluginval
+
+    - name: Save pluginval download
+      if: github.event_name != 'pull_request' && steps.pluginval-cache.outputs.cache-hit != 'true'
+      uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: pluginval.zip
+        key: pluginval-${{ env.PLUGINVAL_VERSION }}-macOS
 
     - name: Validate VST3 with pluginval
       run: |
@@ -314,8 +331,10 @@ jobs:
       run: |
         git clone --depth 1 --branch "${JUCE_VERSION}" https://github.com/juce-framework/JUCE.git JUCE
 
-    - name: Cache ccache objects
-      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+    # Pull requests only restore (falling back to the newest master-scope cache); saving is done
+    # by the "Save ccache objects" step below on non-PR events. See docs/developer/CI.md.
+    - name: Restore ccache objects
+      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
         path: ~/.cache/ccache
         key: ccache-linux-${{ github.sha }}
@@ -331,6 +350,13 @@ jobs:
       run: |
         cmake --build build --config Release -j"$(nproc)"
         ccache --show-stats
+
+    - name: Save ccache objects
+      if: github.event_name != 'pull_request'
+      uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: ~/.cache/ccache
+        key: ccache-linux-${{ github.sha }}
 
     - name: Run unit tests
       run: |
@@ -415,8 +441,10 @@ jobs:
       run: |
         git clone --depth 1 --branch "${JUCE_VERSION}" https://github.com/juce-framework/JUCE.git JUCE
 
-    - name: Cache ccache objects
-      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+    # Pull requests only restore (falling back to the newest master-scope cache); saving is done
+    # by the "Save ccache objects" step below on non-PR events. See docs/developer/CI.md.
+    - name: Restore ccache objects
+      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
         path: ~/.cache/ccache
         key: ccache-linux-asan-${{ github.sha }}
@@ -433,6 +461,13 @@ jobs:
       run: |
         cmake --build build --target GenerativeMIDITests GenerativeMIDIHostSmokeTests -j"$(nproc)"
         ccache --show-stats
+
+    - name: Save ccache objects
+      if: github.event_name != 'pull_request'
+      uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: ~/.cache/ccache
+        key: ccache-linux-asan-${{ github.sha }}
 
     - name: Run unit tests
       env:
@@ -485,8 +520,10 @@ jobs:
       run: |
         git clone --depth 1 --branch "${JUCE_VERSION}" https://github.com/juce-framework/JUCE.git JUCE
 
-    - name: Cache ccache objects
-      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+    # Pull requests only restore (falling back to the newest master-scope cache); saving is done
+    # by the "Save ccache objects" step below on non-PR events. See docs/developer/CI.md.
+    - name: Restore ccache objects
+      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
         path: ~/.cache/ccache
         key: ccache-linux-tsan-${{ github.sha }}
@@ -507,6 +544,13 @@ jobs:
       run: |
         cmake --build build --target GenerativeMIDITests GenerativeMIDIHostSmokeTests -j"$(nproc)"
         ccache --show-stats
+
+    - name: Save ccache objects
+      if: github.event_name != 'pull_request'
+      uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: ~/.cache/ccache
+        key: ccache-linux-tsan-${{ github.sha }}
 
     - name: Run unit tests
       env:
