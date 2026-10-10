@@ -20,7 +20,7 @@ About `COPY_PLUGIN_AFTER_BUILD`: a CMake option that defaults to ON, which makes
 
 ## Where tests go
 
-Two Catch2 executables, both registered with CTest (`CMakeLists.txt:150`, `:180`, `:217-218`):
+Two Catch2 executables, both registered with CTest (`CMakeLists.txt:154`, `:184`, `:221-222`):
 
 - `Tests/EngineTests.cpp` (`GenerativeMIDITests`): engine and DSP logic that does not need the plugin. The executable compiles a fixed source list; if your test needs a new `.cpp`, add it to that list in `CMakeLists.txt`.
 - `Tests/HostSmokeTests.cpp` (`GenerativeMIDIHostSmokeTests`): processor-level behaviour through `GenerativeMIDIProcessor::processBlock` with the `FakePlayHead`, including cross-thread tests.
