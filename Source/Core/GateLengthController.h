@@ -63,7 +63,7 @@ public:
         }
 
         float finalGate = juce::jlimit(0.01f, 2.0f, baseGate + variation);
-        return static_cast<int>(samplesPerStep * finalGate);
+        return static_cast<int>(static_cast<float>(samplesPerStep) * finalGate);
     }
 
     /**

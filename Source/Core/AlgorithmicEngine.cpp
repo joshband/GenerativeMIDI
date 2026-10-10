@@ -53,7 +53,7 @@ void MarkovChain::learn(const std::vector<int>& sequence)
 
         for (const auto& [next, count] : nextMap)
         {
-            float probability = static_cast<float>(count) / total;
+            float probability = static_cast<float>(count) / static_cast<float>(total);
             addTransition(state, next, probability);
         }
     }

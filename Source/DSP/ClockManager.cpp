@@ -88,7 +88,7 @@ void ClockManager::advance(int numSamples)
 
 double ClockManager::getPositionInBeats() const
 {
-    return currentSample / getSamplesPerBeat();
+    return static_cast<double>(currentSample) / getSamplesPerBeat();
 }
 
 double ClockManager::getPositionInBars() const

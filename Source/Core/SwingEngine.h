@@ -107,7 +107,7 @@ public:
         // At 50% swing, off-beats are delayed by 1/6 of a beat (triplet feel)
         // At 100% swing, off-beats are delayed by 1/3 of a beat
         float swingRatio = 0.166f + (swingAmount * 0.167f); // 16.6% to 33.3%
-        int swingOffset = static_cast<int>(samplesPerStep * swingRatio);
+        int swingOffset = static_cast<int>(static_cast<float>(samplesPerStep) * swingRatio);
 
         return swingOffset;
     }
