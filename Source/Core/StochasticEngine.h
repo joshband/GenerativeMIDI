@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <cstdint>
 #include <random>
 #include <cmath>
 #include <algorithm>
@@ -42,6 +43,11 @@ public:
     void setRho(float rho) { this->rho = rho; }
     void setBeta(float beta) { this->beta = beta; }
 
+    /** Fix the RNG seed. reset() (called here too) then restarts every generator and
+        the Perlin permutation table from this seed, so identical inputs give identical
+        output. Without a call, each engine keeps a random seed. */
+    void setSeed(std::uint32_t seed);
+
     // Generation
     void reset();
     void advance(float deltaTime);
@@ -64,6 +70,7 @@ private:
 
     // Perlin noise helpers
     float perlinNoise(float x, float y) const;
+    void buildPermutation();
     float fade(float t) const { return t * t * t * (t * (t * 6.0f - 15.0f) + 10.0f); }
     float lerp(float a, float b, float t) const { return a + t * (b - a); }
     float grad(int hash, float x, float y) const;
@@ -79,7 +86,8 @@ private:
     float acceleration;
 
     // Perlin noise state
-    float noiseTime;
+    double noiseTime;         // wrapped at kNoisePeriod so precision never degrades
+    static constexpr double kNoisePeriod = 256.0; // permutation lattice period
     int permutation[512];     // Permutation table for Perlin noise
 
     // Drunk walk state
@@ -99,7 +107,13 @@ private:
     float beta;               // Geometric factor (default: 8.0/3.0)
     float dt;                 // Integration step size
 
+    // Lorenz state in attractor coordinates (double: RK4 sub-stepped)
+    double lorenzX = 1.0, lorenzY = 1.0, lorenzZ = 1.0;
+    double lorenzPending = 0.0; // simulated time not yet integrated
+
     // Random number generation
+    bool seeded = false;
+    std::uint32_t seedValue = 0;
     mutable std::mt19937 rng;
     mutable std::uniform_real_distribution<float> uniform01;
     mutable std::normal_distribution<float> normalDist;
