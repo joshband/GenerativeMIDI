@@ -203,6 +203,7 @@ private:
     static constexpr const char* PARAM_MOD_ROUTE4_DEST = "modRoute4Dest";
     static constexpr const char* PARAM_MOD_ROUTE4_AMOUNT = "modRoute4Amount";
     static constexpr const char* PARAM_PIANO_ENABLE = "pianoEnable";
+    static constexpr const char* PARAM_SYNC_TO_HOST = "syncToHost";
 
     // Processing state
     int64_t currentSamplePosition = 0;
@@ -217,6 +218,10 @@ private:
 
     // Helper methods
     void processGenerativeOutput(juce::MidiBuffer& midiMessages, int numSamples);
+    /** All-notes-off + pitch-bend centre into the block, and forget every held voice / expression state. */
+    void releaseAllVoices(juce::MidiBuffer& midiMessages);
+    /** Restart the 16th grid, polyrhythm layers and step counter at a song position (in 16ths). */
+    void realignToHost(double startSixteenths);
     void onSubdivisionHit(int subdivision, int sampleOffset = 0);
     bool continuousExpressionActive() const;
     void emitContinuousExpression(int64_t sampleTime);
@@ -237,6 +242,18 @@ private:
     int lastGeneratorType = -1;
     bool lastPitchbendEnabled = false;
     std::atomic<bool> flushRequested { false };
+
+    // Cached parameter pointers / range for the per-block tempo decision.
+    std::atomic<float>* tempoParam = nullptr;
+    std::atomic<float>* syncToHostParam = nullptr;
+    float tempoMin = 20.0f;
+    float tempoMax = 400.0f;
+
+    // Host loop / jump detection (audio thread only).
+    double lastHostPpq = 0.0;
+    double lastBlockTempo = 120.0;
+    int lastBlockSamples = 0;
+    bool haveLastHostPpq = false;
 
     // One held melody note per MIDI channel. Mono steals on the melody channel only.
     struct MelodyVoice

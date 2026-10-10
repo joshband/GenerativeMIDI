@@ -56,6 +56,13 @@ GenerativeMIDIProcessor::GenerativeMIDIProcessor()
     if (wrapperType == wrapperType_Standalone)
         addBus(false);
 
+    // Cache the audio-thread parameters used every block (no string lookups in processBlock).
+    tempoParam = parameters.getRawParameterValue(PARAM_TEMPO);
+    syncToHostParam = parameters.getRawParameterValue(PARAM_SYNC_TO_HOST);
+    const auto tempoRange = parameters.getParameterRange(PARAM_TEMPO);
+    tempoMin = tempoRange.start;
+    tempoMax = tempoRange.end;
+
     // Setup clock manager callback
     clockManager.onSubdivisionHit = [this](int subdivision) {
         onSubdivisionHit(subdivision, 0);
@@ -262,6 +269,10 @@ juce::AudioProcessorValueTreeState::ParameterLayout GenerativeMIDIProcessor::cre
     params.push_back(std::make_unique<juce::AudioParameterBool>(
         PARAM_PIANO_ENABLE, "Piano", false));
 
+    // Appended last so sessions saved before this parameter existed load with the default (on).
+    params.push_back(std::make_unique<juce::AudioParameterBool>(
+        PARAM_SYNC_TO_HOST, "Sync to Host", true));
+
     return {params.begin(), params.end()};
 }
 
@@ -345,6 +356,7 @@ void GenerativeMIDIProcessor::prepareToPlay(double sampleRate, int samplesPerBlo
     lastHeldCcValue = -1;
     lastHeldPitchBend = -1;
     wasAdvancing = false;
+    haveLastHostPpq = false;
     lastGeneratorType = -1;
     lastPitchbendEnabled = parameters.getRawParameterValue(PARAM_PITCHBEND_ENABLE)->load() > 0.5f;
 
@@ -431,9 +443,34 @@ bool GenerativeMIDIProcessor::canApplyBusCountChange(bool isInput, bool isAdding
     return true;
 }
 
+void GenerativeMIDIProcessor::releaseAllVoices(juce::MidiBuffer& midiMessages)
+{
+    eventScheduler.allNotesOff(midiMessages, 0, &midiActivityLog);
+    for (auto& voice : melodyVoices)
+        voice = {};
+    expressionHoldUntil = 0;
+    lastHeldCcNumber = -1;
+    lastHeldCcValue = -1;
+    lastHeldPitchBend = -1;
+}
+
+void GenerativeMIDIProcessor::realignToHost(double startSixteenths)
+{
+    clockManager.restart(startSixteenths);
+    polyrhythmEngine.requestRestart();
+    lastSubdivisionStep = static_cast<int>(std::ceil(startSixteenths - 1.0e-6));
+}
+
 void GenerativeMIDIProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
 {
     juce::ScopedNoDenormals noDenormals;
+
+    // Read the host position once per block. Standalone ignores the host entirely.
+    juce::Optional<juce::AudioPlayHead::PositionInfo> hostPosition;
+    if (wrapperType != wrapperType_Standalone)
+        if (auto* hostPlayHead = getPlayHead())
+            hostPosition = hostPlayHead->getPosition();
+
     const int bufferChannels = buffer.getNumChannels();
     const int totalNumInputChannels = juce::jmin(getTotalNumInputChannels(), bufferChannels);
     const int totalNumOutputChannels = juce::jmin(getTotalNumOutputChannels(), bufferChannels);
@@ -457,8 +494,15 @@ void GenerativeMIDIProcessor::processBlock(juce::AudioBuffer<float>& buffer, juc
     if (euclideanEngine.getRotation() != rotation)
         euclideanEngine.setRotation(rotation);
 
-    auto tempo = parameters.getRawParameterValue(PARAM_TEMPO)->load();
-    clockManager.setTempo(tempo);
+    // Tempo: the Tempo parameter, or the host's BPM (clamped to the parameter's range) when
+    // Sync to Host is on and the host reports one. Set before any restart so the grid uses it.
+    double effectiveTempo = static_cast<double>(tempoParam->load());
+    juce::Optional<double> hostBpm;
+    if (hostPosition.hasValue())
+        hostBpm = hostPosition->getBpm();
+    if (hostBpm.hasValue() && *hostBpm > 0.0 && syncToHostParam->load() > 0.5f)
+        effectiveTempo = juce::jlimit(static_cast<double>(tempoMin), static_cast<double>(tempoMax), *hostBpm);
+    clockManager.setTempo(effectiveTempo);
 
     // Process MIDI clock messages for external sync
     for (const auto metadata : midiMessages)
@@ -470,14 +514,8 @@ void GenerativeMIDIProcessor::processBlock(juce::AudioBuffer<float>& buffer, juc
     // Advance when host is playing. Standalone free-runs (ignore transport gate);
     // host smoke tests attach a FakePlayHead on a non-Standalone processor.
     bool shouldAdvance = true;
-    if (wrapperType != wrapperType_Standalone)
-    {
-        if (auto* hostPlayHead = getPlayHead())
-        {
-            if (auto position = hostPlayHead->getPosition())
-                shouldAdvance = position->getIsPlaying();
-        }
-    }
+    if (hostPosition.hasValue())
+        shouldAdvance = hostPosition->getIsPlaying();
     clockAdvancing.store(shouldAdvance, std::memory_order_relaxed);
 
     // Panic when the host stops, the generator changes, or the session was torn down:
@@ -489,13 +527,7 @@ void GenerativeMIDIProcessor::processBlock(juce::AudioBuffer<float>& buffer, juc
                        || (lastGeneratorType >= 0 && generatorNow != lastGeneratorType);
     if (panic)
     {
-        eventScheduler.allNotesOff(midiMessages, 0, &midiActivityLog);
-        for (auto& voice : melodyVoices)
-            voice = {};
-        expressionHoldUntil = 0;
-        lastHeldCcNumber = -1;
-        lastHeldCcValue = -1;
-        lastHeldPitchBend = -1;
+        releaseAllVoices(midiMessages);
     }
     else if (lastPitchbendEnabled && !bendEnabledNow)
     {
@@ -507,14 +539,53 @@ void GenerativeMIDIProcessor::processBlock(juce::AudioBuffer<float>& buffer, juc
         // the host bar. With a host ppq the grid starts at that song position; without one
         // (standalone free-run) it starts at the top.
         double startSixteenths = 0.0;
-        if (auto* hostPlayHead = getPlayHead())
-            if (auto position = hostPlayHead->getPosition())
-                if (auto ppq = position->getPpqPosition())
-                    startSixteenths = juce::jmax(0.0, *ppq * 4.0);
+        if (hostPosition.hasValue())
+            if (auto ppq = hostPosition->getPpqPosition())
+                startSixteenths = juce::jmax(0.0, *ppq * 4.0);
 
-        clockManager.restart(startSixteenths);
-        polyrhythmEngine.requestRestart();
-        lastSubdivisionStep = static_cast<int>(std::ceil(startSixteenths - 1.0e-6));
+        realignToHost(startSixteenths);
+    }
+
+    // Loop / jump detection. While the transport keeps playing, the host ppq should advance by the
+    // previous block's duration at the host's tempo; anything further than a quarter of a 16th off
+    // means the host looped or relocated. A tempo change alone is not a jump: the advance may use
+    // the previous block's tempo, this block's, or anything between (a change inside the block).
+    // A host that repeats the same ppq while playing is not updating its position, not jumping.
+    // A play-edge block is never a jump (wasAdvancing is false); a panic block can be one.
+    juce::Optional<double> hostPpq;
+    if (shouldAdvance && hostPosition.hasValue())
+        hostPpq = hostPosition->getPpqPosition();
+
+    // The ppq timeline runs at the host's tempo, even when Sync to Host is off.
+    const double hostTimelineTempo = hostBpm.hasValue() && *hostBpm > 0.0 ? *hostBpm : effectiveTempo;
+    const double jumpSampleRate = clockManager.getSampleRate();
+    if (shouldAdvance && wasAdvancing && hostPpq.hasValue() && haveLastHostPpq && jumpSampleRate > 0.0
+        && ! juce::exactlyEqual(*hostPpq, lastHostPpq))
+    {
+        constexpr double tolerance = 1.0 / 16.0;
+        const double blockSeconds = static_cast<double>(lastBlockSamples) / jumpSampleRate;
+        const double advanceAtLastTempo = blockSeconds * (lastBlockTempo / 60.0);
+        const double advanceAtThisTempo = blockSeconds * (hostTimelineTempo / 60.0);
+        const double lowest = lastHostPpq + juce::jmin(advanceAtLastTempo, advanceAtThisTempo) - tolerance;
+        const double highest = lastHostPpq + juce::jmax(advanceAtLastTempo, advanceAtThisTempo) + tolerance;
+        if (*hostPpq < lowest || *hostPpq > highest)
+        {
+            if (!panic)
+                releaseAllVoices(midiMessages);
+            realignToHost(juce::jmax(0.0, *hostPpq * 4.0));
+        }
+    }
+
+    if (hostPpq.hasValue())
+    {
+        lastHostPpq = *hostPpq;
+        lastBlockTempo = hostTimelineTempo;
+        lastBlockSamples = buffer.getNumSamples();
+        haveLastHostPpq = true;
+    }
+    else
+    {
+        haveLastHostPpq = false;
     }
     wasAdvancing = shouldAdvance;
     lastGeneratorType = generatorNow;

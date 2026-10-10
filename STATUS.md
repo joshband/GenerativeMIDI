@@ -18,7 +18,7 @@
 | Voice and parts | Poly or Mono on the melody channel. Parts 1–4 add root, chord, and arp on the next MIDI channels |
 | AUv3 / iOS | CMake iOS target (`GenerativeMIDI_AUv3`) + docs; **not App Store–ready**; macOS desktop build has `JucePlugin_Build_AUv3=0` |
 | Touch / a11y | iOS larger hit targets + scrollable editor; key controls have AX `setTitle` names; MIDI Log toggle/Clear titled |
-| Tests | Catch2 + `ctest` (**83** cases, incl. host playhead smoke + polyrhythm layer persistence + Markov trained lookup + Markov/L-System/Cellular controls + MIDI activity FIFO) in CMake / CI |
+| Tests | Catch2 + `ctest` (**96** cases, incl. host playhead smoke + polyrhythm layer persistence + Markov trained lookup + Markov/L-System/Cellular controls + MIDI activity FIFO) in CMake / CI |
 | CI matrix | Pull requests run the macOS and Linux builds plus the ASan/UBSan job (docs-only and draft PRs skip builds). iOS AUv3, Windows VST3 and TSan also run on a PR that touches build/CI files or carries the `full-ci` label, and always on push to master, weekly, and manual dispatch. pluginval (VST3) on macOS, Windows, Linux. See docs/developer/CI.md |
 | Canonical build | **CMake** (`GenerativeMIDI.jucer` deprecated) |
 
@@ -74,10 +74,10 @@ Physical-device AUv3 touch QA; App Store packaging.
 |--------|-------|
 | Product version | v1.0.0 |
 | UI generators | 10 (Polyrhythm experimental) |
-| Parameters | 57 registered (56 automatable; legacy `stochasticType` is non-automatable) |
+| Parameters | 58 registered (57 automatable; legacy `stochasticType` is non-automatable) |
 | Factory presets | 11 (including Polyrhythm Layers) |
 | Build | `.github/workflows/ci.yml` (4 jobs) |
-| Tests | `ctest` (Catch2; **83** cases — 56 in `EngineTests.cpp`, 27 in `HostSmokeTests.cpp`) |
+| Tests | `ctest` (Catch2; **96** cases — 56 in `EngineTests.cpp`, 40 in `HostSmokeTests.cpp`) |
 | Docs | README, FEATURES, GETTING_STARTED, BUILD, Pages, [SMOKE_CHECKLIST](docs/user/SMOKE_CHECKLIST.md) |
 
 ## Notes

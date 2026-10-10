@@ -159,6 +159,7 @@ private:
     juce::TextButton musicalButton;
     juce::TextButton shapeButton;
     juce::TextButton pianoButton;
+    juce::TextButton syncButton;
     juce::Label currentPresetLabel;
     juce::Label statusChipLabel;
     std::unique_ptr<PresetBrowser> presetBrowser;
@@ -270,6 +271,7 @@ private:
     std::unique_ptr<juce::AudioProcessorValueTreeState::ComboBoxAttachment> partCountAttachment;
     std::unique_ptr<juce::AudioProcessorValueTreeState::ComboBoxAttachment> voiceModeAttachment;
     std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment> pianoAttachment;
+    std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment> syncAttachment;
 
     // Section chrome bounds (filled in resized, painted in paint)
     juce::Rectangle<float> patternPanelBounds;

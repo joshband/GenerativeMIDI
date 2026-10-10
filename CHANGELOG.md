@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Sync to Host, on by default: in a DAW the generator follows the host tempo (clamped to the Tempo range), and falls back to the Tempo knob when the host reports none or Sync is off. The standalone app keeps its own tempo. A loop wrap or a jump in the host timeline while playing releases every note and re-aligns the grid to the new position.
 - Voice is Poly or Mono. Poly lets melody notes overlap. Mono ends the previous melody note before the next one. A pitch stack shows those notes, and the same marks travel through the scrolling picture: the newest melody circle in Mono, and every melody pitch still inside the gate in Poly. Parts 2 adds the root square, 3 the three chord triangles, 4 the arp diamond. Polyrhythm uses the same stack beside the rows, with M, R, C, and A. Schema stays 1.2.
 - Modulation is a fixed four-slot bar under the faceplate. Slots 1 and 2 stay LFO to velocity and LFO to density. Slots 3 and 4 can send the LFO or a sample-and-hold to gate, pitch, CC, or pitch bend. Schema stays 1.2.
 - The standalone app has a Piano switch, off by default. On, it plays the generated MIDI through a small built-in piano. AU and VST3 stay MIDI effects and do not open an audio output.

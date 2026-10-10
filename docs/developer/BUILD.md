@@ -103,13 +103,11 @@ cp -r "build/GenerativeMIDI_artefacts/Release/VST3/Generative MIDI.vst3" \
 
 ### Using COPY_PLUGIN_AFTER_BUILD
 
-The plugin is configured to automatically copy after building if you set:
+`COPY_PLUGIN_AFTER_BUILD` is a CMake option and defaults to `ON`: each build copies the plugins into your system plugin folders. Turn it off for builds that should leave installed plugins alone:
 
-```cmake
-COPY_PLUGIN_AFTER_BUILD TRUE
+```bash
+cmake -S . -B build -DCOPY_PLUGIN_AFTER_BUILD=OFF
 ```
-
-This will automatically install to your system folders.
 
 ## Development Build (Debug)
 

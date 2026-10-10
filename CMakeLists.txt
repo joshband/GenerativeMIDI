@@ -46,6 +46,10 @@ else()
     set(GENERATIVE_MIDI_FORMATS VST3 Standalone)
 endif()
 
+# Copy built plugins into the user plugin folders (e.g. ~/Library/Audio/Plug-Ins/VST3).
+# Pass -DCOPY_PLUGIN_AFTER_BUILD=OFF for a build that leaves those folders alone.
+option(COPY_PLUGIN_AFTER_BUILD "Copy built plugins into the user plugin folders" ON)
+
 # Create the plugin target
 juce_add_plugin(GenerativeMIDI
     COMPANY_NAME "OpenSource"
@@ -54,7 +58,7 @@ juce_add_plugin(GenerativeMIDI
     NEEDS_MIDI_OUTPUT TRUE
     IS_MIDI_EFFECT TRUE
     EDITOR_WANTS_KEYBOARD_FOCUS FALSE
-    COPY_PLUGIN_AFTER_BUILD TRUE
+    COPY_PLUGIN_AFTER_BUILD ${COPY_PLUGIN_AFTER_BUILD}
     PLUGIN_MANUFACTURER_CODE Osrc
     PLUGIN_CODE Gmid
     FORMATS ${GENERATIVE_MIDI_FORMATS}

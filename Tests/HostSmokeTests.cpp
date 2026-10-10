@@ -32,13 +32,15 @@ class FakePlayHead final : public juce::AudioPlayHead
 public:
     bool playing = false;
     double bpm = 120.0;
+    bool reportBpm = true; // false: the host gives no tempo at all
     juce::Optional<double> ppq; // host position in quarter notes, when the test sets one
 
     juce::Optional<PositionInfo> getPosition() const override
     {
         PositionInfo info;
         info.setIsPlaying(playing);
-        info.setBpm(bpm);
+        if (reportBpm)
+            info.setBpm(bpm);
         if (ppq.hasValue())
             info.setPpqPosition(*ppq);
         return info;
@@ -1423,6 +1425,505 @@ TEST_CASE("Polyrhythm layers can be edited while processBlock runs", "[host][pol
     REQUIRE(badMessages.load() == 0);
     REQUIRE(noteOns.load() > 0);
     REQUIRE(engine.getNumLayers() >= 1);
+
+    processor.releaseResources();
+    processor.setPlayHead(nullptr);
+}
+
+//==============================================================================
+// Host tempo follow and loop / jump resync
+
+namespace
+{
+constexpr double kSyncSampleRate = 48000.0;
+
+/** Dense, deterministic single-channel stream; the Tempo parameter is left at 120. */
+void configureSyncTest(GenerativeMIDIProcessor& processor)
+{
+    configureDenseEuclidean(processor);
+    setFloatParam(processor, "tempo", 120.0f);
+    setFloatParam(processor, "swingAmount", 0.0f);
+    setFloatParam(processor, "timingHumanize", 0.0f);
+    setFloatParam(processor, "gateLength", 0.5f);
+    setChoiceParam(processor, "voiceMode", 0);
+    setChoiceParam(processor, "partCount", 0);
+    setIntParam(processor, "midiChannel", 1);
+}
+
+std::vector<int64_t> noteOnSpacings(const std::vector<TimedNote>& notes)
+{
+    std::vector<int64_t> spacings;
+    int64_t previous = -1;
+    for (const auto& n : notes)
+    {
+        if (!n.on)
+            continue;
+        if (previous >= 0)
+            spacings.push_back(n.sample - previous);
+        previous = n.sample;
+    }
+    return spacings;
+}
+
+void requireSpacing(const std::vector<TimedNote>& notes, double expectedSamples)
+{
+    const auto spacings = noteOnSpacings(notes);
+    REQUIRE(spacings.size() >= 15);
+    for (const auto spacing : spacings)
+    {
+        INFO("spacing " << spacing << " expected " << expectedSamples);
+        REQUIRE(std::abs(static_cast<double>(spacing) - expectedSamples) <= 1.0);
+    }
+}
+
+/** Drives a processor block by block with a host whose ppq advances correctly. */
+struct SyncDriver
+{
+    GenerativeMIDIProcessor& proc;
+    FakePlayHead& host;
+    int blockSize;
+    int64_t block = 0;
+    std::vector<RawEvent> events;
+
+    SyncDriver(GenerativeMIDIProcessor& p, FakePlayHead& h, int blockSamples)
+        : proc(p), host(h), blockSize(blockSamples) {}
+
+    /** Processes one block at the host's current ppq and bpm, then advances ppq by that block's duration. */
+    std::vector<RawEvent> step()
+    {
+        std::vector<RawEvent> blockEvents;
+        juce::AudioBuffer<float> buffer(0, blockSize);
+        juce::MidiBuffer midi;
+        proc.processBlock(buffer, midi);
+        for (const auto metadata : midi)
+            blockEvents.push_back({ block * blockSize + metadata.samplePosition, metadata.getMessage() });
+        events.insert(events.end(), blockEvents.begin(), blockEvents.end());
+        ++block;
+        if (host.ppq.hasValue())
+            host.ppq = *host.ppq + (static_cast<double>(blockSize) / kSyncSampleRate) * (host.bpm / 60.0);
+        return blockEvents;
+    }
+
+    void run(int numBlocks)
+    {
+        for (int i = 0; i < numBlocks; ++i)
+            step();
+    }
+
+    int64_t blockStart() const { return block * blockSize; }
+};
+
+int countAllNotesOffAnyChannel(const std::vector<RawEvent>& events)
+{
+    int count = 0;
+    for (const auto& e : events)
+        if (e.message.isAllNotesOff())
+            ++count;
+    return count;
+}
+} // namespace
+
+TEST_CASE("Host BPM overrides the Tempo parameter when Sync to Host is on",
+          "[host][timing][sync]")
+{
+    juce::ScopedJuceInitialiser_GUI juceInit;
+    constexpr int blockSize = 1024;
+
+    GenerativeMIDIProcessor processor;
+    FakePlayHead playHead;
+    playHead.playing = true;
+    playHead.bpm = 90.0; // Tempo parameter stays at 120
+    processor.setPlayHead(&playHead);
+    processor.prepareToPlay(kSyncSampleRate, blockSize);
+    configureSyncTest(processor);
+
+    std::vector<TimedNote> notes;
+    collectNotes(processor, 120, blockSize, notes);
+    requireSpacing(notes, 8000.0); // 60 / 90 / 4 * 48000
+
+    processor.releaseResources();
+    processor.setPlayHead(nullptr);
+}
+
+TEST_CASE("Host BPM is clamped to the Tempo parameter's range", "[host][timing][sync]")
+{
+    juce::ScopedJuceInitialiser_GUI juceInit;
+    constexpr int blockSize = 1024;
+
+    GenerativeMIDIProcessor processor;
+    FakePlayHead playHead;
+    playHead.playing = true;
+    playHead.bpm = 1000.0; // above the 400 BPM maximum
+    processor.setPlayHead(&playHead);
+    processor.prepareToPlay(kSyncSampleRate, blockSize);
+    configureSyncTest(processor);
+
+    std::vector<TimedNote> notes;
+    collectNotes(processor, 60, blockSize, notes);
+    requireSpacing(notes, 1800.0); // 60 / 400 / 4 * 48000
+
+    processor.releaseResources();
+    processor.setPlayHead(nullptr);
+}
+
+TEST_CASE("A host without a BPM falls back to the Tempo parameter", "[host][timing][sync]")
+{
+    juce::ScopedJuceInitialiser_GUI juceInit;
+    constexpr int blockSize = 1024;
+
+    GenerativeMIDIProcessor processor;
+    FakePlayHead playHead;
+    playHead.playing = true;
+    playHead.bpm = 90.0;
+    playHead.reportBpm = false;
+    processor.setPlayHead(&playHead);
+    processor.prepareToPlay(kSyncSampleRate, blockSize);
+    configureSyncTest(processor);
+
+    std::vector<TimedNote> notes;
+    collectNotes(processor, 120, blockSize, notes);
+    requireSpacing(notes, 6000.0); // Tempo parameter 120
+
+    processor.releaseResources();
+    processor.setPlayHead(nullptr);
+}
+
+TEST_CASE("Sync to Host off keeps the Tempo parameter", "[host][timing][sync]")
+{
+    juce::ScopedJuceInitialiser_GUI juceInit;
+    constexpr int blockSize = 1024;
+
+    GenerativeMIDIProcessor processor;
+    FakePlayHead playHead;
+    playHead.playing = true;
+    playHead.bpm = 90.0;
+    processor.setPlayHead(&playHead);
+    processor.prepareToPlay(kSyncSampleRate, blockSize);
+    configureSyncTest(processor);
+    REQUIRE(processor.getValueTreeState().getParameter("syncToHost") != nullptr);
+    setBoolParam(processor, "syncToHost", false);
+
+    std::vector<TimedNote> notes;
+    collectNotes(processor, 120, blockSize, notes);
+    requireSpacing(notes, 6000.0);
+
+    processor.releaseResources();
+    processor.setPlayHead(nullptr);
+}
+
+TEST_CASE("Sync to Host defaults to on", "[host][sync]")
+{
+    juce::ScopedJuceInitialiser_GUI juceInit;
+    GenerativeMIDIProcessor processor;
+    auto* param = processor.getValueTreeState().getParameter("syncToHost");
+    REQUIRE(param != nullptr);
+    REQUIRE(param->getValue() == Catch::Approx(1.0f));
+    REQUIRE(param->getName(64) == "Sync to Host");
+}
+
+TEST_CASE("Standalone ignores host BPM and transport", "[host][timing][sync]")
+{
+    juce::ScopedJuceInitialiser_GUI juceInit;
+    juce::AudioProcessor::setTypeOfNextNewPlugin(juce::AudioProcessor::wrapperType_Standalone);
+    GenerativeMIDIProcessor processor;
+    juce::AudioProcessor::setTypeOfNextNewPlugin(juce::AudioProcessor::wrapperType_Undefined);
+    REQUIRE(processor.wrapperType == juce::AudioProcessor::wrapperType_Standalone);
+
+    constexpr int blockSize = 1024;
+    FakePlayHead playHead;
+    playHead.playing = false; // would gate a plugin; standalone free-runs
+    playHead.bpm = 90.0;
+    processor.setPlayHead(&playHead);
+    processor.prepareToPlay(kSyncSampleRate, blockSize);
+    configureSyncTest(processor);
+
+    std::vector<TimedNote> notes;
+    collectNotes(processor, 120, blockSize, notes);
+    requireSpacing(notes, 6000.0); // internal tempo, not the host's 90
+
+    processor.releaseResources();
+    processor.setPlayHead(nullptr);
+}
+
+TEST_CASE("A loop wrap re-aligns the grid and releases every note", "[host][timing][sync]")
+{
+    juce::ScopedJuceInitialiser_GUI juceInit;
+    constexpr int blockSize = 1024;
+
+    GenerativeMIDIProcessor processor;
+    FakePlayHead playHead;
+    playHead.playing = true;
+    playHead.bpm = 120.0;
+    playHead.ppq = 0.0;
+    processor.setPlayHead(&playHead);
+    processor.prepareToPlay(kSyncSampleRate, blockSize);
+    configureSoundingNotes(processor);
+    setFloatParam(processor, "tempo", 120.0f);
+
+    SyncDriver driver { processor, playHead, blockSize };
+    driver.run(188); // ~2 bars (8 quarters = 187.5 blocks), loop end
+    REQUIRE(countAllNotesOffAnyChannel(driver.events) == 0); // steady playback never resyncs
+    const auto before = notesOf(driver.events);
+    REQUIRE(analyseStream(before).stillSounding > 0);
+    REQUIRE(processor.getCurrentStep() > 16);
+
+    const int64_t jumpBlockStart = driver.blockStart();
+    playHead.ppq = 0.0; // the host loops back to the start
+    const auto jumpEvents = driver.step();
+
+    REQUIRE(countAllNotesOff(jumpEvents, 1) == 1);
+    auto released = before;
+    bool firstOnAtZero = false;
+    bool sawOn = false;
+    for (const auto& n : notesOf(jumpEvents))
+    {
+        if (!n.on)
+            released.push_back(n);
+        else if (!sawOn)
+        {
+            sawOn = true;
+            firstOnAtZero = (n.sample == jumpBlockStart);
+        }
+    }
+    const auto report = analyseStream(released);
+    REQUIRE(report.orphanOffs == 0);
+    REQUIRE(report.stillSounding == 0);   // no stuck notes
+    REQUIRE(firstOnAtZero);                // the grid restarted at the loop start
+    REQUIRE(processor.getCurrentStep() == 1);
+
+    processor.releaseResources();
+    processor.setPlayHead(nullptr);
+}
+
+TEST_CASE("A forward position jump re-aligns to the new song position", "[host][timing][sync]")
+{
+    juce::ScopedJuceInitialiser_GUI juceInit;
+    constexpr int blockSize = 1024;
+
+    GenerativeMIDIProcessor processor;
+    FakePlayHead playHead;
+    playHead.playing = true;
+    playHead.bpm = 120.0;
+    playHead.ppq = 0.0;
+    processor.setPlayHead(&playHead);
+    processor.prepareToPlay(kSyncSampleRate, blockSize);
+    configureSoundingNotes(processor);
+    setFloatParam(processor, "tempo", 120.0f);
+
+    SyncDriver driver { processor, playHead, blockSize };
+    driver.run(100);
+    REQUIRE(countAllNotesOffAnyChannel(driver.events) == 0);
+    const auto before = notesOf(driver.events);
+    REQUIRE(analyseStream(before).stillSounding > 0);
+
+    const int64_t jumpBlockStart = driver.blockStart();
+    // About 5.5 quarters ahead, landing 0.1 of a 16th (= 600 samples) before a grid line so the
+    // first note-on falls inside the jump block at a fractional offset.
+    const double target = (std::floor((*playHead.ppq + 5.5) * 4.0) + 0.9) / 4.0;
+    REQUIRE(target - *playHead.ppq > 5.25);
+    playHead.ppq = target;
+    const auto jumpEvents = driver.step();
+
+    const double sixteenths = target * 4.0;
+    const double expectedOffset = (std::ceil(sixteenths - 1.0e-6) - sixteenths) * 6000.0;
+    REQUIRE(countAllNotesOff(jumpEvents, 1) == 1);
+
+    auto released = before;
+    bool sawOn = false;
+    double firstOnOffset = -1.0;
+    for (const auto& n : notesOf(jumpEvents))
+    {
+        if (!n.on)
+            released.push_back(n);
+        else if (!sawOn)
+        {
+            sawOn = true;
+            firstOnOffset = static_cast<double>(n.sample - jumpBlockStart);
+        }
+    }
+    const auto report = analyseStream(released);
+    REQUIRE(report.orphanOffs == 0);
+    REQUIRE(report.stillSounding == 0);
+    REQUIRE(sawOn);
+    REQUIRE(std::abs(firstOnOffset - expectedOffset) <= 1.0);
+    REQUIRE(processor.getCurrentStep() >= static_cast<int>(std::ceil(sixteenths - 1.0e-6)));
+
+    processor.releaseResources();
+    processor.setPlayHead(nullptr);
+}
+
+TEST_CASE("A tempo ramp with continuous ppq does not resync", "[host][timing][sync]")
+{
+    juce::ScopedJuceInitialiser_GUI juceInit;
+    constexpr int blockSize = 1024;
+
+    GenerativeMIDIProcessor processor;
+    FakePlayHead playHead;
+    playHead.playing = true;
+    playHead.bpm = 100.0;
+    playHead.ppq = 0.0;
+    processor.setPlayHead(&playHead);
+    processor.prepareToPlay(kSyncSampleRate, blockSize);
+    configureSoundingNotes(processor);
+    setFloatParam(processor, "tempo", 120.0f);
+
+    SyncDriver driver { processor, playHead, blockSize };
+    for (int i = 0; i < 160; ++i)
+    {
+        playHead.bpm = 100.0 + 0.5 * i; // 100 -> ~180 BPM, new tempo every block
+        driver.step();
+    }
+
+    REQUIRE(countAllNotesOffAnyChannel(driver.events) == 0);
+    const auto report = analyseStream(notesOf(driver.events));
+    REQUIRE(report.orphanOffs == 0);
+    REQUIRE(report.onWhileSounding == 0);
+
+    // The grid kept following the host: one note-on per elapsed 16th, none lost or repeated.
+    const double elapsedSixteenths = *playHead.ppq * 4.0;
+    INFO("ons " << report.ons << " elapsed sixteenths " << elapsedSixteenths);
+    REQUIRE(std::abs(static_cast<double>(report.ons) - elapsedSixteenths) <= 2.0);
+
+    processor.releaseResources();
+    processor.setPlayHead(nullptr);
+}
+
+TEST_CASE("Sync to Host off does not mistake a different host tempo for a jump", "[host][timing][sync]")
+{
+    juce::ScopedJuceInitialiser_GUI juceInit;
+    constexpr int blockSize = 4096; // long blocks make any tempo-prediction error obvious
+
+    GenerativeMIDIProcessor processor;
+    FakePlayHead playHead;
+    playHead.playing = true;
+    playHead.bpm = 60.0; // host runs at 60, the plugin at its own 120
+    playHead.ppq = 0.0;
+    processor.setPlayHead(&playHead);
+    processor.prepareToPlay(kSyncSampleRate, blockSize);
+    configureSoundingNotes(processor);
+    setFloatParam(processor, "tempo", 120.0f);
+    setBoolParam(processor, "syncToHost", false);
+
+    SyncDriver driver { processor, playHead, blockSize };
+    driver.run(60);
+    REQUIRE(countAllNotesOffAnyChannel(driver.events) == 0);
+
+    processor.releaseResources();
+    processor.setPlayHead(nullptr);
+}
+
+TEST_CASE("A generator change in the same block as a loop wrap still re-aligns the grid",
+          "[host][timing][sync]")
+{
+    juce::ScopedJuceInitialiser_GUI juceInit;
+    constexpr int blockSize = 1024;
+
+    GenerativeMIDIProcessor processor;
+    FakePlayHead playHead;
+    playHead.playing = true;
+    playHead.bpm = 120.0;
+    playHead.ppq = 0.0;
+    processor.setPlayHead(&playHead);
+    processor.prepareToPlay(kSyncSampleRate, blockSize);
+    configureSoundingNotes(processor);
+    setFloatParam(processor, "tempo", 120.0f);
+
+    SyncDriver driver { processor, playHead, blockSize };
+    driver.run(188);
+    REQUIRE(processor.getCurrentStep() > 16);
+
+    // The generator change panics this block; the loop wrap must still restart the grid.
+    auto* generator = processor.getValueTreeState().getParameter("generatorType");
+    REQUIRE(generator != nullptr);
+    const float generatorBefore = generator->getValue();
+    generator->setValueNotifyingHost(generatorBefore < 0.5f ? 1.0f : 0.0f);
+    playHead.ppq = 0.0;
+    const auto jumpEvents = driver.step();
+
+    REQUIRE(countAllNotesOff(jumpEvents, 1) == 1); // one release, not one per cause
+    REQUIRE(processor.getCurrentStep() <= 1);      // re-aligned to the loop start
+
+    processor.releaseResources();
+    processor.setPlayHead(nullptr);
+}
+
+TEST_CASE("A tempo step inside a long block is not mistaken for a jump", "[host][timing][sync]")
+{
+    juce::ScopedJuceInitialiser_GUI juceInit;
+    constexpr int blockSize = 4096;
+
+    GenerativeMIDIProcessor processor;
+    FakePlayHead playHead;
+    playHead.playing = true;
+    playHead.bpm = 120.0;
+    playHead.ppq = 0.0;
+    processor.setPlayHead(&playHead);
+    processor.prepareToPlay(kSyncSampleRate, blockSize);
+    configureSoundingNotes(processor);
+
+    juce::MidiBuffer midi;
+    juce::AudioBuffer<float> buffer(0, blockSize);
+    int allNotesOff = 0;
+    const double blockQuarters120 = (blockSize / kSyncSampleRate) * 2.0; // quarters per block at 120
+    for (int i = 0; i < 40; ++i)
+    {
+        midi.clear();
+        processor.processBlock(buffer, midi);
+        for (const auto metadata : midi)
+            if (metadata.getMessage().isAllNotesOff())
+                ++allNotesOff;
+
+        if (i == 20)
+        {
+            // The host doubled its tempo halfway through block 20: that block covered
+            // 1.5x the quarters a 120 BPM block does, and block 21 reports 240 BPM.
+            playHead.ppq = *playHead.ppq + 1.5 * blockQuarters120;
+            playHead.bpm = 240.0;
+        }
+        else
+        {
+            playHead.ppq = *playHead.ppq + (blockSize / kSyncSampleRate) * (playHead.bpm / 60.0);
+        }
+    }
+    REQUIRE(allNotesOff == 0);
+
+    processor.releaseResources();
+    processor.setPlayHead(nullptr);
+}
+
+TEST_CASE("A host that stops updating ppq while playing does not resync every block",
+          "[host][timing][sync]")
+{
+    juce::ScopedJuceInitialiser_GUI juceInit;
+    constexpr int blockSize = 4096; // a block covers more than the jump tolerance
+
+    GenerativeMIDIProcessor processor;
+    FakePlayHead playHead;
+    playHead.playing = true;
+    playHead.bpm = 120.0;
+    playHead.ppq = 4.0; // frozen: the host keeps reporting the same position
+    processor.setPlayHead(&playHead);
+    processor.prepareToPlay(kSyncSampleRate, blockSize);
+    configureSoundingNotes(processor);
+
+    juce::MidiBuffer midi;
+    juce::AudioBuffer<float> buffer(0, blockSize);
+    int allNotesOff = 0;
+    int noteOns = 0;
+    for (int i = 0; i < 50; ++i)
+    {
+        midi.clear();
+        processor.processBlock(buffer, midi);
+        for (const auto metadata : midi)
+        {
+            if (metadata.getMessage().isAllNotesOff())
+                ++allNotesOff;
+            if (metadata.getMessage().isNoteOn())
+                ++noteOns;
+        }
+    }
+    REQUIRE(allNotesOff == 0);
+    REQUIRE(noteOns > 0); // the plugin keeps playing on its own clock
 
     processor.releaseResources();
     processor.setPlayHead(nullptr);
