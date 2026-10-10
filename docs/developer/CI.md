@@ -55,7 +55,11 @@ CodeQL (codeql.yml) first runs `CodeQL scope`, which builds the analysis matrix.
 
 ### Docs-only skip
 
-Docs-only PRs (`docs/**`, `*.md`, `LICENSE`) skip the build jobs. The skip is a job-level `if`, so skipped jobs report as skipped and still satisfy required status checks (a `paths-ignore` filter would leave required checks pending forever). Anything under `.github/` counts as code.
+Docs-only PRs (`docs/**`, `*.md`, `LICENSE`, `.github/dependabot.yml`) skip the build jobs. The skip is a job-level `if`, so skipped jobs report as skipped and still satisfy required status checks (a `paths-ignore` filter would leave required checks pending forever). Anything else under `.github/` counts as code (and as a build-file change that runs the full matrix).
+
+### Compiler warnings in the logs
+
+Each build step tees its output to `build.log`, and a `Summarize compiler warnings` step (`.github/scripts/summarize-warnings.sh`) turns that into a table on the job summary page plus inline annotations for the first 50 unique warnings. Warnings from JUCE, the `art` submodule and fetched dependencies are excluded, duplicates (the same header compiled into several targets) are collapsed, and the step never fails the job. The iOS build runs `xcodebuild -quiet`, which prints only warnings and errors instead of every compiler command line.
 
 ### Required checks
 

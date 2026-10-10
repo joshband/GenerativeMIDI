@@ -68,10 +68,11 @@ jobs:
         fi
         while IFS= read -r f; do
           case "$f" in
-            docs/*|*.md|LICENSE) ;;
+            docs/*|*.md|LICENSE|.github/dependabot.yml) ;;
             *) code=true; echo "code change: $f" ;;
           esac
           case "$f" in
+            .github/dependabot.yml) ;;
             CMakeLists.txt|*/CMakeLists.txt|cmake/*|*.cmake|.github/*|.gitmodules)
               platform=true; echo "platform change: $f" ;;
           esac
@@ -114,12 +115,19 @@ jobs:
     - name: Build for iOS
       run: |
         cd build_ios
-        xcodebuild -scheme GenerativeMIDI_AUv3 \
+        set -o pipefail
+        # -quiet prints only warnings and errors, not every compiler command line.
+        xcodebuild -quiet -scheme GenerativeMIDI_AUv3 \
           -configuration Release \
           -destination 'generic/platform=iOS' \
           CODE_SIGN_IDENTITY="" \
           CODE_SIGNING_REQUIRED=NO \
-          build
+          build 2>&1 | tee "${GITHUB_WORKSPACE}/build.log"
+
+    - name: Summarize compiler warnings
+      if: always()
+      shell: bash
+      run: bash .github/scripts/summarize-warnings.sh build.log "iOS"
 
     - name: Upload Artifacts
       if: github.event_name != 'pull_request'
@@ -169,18 +177,26 @@ jobs:
 
     - name: Build Plugins
       run: |
+        set -o pipefail
         mkdir -p build
         cd build
         cmake .. -G Ninja -DCMAKE_BUILD_TYPE=Release \
           -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
-        if [ "${GITHUB_EVENT_NAME}" = "pull_request" ]; then
-          # PRs build only what the checks below consume: the VST3 (pluginval) and the
-          # Catch2 executables (ctest). AU, AUv3 and Standalone are built on master.
-          cmake --build . --config Release --target GenerativeMIDI_VST3 GenerativeMIDITests GenerativeMIDIHostSmokeTests
-        else
-          cmake --build . --config Release
-        fi
+        {
+          if [ "${GITHUB_EVENT_NAME}" = "pull_request" ]; then
+            # PRs build only what the checks below consume: the VST3 (pluginval) and the
+            # Catch2 executables (ctest). AU, AUv3 and Standalone are built on master.
+            cmake --build . --config Release --target GenerativeMIDI_VST3 GenerativeMIDITests GenerativeMIDIHostSmokeTests
+          else
+            cmake --build . --config Release
+          fi
+        } 2>&1 | tee "${GITHUB_WORKSPACE}/build.log"
         ccache --show-stats
+
+    - name: Summarize compiler warnings
+      if: always()
+      shell: bash
+      run: bash .github/scripts/summarize-warnings.sh build.log "macOS"
 
     - name: Save ccache objects
       if: github.event_name != 'pull_request'
@@ -280,7 +296,13 @@ jobs:
       run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
 
     - name: Build Plugins
-      run: cmake --build build --config Release
+      shell: bash
+      run: cmake --build build --config Release 2>&1 | tee build.log
+
+    - name: Summarize compiler warnings
+      if: always()
+      shell: bash
+      run: bash .github/scripts/summarize-warnings.sh build.log "Windows"
 
     - name: Run unit tests
       run: |
@@ -383,8 +405,14 @@ jobs:
 
     - name: Build Plugins
       run: |
-        cmake --build build --config Release -j"$(nproc)"
+        set -o pipefail
+        cmake --build build --config Release -j"$(nproc)" 2>&1 | tee build.log
         ccache --show-stats
+
+    - name: Summarize compiler warnings
+      if: always()
+      shell: bash
+      run: bash .github/scripts/summarize-warnings.sh build.log "Linux"
 
     - name: Save ccache objects
       if: github.event_name != 'pull_request'
@@ -496,8 +524,14 @@ jobs:
     # Only the two Catch2 executables: no VST3/Standalone wrappers are needed.
     - name: Build tests
       run: |
-        cmake --build build --target GenerativeMIDITests GenerativeMIDIHostSmokeTests -j"$(nproc)"
+        set -o pipefail
+        cmake --build build --target GenerativeMIDITests GenerativeMIDIHostSmokeTests -j"$(nproc)" 2>&1 | tee build.log
         ccache --show-stats
+
+    - name: Summarize compiler warnings
+      if: always()
+      shell: bash
+      run: bash .github/scripts/summarize-warnings.sh build.log "Linux ASan+UBSan"
 
     - name: Save ccache objects
       if: github.event_name != 'pull_request'
@@ -580,8 +614,14 @@ jobs:
     # Only the two Catch2 executables: no VST3/Standalone wrappers are needed.
     - name: Build tests
       run: |
-        cmake --build build --target GenerativeMIDITests GenerativeMIDIHostSmokeTests -j"$(nproc)"
+        set -o pipefail
+        cmake --build build --target GenerativeMIDITests GenerativeMIDIHostSmokeTests -j"$(nproc)" 2>&1 | tee build.log
         ccache --show-stats
+
+    - name: Summarize compiler warnings
+      if: always()
+      shell: bash
+      run: bash .github/scripts/summarize-warnings.sh build.log "Linux TSan"
 
     - name: Save ccache objects
       if: github.event_name != 'pull_request'
