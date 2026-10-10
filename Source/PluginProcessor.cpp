@@ -548,20 +548,30 @@ void GenerativeMIDIProcessor::processBlock(juce::AudioBuffer<float>& buffer, juc
 
     // Loop / jump detection. While the transport keeps playing, the host ppq should advance by the
     // previous block's duration at the host's tempo; anything further than a quarter of a 16th off
-    // means the host looped or relocated. A tempo change alone is not a jump (the prediction uses
-    // the previous block's tempo). Blocks that were already a play edge or a panic are not re-handled.
+    // means the host looped or relocated. A tempo change alone is not a jump: the advance may use
+    // the previous block's tempo, this block's, or anything between (a change inside the block).
+    // A host that repeats the same ppq while playing is not updating its position, not jumping.
+    // A play-edge block is never a jump (wasAdvancing is false); a panic block can be one.
     juce::Optional<double> hostPpq;
     if (shouldAdvance && hostPosition.hasValue())
         hostPpq = hostPosition->getPpqPosition();
 
+    // The ppq timeline runs at the host's tempo, even when Sync to Host is off.
+    const double hostTimelineTempo = hostBpm.hasValue() && *hostBpm > 0.0 ? *hostBpm : effectiveTempo;
     const double jumpSampleRate = clockManager.getSampleRate();
-    if (shouldAdvance && wasAdvancing && !panic && hostPpq.hasValue() && haveLastHostPpq && jumpSampleRate > 0.0)
+    if (shouldAdvance && wasAdvancing && hostPpq.hasValue() && haveLastHostPpq && jumpSampleRate > 0.0
+        && ! juce::exactlyEqual(*hostPpq, lastHostPpq))
     {
-        const double predicted = lastHostPpq
-                                 + (static_cast<double>(lastBlockSamples) / jumpSampleRate) * (lastBlockTempo / 60.0);
-        if (std::abs(*hostPpq - predicted) > 1.0 / 16.0)
+        constexpr double tolerance = 1.0 / 16.0;
+        const double blockSeconds = static_cast<double>(lastBlockSamples) / jumpSampleRate;
+        const double advanceAtLastTempo = blockSeconds * (lastBlockTempo / 60.0);
+        const double advanceAtThisTempo = blockSeconds * (hostTimelineTempo / 60.0);
+        const double lowest = lastHostPpq + juce::jmin(advanceAtLastTempo, advanceAtThisTempo) - tolerance;
+        const double highest = lastHostPpq + juce::jmax(advanceAtLastTempo, advanceAtThisTempo) + tolerance;
+        if (*hostPpq < lowest || *hostPpq > highest)
         {
-            releaseAllVoices(midiMessages);
+            if (!panic)
+                releaseAllVoices(midiMessages);
             realignToHost(juce::jmax(0.0, *hostPpq * 4.0));
         }
     }
@@ -569,8 +579,7 @@ void GenerativeMIDIProcessor::processBlock(juce::AudioBuffer<float>& buffer, juc
     if (hostPpq.hasValue())
     {
         lastHostPpq = *hostPpq;
-        // The ppq timeline runs at the host's tempo, even when Sync to Host is off.
-        lastBlockTempo = hostBpm.hasValue() && *hostBpm > 0.0 ? *hostBpm : effectiveTempo;
+        lastBlockTempo = hostTimelineTempo;
         lastBlockSamples = buffer.getNumSamples();
         haveLastHostPpq = true;
     }

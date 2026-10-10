@@ -1811,3 +1811,120 @@ TEST_CASE("Sync to Host off does not mistake a different host tempo for a jump",
     processor.releaseResources();
     processor.setPlayHead(nullptr);
 }
+
+TEST_CASE("A generator change in the same block as a loop wrap still re-aligns the grid",
+          "[host][timing][sync]")
+{
+    juce::ScopedJuceInitialiser_GUI juceInit;
+    constexpr int blockSize = 1024;
+
+    GenerativeMIDIProcessor processor;
+    FakePlayHead playHead;
+    playHead.playing = true;
+    playHead.bpm = 120.0;
+    playHead.ppq = 0.0;
+    processor.setPlayHead(&playHead);
+    processor.prepareToPlay(kSyncSampleRate, blockSize);
+    configureSoundingNotes(processor);
+    setFloatParam(processor, "tempo", 120.0f);
+
+    SyncDriver driver { processor, playHead, blockSize };
+    driver.run(188);
+    REQUIRE(processor.getCurrentStep() > 16);
+
+    // The generator change panics this block; the loop wrap must still restart the grid.
+    auto* generator = processor.getValueTreeState().getParameter("generatorType");
+    REQUIRE(generator != nullptr);
+    const float generatorBefore = generator->getValue();
+    generator->setValueNotifyingHost(generatorBefore < 0.5f ? 1.0f : 0.0f);
+    playHead.ppq = 0.0;
+    const auto jumpEvents = driver.step();
+
+    REQUIRE(countAllNotesOff(jumpEvents, 1) == 1); // one release, not one per cause
+    REQUIRE(processor.getCurrentStep() <= 1);      // re-aligned to the loop start
+
+    processor.releaseResources();
+    processor.setPlayHead(nullptr);
+}
+
+TEST_CASE("A tempo step inside a long block is not mistaken for a jump", "[host][timing][sync]")
+{
+    juce::ScopedJuceInitialiser_GUI juceInit;
+    constexpr int blockSize = 4096;
+
+    GenerativeMIDIProcessor processor;
+    FakePlayHead playHead;
+    playHead.playing = true;
+    playHead.bpm = 120.0;
+    playHead.ppq = 0.0;
+    processor.setPlayHead(&playHead);
+    processor.prepareToPlay(kSyncSampleRate, blockSize);
+    configureSoundingNotes(processor);
+
+    juce::MidiBuffer midi;
+    juce::AudioBuffer<float> buffer(0, blockSize);
+    int allNotesOff = 0;
+    const double blockQuarters120 = (blockSize / kSyncSampleRate) * 2.0; // quarters per block at 120
+    for (int i = 0; i < 40; ++i)
+    {
+        midi.clear();
+        processor.processBlock(buffer, midi);
+        for (const auto metadata : midi)
+            if (metadata.getMessage().isAllNotesOff())
+                ++allNotesOff;
+
+        if (i == 20)
+        {
+            // The host doubled its tempo halfway through block 20: that block covered
+            // 1.5x the quarters a 120 BPM block does, and block 21 reports 240 BPM.
+            playHead.ppq = *playHead.ppq + 1.5 * blockQuarters120;
+            playHead.bpm = 240.0;
+        }
+        else
+        {
+            playHead.ppq = *playHead.ppq + (blockSize / kSyncSampleRate) * (playHead.bpm / 60.0);
+        }
+    }
+    REQUIRE(allNotesOff == 0);
+
+    processor.releaseResources();
+    processor.setPlayHead(nullptr);
+}
+
+TEST_CASE("A host that stops updating ppq while playing does not resync every block",
+          "[host][timing][sync]")
+{
+    juce::ScopedJuceInitialiser_GUI juceInit;
+    constexpr int blockSize = 4096; // a block covers more than the jump tolerance
+
+    GenerativeMIDIProcessor processor;
+    FakePlayHead playHead;
+    playHead.playing = true;
+    playHead.bpm = 120.0;
+    playHead.ppq = 4.0; // frozen: the host keeps reporting the same position
+    processor.setPlayHead(&playHead);
+    processor.prepareToPlay(kSyncSampleRate, blockSize);
+    configureSoundingNotes(processor);
+
+    juce::MidiBuffer midi;
+    juce::AudioBuffer<float> buffer(0, blockSize);
+    int allNotesOff = 0;
+    int noteOns = 0;
+    for (int i = 0; i < 50; ++i)
+    {
+        midi.clear();
+        processor.processBlock(buffer, midi);
+        for (const auto metadata : midi)
+        {
+            if (metadata.getMessage().isAllNotesOff())
+                ++allNotesOff;
+            if (metadata.getMessage().isNoteOn())
+                ++noteOns;
+        }
+    }
+    REQUIRE(allNotesOff == 0);
+    REQUIRE(noteOns > 0); // the plugin keeps playing on its own clock
+
+    processor.releaseResources();
+    processor.setPlayHead(nullptr);
+}
