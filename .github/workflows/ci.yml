@@ -7,7 +7,7 @@ on:
     branches: [ main, master ]
   workflow_dispatch:
   schedule:
-    # Weekly full matrix: iOS, Windows and Linux do not run on pull requests.
+    # Weekly full matrix: iOS and Windows do not run on pull requests.
     - cron: "17 6 * * 1"
 
 permissions:
@@ -22,6 +22,10 @@ concurrency:
 env:
   JUCE_VERSION: "8.0.15"
   PLUGINVAL_VERSION: "v1.0.4"
+  # sha256 of the pluginval v1.0.4 release assets (computed from the real downloads).
+  PLUGINVAL_SHA256_MACOS: "3c4c533bda0c5059eea3ddaea752d757ee2025041f0f47e6bcb0e87f6082b29f"
+  PLUGINVAL_SHA256_LINUX: "c01c49d8063965c4c2dea8324468336768f5c9139e0b1caebde14c2400b55352"
+  PLUGINVAL_SHA256_WINDOWS: "c08e61ce3b96db41636f8ec7e76f4c7e2c13ebdac7fa1b5a1f52b4f32ec715ab"
 
 jobs:
   # Docs-only PRs (docs/**, *.md, LICENSE) skip the builds. Skipped jobs satisfy
@@ -109,6 +113,7 @@ jobs:
           build_ios/**/*.appex
           build_ios/**/*.app
         if-no-files-found: error
+        retention-days: 14
 
   build-macos:
     name: Build macOS Plugins
@@ -165,6 +170,7 @@ jobs:
     - name: Download pluginval
       run: |
         [ -f pluginval.zip ] || curl -fsSL "https://github.com/Tracktion/pluginval/releases/download/${PLUGINVAL_VERSION}/pluginval_macOS.zip" -o pluginval.zip
+        echo "${PLUGINVAL_SHA256_MACOS}  pluginval.zip" | shasum -a 256 -c -
         unzip -q pluginval.zip
         chmod +x pluginval.app/Contents/MacOS/pluginval
 
@@ -189,6 +195,7 @@ jobs:
         name: pluginval-logs-macOS
         path: pluginval-logs/
         if-no-files-found: warn
+        retention-days: 14
 
     - name: Upload Artifacts
       uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -196,6 +203,7 @@ jobs:
         name: GenerativeMIDI-macOS
         path: build/GenerativeMIDI_artefacts/Release/**/*
         if-no-files-found: error
+        retention-days: 14
 
   build-windows:
     name: Build Windows VST3
@@ -233,6 +241,7 @@ jobs:
       shell: bash
       run: |
         curl -fsSL "https://github.com/Tracktion/pluginval/releases/download/${PLUGINVAL_VERSION}/pluginval_Windows.zip" -o pluginval.zip
+        echo "${PLUGINVAL_SHA256_WINDOWS}  pluginval.zip" | sha256sum -c -
         unzip -q pluginval.zip
 
     - name: Validate VST3 with pluginval
@@ -255,6 +264,7 @@ jobs:
         name: pluginval-logs-Windows
         path: pluginval-logs/
         if-no-files-found: warn
+        retention-days: 14
 
     - name: Upload Artifacts
       uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -264,11 +274,12 @@ jobs:
           build/GenerativeMIDI_artefacts/Release/VST3/**
           build/GenerativeMIDI_artefacts/Release/Standalone/**
         if-no-files-found: error
+        retention-days: 14
 
   build-linux:
     name: Build Linux VST3
     needs: changes
-    if: needs.changes.outputs.code == 'true' && github.event_name != 'pull_request'
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-22.04
     timeout-minutes: 45
 
@@ -296,19 +307,30 @@ jobs:
           libxrandr-dev \
           libxrender-dev \
           libglu1-mesa-dev \
-          libjack-jackd2-dev
+          libjack-jackd2-dev \
+          ccache
 
     - name: Install JUCE
       run: |
         git clone --depth 1 --branch "${JUCE_VERSION}" https://github.com/juce-framework/JUCE.git JUCE
 
+    - name: Cache ccache objects
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: ~/.cache/ccache
+        key: ccache-linux-${{ github.sha }}
+        restore-keys: ccache-linux-
+
     - name: Configure
       run: |
         mkdir -p build
-        cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+        cmake -S . -B build -DCMAKE_BUILD_TYPE=Release \
+          -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
 
     - name: Build Plugins
-      run: cmake --build build --config Release -j"$(nproc)"
+      run: |
+        cmake --build build --config Release -j"$(nproc)"
+        ccache --show-stats
 
     - name: Run unit tests
       run: |
@@ -318,6 +340,7 @@ jobs:
     - name: Download pluginval
       run: |
         curl -fsSL "https://github.com/Tracktion/pluginval/releases/download/${PLUGINVAL_VERSION}/pluginval_Linux.zip" -o pluginval.zip
+        echo "${PLUGINVAL_SHA256_LINUX}  pluginval.zip" | sha256sum -c -
         unzip -q pluginval.zip
         chmod +x pluginval
 
@@ -341,6 +364,7 @@ jobs:
         name: pluginval-logs-Linux
         path: pluginval-logs/
         if-no-files-found: warn
+        retention-days: 14
 
     - name: Upload Artifacts
       uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -350,3 +374,152 @@ jobs:
           build/GenerativeMIDI_artefacts/Release/VST3/**
           build/GenerativeMIDI_artefacts/Release/Standalone/**
         if-no-files-found: error
+        retention-days: 14
+
+  sanitize-asan:
+    name: Sanitizers (ASan+UBSan)
+    needs: changes
+    # Runs on pull requests too (see docs/developer/CI.md for measured runtime).
+    if: needs.changes.outputs.code == 'true'
+    runs-on: ubuntu-22.04
+    timeout-minutes: 45
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        submodules: recursive
+
+    - name: Install build dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y --no-install-recommends \
+          build-essential \
+          cmake \
+          pkg-config \
+          libasound2-dev \
+          libfreetype6-dev \
+          libfontconfig1-dev \
+          libx11-dev \
+          libxcomposite-dev \
+          libxcursor-dev \
+          libxext-dev \
+          libxinerama-dev \
+          libxrandr-dev \
+          libxrender-dev \
+          libglu1-mesa-dev \
+          libjack-jackd2-dev \
+          ccache
+
+    - name: Install JUCE
+      run: |
+        git clone --depth 1 --branch "${JUCE_VERSION}" https://github.com/juce-framework/JUCE.git JUCE
+
+    - name: Cache ccache objects
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: ~/.cache/ccache
+        key: ccache-linux-asan-${{ github.sha }}
+        restore-keys: ccache-linux-asan-
+
+    - name: Configure
+      run: |
+        cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug \
+          -DGENMIDI_SANITIZE=address,undefined \
+          -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+
+    # Only the two Catch2 executables: no VST3/Standalone wrappers are needed.
+    - name: Build tests
+      run: |
+        cmake --build build --target GenerativeMIDITests GenerativeMIDIHostSmokeTests -j"$(nproc)"
+        ccache --show-stats
+
+    - name: Run unit tests
+      env:
+        ASAN_OPTIONS: detect_leaks=1:strict_string_checks=1:detect_stack_use_after_return=1
+        UBSAN_OPTIONS: print_stacktrace=1:halt_on_error=1
+      run: |
+        cd build
+        ctest --output-on-failure
+
+  sanitize-tsan:
+    name: Sanitizers (TSan)
+    needs: changes
+    # Not on pull requests: push to main/master, weekly, and manual dispatch.
+    if: needs.changes.outputs.code == 'true' && github.event_name != 'pull_request'
+    runs-on: ubuntu-22.04
+    timeout-minutes: 45
+    # NON-REQUIRED / advisory: continue-on-error keeps a TSan finding from failing the run.
+    # TSan legitimately flags the Polyrhythm data race until fix/polyrhythm-thread-safety
+    # lands. Once it does, remove the next line (and consider requiring this check).
+    continue-on-error: true
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        submodules: recursive
+
+    - name: Install build dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y --no-install-recommends \
+          build-essential \
+          cmake \
+          pkg-config \
+          libasound2-dev \
+          libfreetype6-dev \
+          libfontconfig1-dev \
+          libx11-dev \
+          libxcomposite-dev \
+          libxcursor-dev \
+          libxext-dev \
+          libxinerama-dev \
+          libxrandr-dev \
+          libxrender-dev \
+          libglu1-mesa-dev \
+          libjack-jackd2-dev \
+          ccache
+
+    - name: Install JUCE
+      run: |
+        git clone --depth 1 --branch "${JUCE_VERSION}" https://github.com/juce-framework/JUCE.git JUCE
+
+    - name: Cache ccache objects
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: ~/.cache/ccache
+        key: ccache-linux-tsan-${{ github.sha }}
+        restore-keys: ccache-linux-tsan-
+
+    # Newer runner kernels use high ASLR entropy that breaks TSan's shadow memory mapping.
+    - name: Lower ASLR entropy for TSan
+      run: sudo sysctl vm.mmap_rnd_bits=28
+
+    - name: Configure
+      run: |
+        cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug \
+          -DGENMIDI_SANITIZE=thread \
+          -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+
+    # Only the two Catch2 executables: no VST3/Standalone wrappers are needed.
+    - name: Build tests
+      run: |
+        cmake --build build --target GenerativeMIDITests GenerativeMIDIHostSmokeTests -j"$(nproc)"
+        ccache --show-stats
+
+    - name: Run unit tests
+      env:
+        # libtsan (GCC 11) reports false positives entirely inside JUCE (Timer::TimerThread /
+        # WaitableEvent): "double lock of a mutex" (report_mutex_bugs=0) and lock-order-inversion
+        # (filtered below; TSan suppressions did not match these). exitcode=0 so those reports
+        # do not fail the test; the step instead fails on any other TSan report, e.g. data races.
+        TSAN_OPTIONS: report_mutex_bugs=0:exitcode=0
+      run: |
+        cd build
+        set -o pipefail
+        ctest --output-on-failure -V 2>&1 | tee ctest-tsan.log
+        if grep "WARNING: ThreadSanitizer" ctest-tsan.log | grep -v "lock-order-inversion"; then
+          echo "::error::ThreadSanitizer reported a data race or other issue (see log above)"
+          exit 1
+        fi
