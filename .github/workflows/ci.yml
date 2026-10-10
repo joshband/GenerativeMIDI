@@ -137,8 +137,8 @@ jobs:
       run: |
         git clone --depth 1 --branch "${JUCE_VERSION}" https://github.com/juce-framework/JUCE.git JUCE
 
-    - name: Install ccache
-      run: brew install ccache
+    - name: Install ccache and Ninja
+      run: brew install ccache ninja
 
     # Pull requests only restore (falling back to the newest master-scope cache); saving is done
     # by the "Save ccache objects" step below on non-PR events. See docs/developer/CI.md.
@@ -153,7 +153,7 @@ jobs:
       run: |
         mkdir -p build
         cd build
-        cmake .. -DCMAKE_BUILD_TYPE=Release \
+        cmake .. -G Ninja -DCMAKE_BUILD_TYPE=Release \
           -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
         if [ "${GITHUB_EVENT_NAME}" = "pull_request" ]; then
           # PRs build only what the checks below consume: the VST3 (pluginval) and the
@@ -332,7 +332,8 @@ jobs:
           libxrender-dev \
           libglu1-mesa-dev \
           libjack-jackd2-dev \
-          ccache
+          ccache \
+          ninja-build
 
     - name: Install JUCE
       run: |
@@ -350,7 +351,7 @@ jobs:
     - name: Configure
       run: |
         mkdir -p build
-        cmake -S . -B build -DCMAKE_BUILD_TYPE=Release \
+        cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release \
           -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
 
     - name: Build Plugins
@@ -443,7 +444,8 @@ jobs:
           libxrender-dev \
           libglu1-mesa-dev \
           libjack-jackd2-dev \
-          ccache
+          ccache \
+          ninja-build
 
     - name: Install JUCE
       run: |
@@ -460,7 +462,7 @@ jobs:
 
     - name: Configure
       run: |
-        cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug \
+        cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug \
           -DGENMIDI_SANITIZE=address,undefined \
           -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
 
@@ -522,7 +524,8 @@ jobs:
           libxrender-dev \
           libglu1-mesa-dev \
           libjack-jackd2-dev \
-          ccache
+          ccache \
+          ninja-build
 
     - name: Install JUCE
       run: |
@@ -543,7 +546,7 @@ jobs:
 
     - name: Configure
       run: |
-        cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug \
+        cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug \
           -DGENMIDI_SANITIZE=thread \
           -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
 
