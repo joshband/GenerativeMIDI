@@ -598,13 +598,13 @@ Result: Loose, sloppy, experimental jazz
 
 ✅ **Audio Unit (AU)**
 - Native macOS format
-- Tested with Logic Pro, GarageBand, Ableton Live
+- Tested: Standalone (macOS) and REAPER. Logic Pro, GarageBand and Ableton Live: expected to work, not yet tested
 - Full parameter automation
 - State saving/recall
 
 ✅ **VST3**
 - Cross-DAW compatibility
-- Tested with Ableton Live, Bitwig, Reaper
+- Tested: REAPER. Ableton Live and Bitwig: expected to work, not yet tested
 - Full automation and preset support
 
 ✅ **Standalone Application**
