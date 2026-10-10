@@ -22,7 +22,7 @@
 class MarkovChain
 {
 public:
-    MarkovChain(int order = 1);
+    MarkovChain(int requestedOrder = 1);
 
     void addTransition(const std::vector<int>& state, int nextValue, float probability = 1.0f);
     void learn(const std::vector<int>& sequence);

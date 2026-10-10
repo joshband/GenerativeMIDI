@@ -304,8 +304,6 @@ private:
 
     uint32_t lastNoteActivityCount = 0;
     float activityPulse = 0.0f;
-    int activitySampleFrames = 0;
-    bool activitySampleHit = false;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(GenerativeMIDIEditor)
 };

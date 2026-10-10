@@ -13,14 +13,14 @@
 // ============================================================================
 // Markov Chain Implementation
 // ============================================================================
-MarkovChain::MarkovChain(int order) : order(juce::jlimit(1, 5, order))
+MarkovChain::MarkovChain(int requestedOrder) : order(juce::jlimit(1, 5, requestedOrder))
 {
     lookupScratch.reserve(static_cast<size_t>(this->order));
 }
 
 void MarkovChain::addTransition(const std::vector<int>& state, int nextValue, float probability)
 {
-    if (state.size() != order)
+    if (state.size() != static_cast<size_t>(order))
         return;
 
     transitionTable[state][nextValue] = probability;
@@ -28,16 +28,19 @@ void MarkovChain::addTransition(const std::vector<int>& state, int nextValue, fl
 
 void MarkovChain::learn(const std::vector<int>& sequence)
 {
-    if (sequence.size() <= order)
+    const auto stateLength = static_cast<size_t>(order);
+    if (sequence.size() <= stateLength)
         return;
 
     // Count transitions
     std::map<std::vector<int>, std::map<int, int>> counts;
 
-    for (size_t i = 0; i <= sequence.size() - order - 1; ++i)
+    for (size_t i = 0; i <= sequence.size() - stateLength - 1; ++i)
     {
-        std::vector<int> state(sequence.begin() + i, sequence.begin() + i + order);
-        int next = sequence[i + order];
+        const auto offset = static_cast<std::ptrdiff_t>(i);
+        std::vector<int> state(sequence.begin() + offset,
+                               sequence.begin() + offset + static_cast<std::ptrdiff_t>(stateLength));
+        int next = sequence[i + stateLength];
         counts[state][next]++;
     }
 
@@ -192,7 +195,7 @@ namespace LSystemCatalog
         int ruleCount;
     };
 
-    const Grammar& grammarAt(int index)
+    static const Grammar& grammarAt(int index)
     {
         static const Grammar grammars[] = {
             { "Fib", "A", { { 'A', "AB" }, { 'B', "A" } }, 2 },
@@ -294,7 +297,8 @@ std::vector<int> LSystemEngine::toMidiNotes(const juce::String& sequence, int ba
 // ============================================================================
 // Cellular Automaton Implementation
 // ============================================================================
-CellularAutomaton::CellularAutomaton(int size) : cells(size, false), scratch(size, false)
+CellularAutomaton::CellularAutomaton(int size)
+    : cells(static_cast<size_t>(size), false), scratch(static_cast<size_t>(size), false)
 {
     // A single center cell. All-off is a fixed point of rule 30, so a blank
     // row never moves.
@@ -505,13 +509,13 @@ std::vector<int> ProbabilisticGenerator::generateMelody(int length, int minNote,
 
 std::vector<bool> ProbabilisticGenerator::generateRhythm(int length, float density, float grouping)
 {
-    std::vector<bool> rhythm(length, false);
+    std::vector<bool> rhythm(static_cast<size_t>(length), false);
 
     for (int i = 0; i < length; ++i)
     {
         // Apply grouping bias
         float bias = std::fmod(i, grouping) < 1.0f ? 1.5f : 1.0f;
-        rhythm[i] = random.nextFloat() < (density * bias);
+        rhythm[static_cast<size_t>(i)] = random.nextFloat() < (density * bias);
     }
 
     return rhythm;
