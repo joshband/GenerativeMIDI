@@ -89,7 +89,7 @@ Not claimed: App Store readiness, MPE, continuous CC/pitch-bend modulation, a fu
 | Audience | Start here |
 |----------|------------|
 | Users | [Getting Started](docs/user/GETTING_STARTED.md) · [Features](docs/user/FEATURES.md) · [Presets](docs/user/PRESET_GUIDE.md) |
-| Developers | [Build](docs/developer/BUILD.md) · [CI](docs/developer/CI.md) · [Roadmap](docs/developer/ENHANCEMENTS.md) |
+| Developers | [Architecture](docs/developer/ARCHITECTURE.md) · [Contributing](CONTRIBUTING.md) · [Build](docs/developer/BUILD.md) · [CI](docs/developer/CI.md) · [Roadmap](docs/developer/ENHANCEMENTS.md) |
 | QA | [QA findings](docs/qa/QA_FINDINGS_v0.8.0.md) · [REAPER MCP setup](docs/qa/reaper/MCP_SETUP.md) |
 | Design | [UI spec](docs/design/SYNAPTIK_UI_SPEC.md) · [Palette](docs/design/COLOR_PALETTE.md) · [Components](docs/design/COMPONENT_SPECS.md) |
 
