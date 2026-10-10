@@ -74,3 +74,4 @@ docs/qa/logs/pluginval.app/
 docs/qa/logs/pluginval.zip
 docs/qa/logs/*.vst3/
 build_ios_sim/
+# full-ci label test
