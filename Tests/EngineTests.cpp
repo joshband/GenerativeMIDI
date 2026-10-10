@@ -9,6 +9,8 @@
 
 #include "Core/AlgorithmicEngine.h"
 #include "Core/EuclideanEngine.h"
+#include "Core/GateLengthController.h"
+#include "Core/RatchetEngine.h"
 #include "Core/PolyrhythmEngine.h"
 #include "Core/ScaleQuantizer.h"
 #include "Core/HarmonyParts.h"
@@ -1494,4 +1496,75 @@ TEST_CASE("PolyrhythmEngine restarts every layer on requestRestart", "[polyrhyth
 
     // A request is consumed once: it does not keep resetting the layer.
     REQUIRE(engine.getCurrentStep(0) == 1);
+}
+
+TEST_CASE("Seeded engines are reproducible", "[seed]")
+{
+    SECTION("ProbabilisticGenerator rhythm")
+    {
+        ProbabilisticGenerator a, b, c;
+        a.setSeed(42);
+        b.setSeed(42);
+        c.setSeed(43);
+        const auto ra = a.generateRhythm(64, 0.5f, 2.0f);
+        REQUIRE(ra == b.generateRhythm(64, 0.5f, 2.0f));
+        REQUIRE(ra != c.generateRhythm(64, 0.5f, 2.0f));
+    }
+
+    SECTION("CellularAutomaton random state")
+    {
+        CellularAutomaton a(32), b(32);
+        a.setSeed(7);
+        b.setSeed(7);
+        a.randomizeState(0.5f);
+        b.randomizeState(0.5f);
+        REQUIRE(a.getState() == b.getState());
+    }
+
+    SECTION("EuclideanEngine randomize")
+    {
+        EuclideanEngine a, b;
+        a.setSeed(5);
+        b.setSeed(5);
+        for (int i = 0; i < 8; ++i)
+        {
+            a.randomize(0.5f);
+            b.randomize(0.5f);
+            REQUIRE(a.getRotation() == b.getRotation());
+            REQUIRE(a.getPulses() == b.getPulses());
+        }
+    }
+
+    SECTION("PolyrhythmEngine randomizeLayer")
+    {
+        PolyrhythmEngine a, b;
+        a.setSeed(11);
+        b.setSeed(11);
+        a.randomizeLayer(0, 0.5f);
+        b.randomizeLayer(0, 0.5f);
+        REQUIRE(a.toValueTree().toXmlString() == b.toValueTree().toXmlString());
+    }
+
+    SECTION("GateLengthController variation and RatchetEngine probability")
+    {
+        GateLengthController ga, gb;
+        ga.setGateRandomization(1.0f);
+        gb.setGateRandomization(1.0f);
+        ga.setSeed(3);
+        gb.setSeed(3);
+
+        RatchetEngine ra, rb;
+        ra.setRatchetCount(3);
+        rb.setRatchetCount(3);
+        ra.setRatchetProbability(0.5f);
+        rb.setRatchetProbability(0.5f);
+        ra.setSeed(9);
+        rb.setSeed(9);
+
+        for (int i = 0; i < 32; ++i)
+        {
+            REQUIRE(ga.calculateGateLengthSamples(1000) == gb.calculateGateLengthSamples(1000));
+            REQUIRE(ra.shouldRatchet() == rb.shouldRatchet());
+        }
+    }
 }

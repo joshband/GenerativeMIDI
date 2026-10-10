@@ -81,6 +81,10 @@ public:
      */
     float getGateRandomization() const { return gateRandomization; }
 
+    /** Fix the RNG seed so identical inputs give identical output. Without a call the
+        engine keeps its time-based random seed. */
+    void setSeed(unsigned seed) { generator.seed(seed); }
+
 private:
     float gateLength = 0.8f;           // 80% default gate length
     bool legatoMode = false;            // Legato off by default

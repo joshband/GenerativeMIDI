@@ -119,6 +119,10 @@ public:
     void reset();
     void resetLayer(int layerIndex);
 
+    /** Fix the RNG seed so identical inputs give identical output. Without a call the
+        engine keeps its time-based random seed. */
+    void setSeed(juce::int64 seed) { random.setSeed(seed); }
+
     /** Lock-free and safe from the audio thread: every layer restarts at its phase on the next
         processTick. Call it on the transport play edge so layers line up with the new grid. */
     void requestRestart() noexcept { restartRequested.store(true, std::memory_order_release); }

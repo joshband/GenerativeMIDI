@@ -78,6 +78,20 @@ public:
     PolyrhythmEngine& getPolyrhythmEngine() { return polyrhythmEngine; }
     AlgorithmicEngine& getAlgorithmicEngine() { return algorithmicEngine; }
     StochasticEngine& getStochasticEngine() { return stochasticEngine; }
+
+    /** Seed every random source (engines, swing, gate, ratchet) from one value so a run is
+        reproducible. Used by tests and offline rendering; normal use keeps random seeds. */
+    void setRandomSeed(juce::int64 seed)
+    {
+        const auto low = static_cast<unsigned>(seed & 0xffffffff);
+        euclideanEngine.setSeed(seed);
+        polyrhythmEngine.setSeed(seed + 1);
+        algorithmicEngine.setSeed(seed + 2);
+        stochasticEngine.setSeed(low + 3u);
+        swingEngine.resetSeed(low + 4u);
+        gateLengthController.setSeed(low + 5u);
+        ratchetEngine.setSeed(low + 6u);
+    }
     MIDIGenerator& getMIDIGenerator() { return midiGenerator; }
     ClockManager& getClockManager() { return clockManager; }
     EventScheduler& getEventScheduler() { return eventScheduler; }
