@@ -1578,18 +1578,19 @@ void GenerativeMIDIEditor::feedSoundingNotes(int generatorType, int partStep, in
             auto* layer = engine.getLayer(i);
             if (layer == nullptr || !layer->enabled || layer->length <= 0)
                 continue;
+            const int curStep = engine.getCurrentStep(i);
             if (!polyLayerFeedSeen[i])
             {
                 polyLayerFeedSeen[i] = true;
-                polyLayerFeedStep[i] = layer->currentStep;
+                polyLayerFeedStep[i] = curStep;
                 continue;
             }
-            if (layer->currentStep == polyLayerFeedStep[i])
+            if (curStep == polyLayerFeedStep[i])
                 continue;
 
             const int length = juce::jmax(1, layer->length);
-            const int played = (layer->currentStep - 1 + length) % length;
-            polyLayerFeedStep[i] = layer->currentStep;
+            const int played = (curStep - 1 + length) % length;
+            polyLayerFeedStep[i] = curStep;
             if (played >= static_cast<int>(layer->pattern.size())
                 || played >= static_cast<int>(layer->pitches.size())
                 || !layer->pattern[static_cast<size_t>(played)])
