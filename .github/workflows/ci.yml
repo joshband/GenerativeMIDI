@@ -5,7 +5,7 @@ on:
     branches: [ main, master ]
   # No base-branch filter: stacked PRs (base = another feature branch) also get CI.
   pull_request:
-    types: [opened, synchronize, reopened, labeled]
+    types: [opened, synchronize, reopened, labeled, ready_for_review]
   workflow_dispatch:
   schedule:
     # Weekly full matrix: iOS and Windows do not run on pull requests.
@@ -34,6 +34,8 @@ jobs:
   # Changes under .github/workflows always count as code.
   changes:
     name: Detect code changes
+    # Draft PRs run nothing (saves runner minutes while iterating); marking ready runs CI.
+    if: github.event_name != 'pull_request' || !github.event.pull_request.draft
     runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:

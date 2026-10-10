@@ -61,6 +61,10 @@ Docs-only PRs (`docs/**`, `*.md`, `LICENSE`, `.github/dependabot.yml`) skip the 
 
 Each build step tees its output to `build.log`, and a `Summarize compiler warnings` step (`.github/scripts/summarize-warnings.sh`) turns that into a table on the job summary page plus inline annotations for the first 50 unique warnings. Warnings from JUCE, the `art` submodule and fetched dependencies are excluded, duplicates (the same header compiled into several targets) are collapsed, and the step never fails the job. The iOS build runs `xcodebuild -quiet`, which prints only warnings and errors instead of every compiler command line.
 
+### Draft PRs
+
+Draft pull requests run no jobs (the `Detect code changes` and `CodeQL scope` jobs are skipped, which skips everything that depends on them). Open a PR as a draft while iterating and click "Ready for review" to start CI; the `ready_for_review` trigger runs the checks at that point. Skipped jobs still satisfy required checks, but GitHub will not merge a draft anyway.
+
 ### Required checks
 
 The branch ruleset "Protect master" currently requires **Build macOS Plugins**. Recommended additions (the owner approves and edits the ruleset; this repo's workflows do not change it):
