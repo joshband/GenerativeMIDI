@@ -122,16 +122,11 @@ Current behaviour (`Source/PluginProcessor.cpp:470-519`):
 - **Play edge restarts the grid.** On `shouldAdvance && !wasAdvancing` the grid starts at the host ppq (converted to sixteenths, `ppq * 4`) when the host provides one, otherwise at 0. `ClockManager::restart` sets the sample position and the offset to the next sixteenth (`Source/DSP/ClockManager.cpp:54-64`), the polyrhythm layers are told to restart, and `lastSubdivisionStep` is set to match (`:504-518`).
 - Tempo is always the `Tempo` parameter today (`:460-461`); the host BPM is not read.
 
-### Host tempo and position jumps (pending)
+### Host tempo and position jumps
 
-<!-- TODO(lead): verify against Track A code -->
-
-Status: being implemented in parallel; nothing in this subsection is in `bde6731`. The agreed behaviour:
-
-- A new boolean parameter **Sync to Host** (ID `syncToHost`, default on).
-- When on and the host provides a BPM, the host BPM drives the clock, clamped to the Tempo parameter's range; when the host provides none, the Tempo parameter is used. When off, the Tempo parameter is used.
-- Standalone ignores the host tempo.
-- While playing, a ppq discontinuity larger than a quarter of a sixteenth (versus the position predicted from the previous block) is treated as a loop wrap or jump: all notes are released and the grid is re-aligned to the new position.
+- **Sync to Host** (`syncToHost`, bool, default on, the last parameter in `createParameterLayout`). When it is on and the host reports a BPM, that BPM drives the clock, clamped to the Tempo parameter's range. When the host reports none, or Sync is off, the Tempo parameter is used. Standalone never reads the host playhead, so it keeps the internal tempo and free-runs.
+- The host position is read once per block (`hostPosition` in `processBlock`) and reused for the transport gate, the tempo and the jump check.
+- **Loop wraps and jumps.** While playing, each block predicts the host ppq from the previous block: `lastHostPpq + (lastBlockSamples / sampleRate) * (lastBlockTempo / 60)`. `lastBlockTempo` is the host's reported BPM when there is one, because the host's ppq advances at the host tempo even when Sync is off. If the reported ppq differs from the prediction by more than a quarter of a sixteenth (`1.0 / 16.0` quarter notes), the block is treated as a loop wrap or position jump: `releaseAllVoices` sends all-notes-off, and `realignToHost` restarts the grid at the new position (the same path as the play edge). A tempo change with a continuous ppq is not a jump. A block that is already a play edge or a panic skips the check.
 
 ## Testing
 

@@ -23,7 +23,7 @@ It is an open-source development project (**v1.0.0** per `CMakeLists.txt` and th
 |-----------------|---------|---------------|
 | Euclidean, Polyrhythm (experimental) | AU, VST3, Standalone on macOS | Scale quantization, swing, gate, ratchet |
 | Markov, L-System, Cellular, Probabilistic | VST3 + Standalone also build in CI on Windows and Linux | Note-on expression: aftertouch, pitch bend, CC (fixed amounts, not MPE) |
-| Brownian, Perlin, Drunk Walk, Lorenz | AUv3 (iPhone/iPad): builds in CI, **not store-ready** | 11 factory presets; 57 registered parameters (56 automatable) |
+| Brownian, Perlin, Drunk Walk, Lorenz | AUv3 (iPhone/iPad): builds in CI, **not store-ready** | 11 factory presets; 58 registered parameters (57 automatable) |
 
 Terms such as *Euclidean rhythm* or *ratchet* are explained in the site's [glossary](https://joshband.github.io/GenerativeMIDI/index.html#glossary).
 
@@ -67,7 +67,7 @@ Artifacts appear in `build/GenerativeMIDI_artefacts/Release/` under `AU/`, `VST3
 
 | Check | Proves | Does not prove |
 |-------|--------|----------------|
-| `ctest` (83 Catch2 cases: 56 in `Tests/EngineTests.cpp`, 27 in `Tests/HostSmokeTests.cpp`) | Engine logic, preset round-trips, and a headless host smoke test behave as written | Real-DAW behavior, UI behavior, audio quality |
+| `ctest` (93 Catch2 cases: 56 in `Tests/EngineTests.cpp`, 37 in `Tests/HostSmokeTests.cpp`) | Engine logic, preset round-trips, and a headless host smoke test behave as written | Real-DAW behavior, UI behavior, audio quality |
 | CI ([`ci.yml`](.github/workflows/ci.yml)): macOS, iOS, Windows, Linux builds; `ctest` on macOS, Windows, Linux; pluginval on the VST3 build | The code compiles on four platforms and the VST3 passes pluginval (strictness 5, GUI tests skipped) | AU validation (not run in CI), running on a real iOS device |
 | Manual [smoke checklist](docs/user/SMOKE_CHECKLIST.md) and [QA findings](docs/qa/QA_FINDINGS_v0.8.0.md) | A person exercised the Standalone app and REAPER transport on recorded dates | Every DAW, every host version |
 

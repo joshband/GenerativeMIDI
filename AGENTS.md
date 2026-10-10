@@ -15,7 +15,7 @@ cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCOPY_PLUGIN_AFTER_BUIL
 ```
 
 - JUCE must be at `./JUCE`. In a git worktree, symlink your JUCE checkout to `./JUCE` first (a worktree does not contain it).
-- `CMakeLists.txt` hard-codes `COPY_PLUGIN_AFTER_BUILD TRUE` (`CMakeLists.txt:57`); a build may copy plugins into the user's plugin folders. See [CONTRIBUTING.md](CONTRIBUTING.md).
+- `-DCOPY_PLUGIN_AFTER_BUILD=OFF` keeps the build from copying plugins into the user's plugin folders (the option defaults to ON). See [CONTRIBUTING.md](CONTRIBUTING.md).
 - Two test executables: `GenerativeMIDITests` (engines, fixed source list) and `GenerativeMIDIHostSmokeTests` (full processor with a fake playhead).
 - More: [docs/developer/BUILD.md](docs/developer/BUILD.md), [docs/developer/BUILDING-iOS.md](docs/developer/BUILDING-iOS.md).
 

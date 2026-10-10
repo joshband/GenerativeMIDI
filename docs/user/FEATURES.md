@@ -534,6 +534,7 @@ Result: Loose, sloppy, experimental jazz
 - **MIDI Channel**: Channel selector (1-16). Melody uses this channel
 - **Parts**: 1 is melody only. 2 adds the chord root, 3 adds the triad, 4 adds an arp of that triad. Each extra part uses the next MIDI channel, wrapping after 16. The pitch stack draws only those parts: melody circles, then a brass root square, three steel chord triangles, and a clay arp diamond. Height is the pitch. The same marks travel through the scrolling picture. The caption names only the parts that are on.
 - **Tempo**: Master BPM control (20-400)
+- **Sync to Host** (plugin only, on by default): follow the host tempo when the host reports one, clamped to 20-400; off, or with no host tempo, the Tempo knob is used. A host loop wrap or position jump releases all notes and re-aligns the grid
 
 #### 3. EUCLIDEAN CONTROLS (context-aware)
 - **Steps**: Pattern length (1-64)
@@ -586,7 +587,7 @@ Result: Loose, sloppy, experimental jazz
 - **Resizable**: 1200x500 to 2000x1000 pixels
 - **30Hz refresh**: Editor timer drives Euclidean playhead visualization
 - **Real-time feedback**: Immediate parameter response
-- **57 registered parameters (56 automatable)**: Full automation support; one legacy slot (`stochasticType`) is non-automatable and kept only for session load
+- **58 registered parameters (57 automatable)**: Full automation support; one legacy slot (`stochasticType`) is non-automatable and kept only for session load
 - **Touch / iPad**: AUv3 builds exist (iOS CMake target, deployment 15+); scrollable editor + larger hit targets — not App Store–ready / not a mobile-first redesign
 - **Editor sizes**: Desktop default 1280×760 (min 960×560); short host frames scroll vertically so Advanced stays reachable
 

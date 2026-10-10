@@ -16,7 +16,7 @@ cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCOPY_PLUGIN_AFTER_BUIL
   && (cd build && ctest --output-on-failure -C Release)
 ```
 
-About `COPY_PLUGIN_AFTER_BUILD`: `CMakeLists.txt:57` passes a literal `COPY_PLUGIN_AFTER_BUILD TRUE` to `juce_add_plugin`, which makes JUCE copy each built plugin into the user plugin folders (for VST3 on macOS, `~/Library/Audio/Plug-Ins/VST3`, per [BUILD.md](docs/developer/BUILD.md)). `CMakeLists.txt` does not read a `COPY_PLUGIN_AFTER_BUILD` cache variable, so `-DCOPY_PLUGIN_AFTER_BUILD=OFF` has no effect that is visible in the repo; check the build output if you need a build that does not touch your plugin folders.
+About `COPY_PLUGIN_AFTER_BUILD`: a CMake option that defaults to ON, which makes JUCE copy each built plugin into the user plugin folders (for VST3 on macOS, `~/Library/Audio/Plug-Ins/VST3`, per [BUILD.md](docs/developer/BUILD.md)). The command above passes `OFF`, so a development build leaves your installed plugins alone.
 
 ## Where tests go
 
