@@ -45,8 +45,10 @@ namespace NoteSchedulerHelpers
             const float ratchetVelocity = ratchetEngine.calculateRatchetVelocity(velocity, ratchetIdx);
             const int ratchetTimingOffset = timingOffset + ratchetOffsets[ratchetIdx];
 
-            scheduler.scheduleNoteOn(pitch, ratchetVelocity, midiChannel,
-                                     baseSample + ratchetTimingOffset);
+            // A dropped note-on gets no note-off either (it would only be an orphan).
+            if (!scheduler.scheduleNoteOn(pitch, ratchetVelocity, midiChannel,
+                                          baseSample + ratchetTimingOffset))
+                continue;
 
             // At least one sample: the off must never share a sample with (and so precede) its own on.
             const int noteDuration = juce::jmax(1, gateLengthController.calculateGateLengthSamples(samplesPerStep));

@@ -793,3 +793,290 @@ TEST_CASE("Generated repeated pitches never overlap, vanish or leave a stuck not
         }
     }
 }
+
+//==============================================================================
+// Realtime MIDI correctness: stuck notes
+
+namespace
+{
+struct RawEvent
+{
+    int64_t sample = 0;
+    juce::MidiMessage message;
+};
+
+std::vector<RawEvent> collectAll(GenerativeMIDIProcessor& proc, int numBlocks, int blockSize,
+                                 int64_t firstSample = 0)
+{
+    std::vector<RawEvent> out;
+    juce::AudioBuffer<float> buffer(0, blockSize);
+    for (int block = 0; block < numBlocks; ++block)
+    {
+        juce::MidiBuffer midi;
+        proc.processBlock(buffer, midi);
+        for (const auto metadata : midi)
+            out.push_back({ firstSample + static_cast<int64_t>(block) * blockSize + metadata.samplePosition,
+                            metadata.getMessage() });
+    }
+    return out;
+}
+
+std::vector<TimedNote> notesOf(const std::vector<RawEvent>& events)
+{
+    std::vector<TimedNote> out;
+    for (const auto& e : events)
+        if (e.message.isNoteOn() || e.message.isNoteOff())
+            out.push_back({ e.sample, e.message.getChannel(), e.message.getNoteNumber(), e.message.isNoteOn() });
+    return out;
+}
+
+int countAllNotesOff(const std::vector<RawEvent>& events, int channel)
+{
+    int count = 0;
+    for (const auto& e : events)
+        if (e.message.isAllNotesOff() && e.message.getChannel() == channel)
+            ++count;
+    return count;
+}
+
+int lastPitchWheel(const std::vector<RawEvent>& events, int channel)
+{
+    int value = -1;
+    for (const auto& e : events)
+        if (e.message.isPitchWheel() && e.message.getChannel() == channel)
+            value = e.message.getPitchWheelValue();
+    return value;
+}
+
+/** Long, overlapping notes with a non-centre pitch bend so there is plenty to clean up. */
+void configureSoundingNotes(GenerativeMIDIProcessor& processor)
+{
+    configureDenseEuclidean(processor);
+    setFloatParam(processor, "gateLength", 2.0f);
+    setFloatParam(processor, "swingAmount", 0.0f);
+    setFloatParam(processor, "timingHumanize", 0.0f);
+    setIntParam(processor, "pitchMin", 48);
+    setIntParam(processor, "pitchMax", 72);
+    setChoiceParam(processor, "scaleType", 0);
+    setChoiceParam(processor, "voiceMode", 0);
+    setChoiceParam(processor, "partCount", 0);
+    setIntParam(processor, "midiChannel", 1);
+    setBoolParam(processor, "pitchbendEnable", true);
+    setFloatParam(processor, "pitchbendRange", 12.0f);
+    setBoolParam(processor, "modLfoEnable", false);
+    setFloatParam(processor, "modLfoDepth", 0.0f);
+}
+} // namespace
+
+TEST_CASE("Note-offs survive a full event queue and drops are counted", "[scheduler][regression]")
+{
+    EventScheduler scheduler;
+    scheduler.prepare(64);
+    const int capacity = scheduler.getCapacity();
+    REQUIRE(capacity >= 64);
+
+    // One note sounds before the queue fills up.
+    scheduler.scheduleNoteOn(60, 0.8f, 1, 0);
+    {
+        juce::MidiBuffer midi;
+        scheduler.processEvents(0, midi, 512);
+        REQUIRE(midi.getNumEvents() == 1);
+    }
+
+    // Flood the queue with future expression events.
+    for (int i = 0; i < capacity + 50; ++i)
+        scheduler.scheduleCC(1, 0.5f, 1, 100000 + i);
+
+    REQUIRE(scheduler.getQueueSize() < capacity);          // room is kept back for note-offs
+    REQUIRE(scheduler.getDroppedEventCount() >= 50u);
+    REQUIRE(scheduler.getDroppedNoteOffCount() == 0u);
+
+    scheduler.scheduleNoteOff(60, 1, 600);
+    REQUIRE(scheduler.getDroppedNoteOffCount() == 0u);
+
+    juce::MidiBuffer midi;
+    scheduler.processEvents(512, midi, 512);
+    bool sawOff = false;
+    for (const auto metadata : midi)
+        sawOff = sawOff || metadata.getMessage().isNoteOff();
+    REQUIRE(sawOff);
+}
+
+TEST_CASE("A flood of notes keeps every accepted note balanced", "[scheduler][regression]")
+{
+    EventScheduler scheduler;
+    scheduler.prepare(64);
+
+    for (int i = 0; i < 2000; ++i)
+        scheduler.scheduleNote(i % 128, 0.8f, 1 + (i / 128) % 16, 10, 1000);
+
+    REQUIRE(scheduler.getDroppedEventCount() > 0u);
+    REQUIRE(scheduler.getDroppedNoteOffCount() == 0u);
+
+    const auto report = analyseStream(drainScheduler(scheduler, 4096, 512));
+    REQUIRE(report.ons > 0);
+    REQUIRE(report.orphanOffs == 0);
+    REQUIRE(report.stillSounding == 0);
+}
+
+TEST_CASE("allNotesOff releases sounding notes, sends CC123 and centres pitch bend",
+          "[scheduler][regression]")
+{
+    EventScheduler scheduler;
+    scheduler.prepare(256);
+    scheduler.scheduleNoteOn(60, 0.8f, 3, 0);
+    scheduler.scheduleNoteOn(64, 0.8f, 3, 0);
+    scheduler.schedulePitchBend(0.5f, 3, 0);
+    scheduler.scheduleNoteOn(67, 0.8f, 3, 5000); // still queued: must be discarded
+    {
+        juce::MidiBuffer midi;
+        scheduler.processEvents(0, midi, 512);
+    }
+
+    juce::MidiBuffer out;
+    scheduler.allNotesOff(out, 7);
+
+    int offs = 0;
+    int allOff = 0;
+    int centre = 0;
+    for (const auto metadata : out)
+    {
+        const auto m = metadata.getMessage();
+        REQUIRE(metadata.samplePosition == 7);
+        offs += m.isNoteOff() ? 1 : 0;
+        allOff += m.isAllNotesOff() ? 1 : 0;
+        centre += (m.isPitchWheel() && m.getPitchWheelValue() == 8192) ? 1 : 0;
+    }
+    REQUIRE(offs == 2);
+    REQUIRE(allOff == 1);
+    REQUIRE(centre == 1);
+    REQUIRE(scheduler.getQueueSize() == 0);
+    REQUIRE_FALSE(scheduler.hasSoundingNotes());
+
+    juce::MidiBuffer again;
+    scheduler.allNotesOff(again, 0);
+    REQUIRE(again.getNumEvents() == 0); // nothing left to clean up
+}
+
+TEST_CASE("Transport stop releases every sounding note and re-centres pitch bend",
+          "[host][scheduler][regression]")
+{
+    juce::ScopedJuceInitialiser_GUI juceInit;
+    constexpr int blockSize = 512;
+
+    GenerativeMIDIProcessor processor;
+    FakePlayHead playHead;
+    playHead.playing = true;
+    playHead.bpm = 240.0;
+    processor.setPlayHead(&playHead);
+    processor.prepareToPlay(48000.0, blockSize);
+    configureSoundingNotes(processor);
+
+    auto running = collectAll(processor, 40, blockSize);
+    REQUIRE(analyseStream(notesOf(running)).stillSounding > 0);
+    REQUIRE(lastPitchWheel(running, 1) != 8192);
+
+    playHead.playing = false;
+    const auto stopped = collectAll(processor, 1, blockSize, 40 * blockSize);
+    running.insert(running.end(), stopped.begin(), stopped.end());
+
+    const auto report = analyseStream(notesOf(running));
+    REQUIRE(report.orphanOffs == 0);
+    REQUIRE(report.stillSounding == 0);
+    REQUIRE(countAllNotesOff(stopped, 1) == 1);
+    REQUIRE(lastPitchWheel(running, 1) == 8192);
+
+    // Nothing else is released later: the queue was emptied.
+    const auto later = collectAll(processor, 20, blockSize, 41 * blockSize);
+    REQUIRE(notesOf(later).empty());
+
+    processor.releaseResources();
+    processor.setPlayHead(nullptr);
+}
+
+TEST_CASE("Switching generator releases sounding notes", "[host][scheduler][regression]")
+{
+    juce::ScopedJuceInitialiser_GUI juceInit;
+    constexpr int blockSize = 512;
+
+    GenerativeMIDIProcessor processor;
+    FakePlayHead playHead;
+    playHead.playing = true;
+    playHead.bpm = 240.0;
+    processor.setPlayHead(&playHead);
+    processor.prepareToPlay(48000.0, blockSize);
+    configureSoundingNotes(processor);
+
+    auto events = collectAll(processor, 40, blockSize);
+    REQUIRE(analyseStream(notesOf(events)).stillSounding > 0);
+
+    setFloatParam(processor, "noteDensity", 0.0f);
+    setChoiceParam(processor, "generatorType", 2); // Markov
+    const auto switched = collectAll(processor, 1, blockSize, 40 * blockSize);
+    events.insert(events.end(), switched.begin(), switched.end());
+
+    const auto report = analyseStream(notesOf(events));
+    REQUIRE(report.orphanOffs == 0);
+    REQUIRE(report.stillSounding == 0);
+    REQUIRE(countAllNotesOff(switched, 1) == 1);
+    REQUIRE(lastPitchWheel(events, 1) == 8192);
+
+    processor.releaseResources();
+    processor.setPlayHead(nullptr);
+}
+
+TEST_CASE("Disabling pitch bend re-centres the wheel", "[host][scheduler][regression]")
+{
+    juce::ScopedJuceInitialiser_GUI juceInit;
+    constexpr int blockSize = 512;
+
+    GenerativeMIDIProcessor processor;
+    FakePlayHead playHead;
+    playHead.playing = true;
+    playHead.bpm = 240.0;
+    processor.setPlayHead(&playHead);
+    processor.prepareToPlay(48000.0, blockSize);
+    configureSoundingNotes(processor);
+
+    auto events = collectAll(processor, 20, blockSize);
+    REQUIRE(lastPitchWheel(events, 1) != 8192);
+
+    setBoolParam(processor, "pitchbendEnable", false);
+    setFloatParam(processor, "noteDensity", 0.0f);
+    const auto after = collectAll(processor, 1, blockSize, 20 * blockSize);
+    events.insert(events.end(), after.begin(), after.end());
+    REQUIRE(lastPitchWheel(events, 1) == 8192);
+    REQUIRE(countAllNotesOff(after, 1) == 0); // notes keep sounding; only the wheel moves
+
+    processor.releaseResources();
+    processor.setPlayHead(nullptr);
+}
+
+TEST_CASE("releaseResources releases notes on the next block", "[host][scheduler][regression]")
+{
+    juce::ScopedJuceInitialiser_GUI juceInit;
+    constexpr int blockSize = 512;
+
+    GenerativeMIDIProcessor processor;
+    FakePlayHead playHead;
+    playHead.playing = true;
+    playHead.bpm = 240.0;
+    processor.setPlayHead(&playHead);
+    processor.prepareToPlay(48000.0, blockSize);
+    configureSoundingNotes(processor);
+
+    auto events = collectAll(processor, 40, blockSize);
+    REQUIRE(analyseStream(notesOf(events)).stillSounding > 0);
+
+    setFloatParam(processor, "noteDensity", 0.0f); // the restarted clock must not add new notes
+    processor.releaseResources(); // no MIDI buffer here: cleanup is emitted by the next block
+    processor.prepareToPlay(48000.0, blockSize);
+    const auto restarted = collectAll(processor, 1, blockSize, 40 * blockSize);
+    events.insert(events.end(), restarted.begin(), restarted.end());
+
+    REQUIRE(analyseStream(notesOf(events)).stillSounding == 0);
+    REQUIRE(lastPitchWheel(events, 1) == 8192);
+
+    processor.releaseResources();
+    processor.setPlayHead(nullptr);
+}

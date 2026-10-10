@@ -217,6 +217,12 @@ private:
     int lastHeldCcValue = -1;
     int lastHeldPitchBend = -1;
 
+    // Cleanup triggers (audio thread, except flushRequested which releaseResources sets).
+    bool wasAdvancing = false;
+    int lastGeneratorType = -1;
+    bool lastPitchbendEnabled = false;
+    std::atomic<bool> flushRequested { false };
+
     // One held melody note per MIDI channel. Mono steals on the melody channel only.
     struct MelodyVoice
     {

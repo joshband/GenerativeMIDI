@@ -331,6 +331,9 @@ void GenerativeMIDIProcessor::prepareToPlay(double sampleRate, int samplesPerBlo
     lastHeldCcNumber = -1;
     lastHeldCcValue = -1;
     lastHeldPitchBend = -1;
+    wasAdvancing = false;
+    lastGeneratorType = -1;
+    lastPitchbendEnabled = parameters.getRawParameterValue(PARAM_PITCHBEND_ENABLE)->load() > 0.5f;
 
     // Update parameters from value tree
     auto tempo = parameters.getRawParameterValue(PARAM_TEMPO)->load();
@@ -393,6 +396,9 @@ void GenerativeMIDIProcessor::prepareToPlay(double sampleRate, int samplesPerBlo
 void GenerativeMIDIProcessor::releaseResources()
 {
     clockManager.stop();
+    // There is no MIDI buffer here, so the all-notes-off goes out with the next block.
+    eventScheduler.clearAll();
+    flushRequested.store(true, std::memory_order_relaxed);
 }
 
 #ifndef JucePlugin_PreferredChannelConfigurations
@@ -482,6 +488,31 @@ void GenerativeMIDIProcessor::processBlock(juce::AudioBuffer<float>& buffer, juc
         }
     }
     clockAdvancing.store(shouldAdvance, std::memory_order_relaxed);
+
+    // Panic when the host stops, the generator changes, or the session was torn down:
+    // release every sounding note and re-centre the pitch wheel.
+    const int generatorNow = static_cast<int>(parameters.getRawParameterValue(PARAM_GENERATOR_TYPE)->load());
+    const bool bendEnabledNow = parameters.getRawParameterValue(PARAM_PITCHBEND_ENABLE)->load() > 0.5f;
+    const bool panic = flushRequested.exchange(false, std::memory_order_relaxed)
+                       || (wasAdvancing && !shouldAdvance)
+                       || (lastGeneratorType >= 0 && generatorNow != lastGeneratorType);
+    if (panic)
+    {
+        eventScheduler.allNotesOff(midiMessages, 0, &midiActivityLog);
+        for (auto& voice : melodyVoices)
+            voice = {};
+        expressionHoldUntil = 0;
+        lastHeldCcNumber = -1;
+        lastHeldCcValue = -1;
+        lastHeldPitchBend = -1;
+    }
+    else if (lastPitchbendEnabled && !bendEnabledNow)
+    {
+        eventScheduler.centrePitchBend(midiMessages, 0, &midiActivityLog);
+    }
+    wasAdvancing = shouldAdvance;
+    lastGeneratorType = generatorNow;
+    lastPitchbendEnabled = bendEnabledNow;
 
     if (shouldAdvance)
     {
