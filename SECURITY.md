@@ -12,7 +12,12 @@ This project is under active development (see `STATUS.md`). Security fixes are a
 
 ## Reporting a vulnerability
 
-Open a [GitHub Security Advisory](https://github.com/joshband/GenerativeMIDI/security/advisories/new) if available, or file a private report via GitHub Issues marked as security-sensitive.
+Please do not post vulnerability details in a public issue.
+
+1. Preferred: use GitHub's private vulnerability reporting (repository **Security** tab → **Report a vulnerability**). If that button is not shown, private reporting has not been enabled yet; use step 2.
+2. Otherwise open a public issue titled "Security contact request" with **no technical details**, and the maintainer will arrange a private channel.
+
+You can expect an acknowledgement within a few days. This is a spare-time open-source project, so there is no formal response-time guarantee.
 
 Please include:
 - Affected version / commit

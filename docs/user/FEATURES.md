@@ -621,18 +621,15 @@ Result: Loose, sloppy, experimental jazz
 - Prefer landscape; expect further UI work before store packaging
 
 **System Requirements (when building AUv3):**
-- iOS 13.0 or later / iPadOS 13.0 or later
+- iOS 15.0 or later / iPadOS 15.0 or later
 - Xcode + signing team
 
-### Future Platforms
+### Windows and Linux
 
-📋 **Windows**
-- VST3 support planned
-- Standalone application
-
-📋 **Linux**
-- VST3 and standalone builds
-- Community-requested feature
+⚙️ **Built and unit-tested in CI, not yet QA'd in a DAW**
+- VST3 builds on Windows and Linux in CI, run the unit tests, and pass pluginval
+- Unsigned developer builds from the CI artifacts; no installer
+- Hands-on host testing so far was on macOS (see `docs/qa/`)
 
 ---
 

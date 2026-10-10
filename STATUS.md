@@ -19,7 +19,7 @@
 | AUv3 / iOS | CMake iOS target (`GenerativeMIDI_AUv3`) + docs; **not App Store–ready**; macOS desktop build has `JucePlugin_Build_AUv3=0` |
 | Touch / a11y | iOS larger hit targets + scrollable editor; key controls have AX `setTitle` names; MIDI Log toggle/Clear titled |
 | Tests | Catch2 + `ctest` (**78** cases, incl. host playhead smoke + polyrhythm layer persistence + Markov trained lookup + Markov/L-System/Cellular controls + MIDI activity FIFO) in CMake / CI |
-| CI matrix | Pull requests run macOS plugins only (docs-only PRs skip builds). iOS AUv3 + Windows/Linux VST3 run on push to master, weekly, and manual dispatch. pluginval (VST3) on macOS, Windows, Linux |
+| CI matrix | Pull requests run the macOS and Linux builds plus the ASan/UBSan job (docs-only and draft PRs skip builds). iOS AUv3, Windows VST3 and TSan also run on a PR that touches build/CI files or carries the `full-ci` label, and always on push to master, weekly, and manual dispatch. pluginval (VST3) on macOS, Windows, Linux. See docs/developer/CI.md |
 | Canonical build | **CMake** (`GenerativeMIDI.jucer` deprecated) |
 
 Showcase: https://joshband.github.io/GenerativeMIDI/

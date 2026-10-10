@@ -52,6 +52,7 @@ jobs:
         else
           while IFS= read -r f; do
             case "$f" in
+              .github/dependabot.yml|.github/CODEOWNERS|.github/ISSUE_TEMPLATE/*|.github/pull_request_template.md) ;;
               CMakeLists.txt|*/CMakeLists.txt|cmake/*|*.cmake|.github/*|.gitmodules)
                 cpp=true; echo "build change: $f" ;;
             esac

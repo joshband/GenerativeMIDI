@@ -71,11 +71,11 @@ jobs:
         fi
         while IFS= read -r f; do
           case "$f" in
-            docs/*|*.md|LICENSE|.github/dependabot.yml) ;;
+            docs/*|*.md|LICENSE|.github/dependabot.yml|.github/CODEOWNERS|.github/ISSUE_TEMPLATE/*|.github/pull_request_template.md) ;;
             *) code=true; echo "code change: $f" ;;
           esac
           case "$f" in
-            .github/dependabot.yml) ;;
+            .github/dependabot.yml|.github/CODEOWNERS|.github/ISSUE_TEMPLATE/*|.github/pull_request_template.md) ;;
             # Dependabot action bumps only change version pins; upload/cache steps do not run on
             # pull requests, so iOS/Windows would test nothing. Add the full-ci label to force them.
             .github/workflows/*)
