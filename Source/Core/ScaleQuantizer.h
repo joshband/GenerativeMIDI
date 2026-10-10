@@ -11,6 +11,7 @@
 
 #include <vector>
 #include <array>
+#include <map>
 #include <algorithm>
 #include <cmath>
 
@@ -86,7 +87,14 @@ public:
      */
     void setCustomScale(const std::vector<int>& intervals)
     {
-        customScaleIntervals = intervals;
+        // Keep intervals as sorted, unique pitch classes (0-11) so the audio-thread
+        // lookups below never need to copy or re-sort.
+        customScaleIntervals.clear();
+        for (int interval : intervals)
+            customScaleIntervals.push_back(((interval % 12) + 12) % 12);
+        std::sort(customScaleIntervals.begin(), customScaleIntervals.end());
+        customScaleIntervals.erase(std::unique(customScaleIntervals.begin(), customScaleIntervals.end()),
+                                   customScaleIntervals.end());
         currentScale = Scale::Custom;
     }
 
@@ -100,20 +108,36 @@ public:
         if (currentScale == Scale::Chromatic)
             return midiNote; // No quantization needed
 
-        // Get the intervals for current scale
         const auto& intervals = getScaleIntervals();
         if (intervals.empty())
             return midiNote; // Fallback if scale not defined
 
-        // Break note into octave and pitch class
-        int octave = midiNote / 12;
-        int pitchClass = midiNote % 12;
+        // Work in absolute semitones relative to the root so notes that sit just
+        // below the root (or above the last degree) snap across the octave
+        // boundary instead of jumping a whole octave.
+        const int rel = midiNote - rootNote;
+        const int base = floorDiv12(rel) * 12;
 
-        // Find nearest note in scale
-        int nearestInterval = findNearestInterval(pitchClass, intervals);
+        int best = base + intervals[0];
+        int bestDistance = std::abs(rel - best);
 
-        // Reconstruct MIDI note
-        return octave * 12 + ((rootNote + nearestInterval) % 12);
+        for (int octaveShift = -12; octaveShift <= 12; octaveShift += 12)
+        {
+            for (int interval : intervals)
+            {
+                const int candidate = base + octaveShift + interval;
+                const int distance = std::abs(rel - candidate);
+
+                // Ties resolve to the lower note.
+                if (distance < bestDistance || (distance == bestDistance && candidate < best))
+                {
+                    best = candidate;
+                    bestDistance = distance;
+                }
+            }
+        }
+
+        return clampMidi(rootNote + best);
     }
 
     /**
@@ -128,20 +152,20 @@ public:
         if (intervals.empty())
             return midiNote;
 
-        int octave = midiNote / 12;
-        int pitchClass = midiNote % 12;
+        const int rel = midiNote - rootNote;
+        const int base = floorDiv12(rel) * 12;
 
-        // Find next higher interval
-        int targetPitch = (pitchClass - rootNote + 12) % 12;
-
-        for (int interval : intervals)
+        for (int octaveShift = 0; octaveShift <= 12; octaveShift += 12)
         {
-            if (interval > targetPitch)
-                return octave * 12 + ((rootNote + interval) % 12);
+            for (int interval : intervals)
+            {
+                const int candidate = base + octaveShift + interval;
+                if (candidate > rel)
+                    return clampMidi(rootNote + candidate);
+            }
         }
 
-        // Wrap to next octave if we're past all intervals
-        return (octave + 1) * 12 + ((rootNote + intervals[0]) % 12);
+        return clampMidi(midiNote);
     }
 
     /**
@@ -156,20 +180,20 @@ public:
         if (intervals.empty())
             return midiNote;
 
-        int octave = midiNote / 12;
-        int pitchClass = midiNote % 12;
+        const int rel = midiNote - rootNote;
+        const int base = floorDiv12(rel) * 12;
 
-        // Find next lower interval
-        int targetPitch = (pitchClass - rootNote + 12) % 12;
-
-        for (int i = static_cast<int>(intervals.size()) - 1; i >= 0; --i)
+        for (int octaveShift = 0; octaveShift >= -12; octaveShift -= 12)
         {
-            if (intervals[i] < targetPitch)
-                return octave * 12 + ((rootNote + intervals[i]) % 12);
+            for (int i = static_cast<int>(intervals.size()) - 1; i >= 0; --i)
+            {
+                const int candidate = base + octaveShift + intervals[static_cast<size_t>(i)];
+                if (candidate < rel)
+                    return clampMidi(rootNote + candidate);
+            }
         }
 
-        // Wrap to previous octave if we're below all intervals
-        return (octave - 1) * 12 + ((rootNote + intervals.back()) % 12);
+        return clampMidi(midiNote);
     }
 
     /**
@@ -246,25 +270,14 @@ private:
         scaleIntervals[Scale::HarmonicMajor] = {0, 2, 4, 5, 7, 8, 11};
     }
 
-    /**
-     * @brief Find nearest interval to target pitch within scale
-     */
-    int findNearestInterval(int pitchClass, const std::vector<int>& intervals) const
+    /** Floor division by 12 that is correct for negative values. */
+    static int floorDiv12(int value)
     {
-        int targetPitch = (pitchClass - rootNote + 12) % 12;
-        int nearest = intervals[0];
-        int minDistance = std::abs(targetPitch - intervals[0]);
+        return value >= 0 ? value / 12 : -((-value + 11) / 12);
+    }
 
-        for (int interval : intervals)
-        {
-            int distance = std::abs(targetPitch - interval);
-            if (distance < minDistance)
-            {
-                minDistance = distance;
-                nearest = interval;
-            }
-        }
-
-        return nearest;
+    static int clampMidi(int note)
+    {
+        return std::max(0, std::min(127, note));
     }
 };

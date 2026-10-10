@@ -685,8 +685,13 @@ void GenerativeMIDIProcessor::onSubdivisionHit(int subdivision)
 
     const float velocityMin = parameters.getRawParameterValue(PARAM_VELOCITY_MIN)->load();
     const float velocityMax = parameters.getRawParameterValue(PARAM_VELOCITY_MAX)->load();
-    const int pitchMin = static_cast<int>(parameters.getRawParameterValue(PARAM_PITCH_MIN)->load());
-    const int pitchMax = static_cast<int>(parameters.getRawParameterValue(PARAM_PITCH_MAX)->load());
+    // The two range parameters are independent, so either one can be the larger.
+    // Order them once here: later code takes jlimit(pitchMin, pitchMax, ...) and
+    // `step % (pitchMax - pitchMin + 1)`, which need min <= max.
+    const int pitchParamA = static_cast<int>(parameters.getRawParameterValue(PARAM_PITCH_MIN)->load());
+    const int pitchParamB = static_cast<int>(parameters.getRawParameterValue(PARAM_PITCH_MAX)->load());
+    const int pitchMin = juce::jmin(pitchParamA, pitchParamB);
+    const int pitchMax = juce::jmax(pitchParamA, pitchParamB);
     const int midiChannel = static_cast<int>(parameters.getRawParameterValue(PARAM_MIDI_CHANNEL)->load());
     const bool monoVoice = juce::roundToInt(parameters.getRawParameterValue(PARAM_VOICE_MODE)->load()) == 1;
     const int harmonyStep = lastSubdivisionStep;
