@@ -84,6 +84,7 @@ private:
 
     // Drunk walk state
     float drunkPosition;
+    float drunkElapsed = 0.0f; // seconds since the last drunk-walk step
 
     // Parameters
     float noteDensity;

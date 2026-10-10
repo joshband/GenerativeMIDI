@@ -37,7 +37,8 @@ void EventScheduler::scheduleEvent(const juce::MidiMessage& message, int64_t sam
 void EventScheduler::scheduleNoteOn(int note, float velocity, int channel, int64_t sampleTime)
 {
     auto message = juce::MidiMessage::noteOn(channel, note,
-        static_cast<juce::uint8>(juce::jlimit(0.0f, 1.0f, velocity) * 127.0f));
+        // Velocity 0 is a note-off to most receivers, so a note-on is never below 1.
+        static_cast<juce::uint8>(juce::jmax(1, juce::roundToInt(juce::jlimit(0.0f, 1.0f, velocity) * 127.0f))));
     scheduleEvent(message, sampleTime, 10); // Higher priority for note-ons
 }
 

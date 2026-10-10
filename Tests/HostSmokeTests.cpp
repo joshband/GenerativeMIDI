@@ -571,3 +571,79 @@ TEST_CASE("Part count routes root chord and arp onto the next channels", "[parts
     REQUIRE(ch1);
     REQUIRE(ch2);
 }
+
+
+namespace
+{
+/** Raw note-on status bytes seen in a buffer, including velocity-0 ones that JUCE reports as note-offs. */
+void collectRawNoteOns(GenerativeMIDIProcessor& proc, int numBlocks, int blockSize,
+                       std::vector<std::pair<int, int>>& noteVelocity)
+{
+    juce::AudioBuffer<float> buffer(0, blockSize);
+    for (int i = 0; i < numBlocks; ++i)
+    {
+        juce::MidiBuffer midi;
+        proc.processBlock(buffer, midi);
+        for (const auto metadata : midi)
+        {
+            const auto message = metadata.getMessage();
+            if (message.getRawDataSize() == 3 && (message.getRawData()[0] & 0xF0) == 0x90)
+                noteVelocity.emplace_back(message.getRawData()[1], message.getRawData()[2]);
+        }
+    }
+}
+} // namespace
+
+TEST_CASE("Zero velocity range still sends audible note-ons", "[host][regression]")
+{
+    // Regression: velocity truncated to 0, which receivers read as a note-off.
+    juce::ScopedJuceInitialiser_GUI juceInit;
+
+    GenerativeMIDIProcessor processor;
+    FakePlayHead playHead;
+    playHead.playing = true;
+    playHead.bpm = 240.0;
+    processor.setPlayHead(&playHead);
+    processor.prepareToPlay(48000.0, 512);
+    configureDenseEuclidean(processor);
+    setFloatParam(processor, "velocityMin", 0.0f);
+    setFloatParam(processor, "velocityMax", 0.0f);
+
+    std::vector<std::pair<int, int>> noteOns;
+    collectRawNoteOns(processor, 200, 512, noteOns);
+
+    REQUIRE_FALSE(noteOns.empty());
+    for (const auto& [note, velocity] : noteOns)
+    {
+        INFO("note " << note);
+        REQUIRE(velocity >= 1);
+    }
+}
+
+TEST_CASE("Inverted pitch range is ordered instead of dividing by zero", "[host][regression]")
+{
+    // Regression: pitchMax == pitchMin - 1 made `step % (range + 1)` a modulo by zero,
+    // and pitchMax < pitchMin asserted inside jlimit.
+    juce::ScopedJuceInitialiser_GUI juceInit;
+
+    GenerativeMIDIProcessor processor;
+    FakePlayHead playHead;
+    playHead.playing = true;
+    playHead.bpm = 240.0;
+    processor.setPlayHead(&playHead);
+    processor.prepareToPlay(48000.0, 512);
+    configureDenseEuclidean(processor);
+    setIntParam(processor, "pitchMin", 61);
+    setIntParam(processor, "pitchMax", 60);
+
+    std::vector<std::pair<int, int>> noteOns;
+    collectRawNoteOns(processor, 200, 512, noteOns);
+
+    REQUIRE_FALSE(noteOns.empty());
+    for (const auto& [note, velocity] : noteOns)
+    {
+        juce::ignoreUnused(velocity);
+        REQUIRE(note >= 60);
+        REQUIRE(note <= 61);
+    }
+}

@@ -965,3 +965,162 @@ TEST_CASE("Harmony parts build a scale triad and wrap channels", "[harmony]")
     REQUIRE(HarmonyParts::roleChannel(15, 3) == 2);
 }
 
+
+
+TEST_CASE("ScaleQuantizer stays in scale and never jumps an octave for any root", "[scale][regression]")
+{
+    // Regression: notes just below the root used to snap an octave away for every root except C.
+    for (int scaleIndex = 1; scaleIndex <= 15; ++scaleIndex) // Major .. HarmonicMajor
+    {
+        for (int root = 0; root < 12; ++root)
+        {
+            ScaleQuantizer quantizer;
+            quantizer.setScale(static_cast<ScaleQuantizer::Scale>(scaleIndex));
+            quantizer.setRootNote(root);
+            const auto& intervals = quantizer.getScaleIntervals();
+
+            auto inScale = [&](int note)
+            {
+                const int relative = ((note - root) % 12 + 12) % 12;
+                return std::find(intervals.begin(), intervals.end(), relative) != intervals.end();
+            };
+
+            // Stay away from the 0 and 127 ends, where results are clamped.
+            for (int note = 12; note <= 115; ++note)
+            {
+                INFO("scale " << scaleIndex << " root " << root << " note " << note);
+
+                const int nearest = quantizer.quantize(note);
+                REQUIRE(inScale(nearest));
+                REQUIRE(std::abs(nearest - note) <= 2);
+
+                const int up = quantizer.quantizeUp(note);
+                REQUIRE(up > note);
+                REQUIRE(up - note <= 3);
+                REQUIRE(inScale(up));
+
+                const int down = quantizer.quantizeDown(note);
+                REQUIRE(down < note);
+                REQUIRE(note - down <= 3);
+                REQUIRE(inScale(down));
+            }
+        }
+    }
+}
+
+TEST_CASE("ScaleQuantizer custom scale is normalised to sorted pitch classes", "[scale][regression]")
+{
+    ScaleQuantizer quantizer;
+    quantizer.setRootNote(0);
+    quantizer.setCustomScale({ 14, -1, 2, 2 }); // 14 -> 2, -1 -> 11, duplicate 2
+
+    const auto& intervals = quantizer.getScaleIntervals();
+    REQUIRE(intervals.size() == 2);
+    REQUIRE(intervals[0] == 2);
+    REQUIRE(intervals[1] == 11);
+
+    REQUIRE(quantizer.quantize(60) == 59); // C snaps down to B, not up to D
+    REQUIRE(quantizer.quantize(62) == 62);
+}
+
+TEST_CASE("StochasticEngine drunk-walk timing belongs to each instance", "[stochastic][regression]")
+{
+    // Regression: the step timer was a function-local static shared by every instance.
+    auto configure = [](StochasticEngine& engine)
+    {
+        engine.setGeneratorType(StochasticEngine::GeneratorType::DrunkWalk);
+        engine.setTimeScale(1.0f);   // one step every 0.1 s
+        engine.setMomentum(0.5f);    // follow = 1: value lands on the walk position at once
+        engine.setStepSize(1.0f);
+        engine.reset();
+    };
+
+    StochasticEngine other;
+    StochasticEngine subject;
+    configure(other);
+    configure(subject);
+
+    // Both are 0.06 s into a 0.1 s interval. With one shared timer, `subject` would see
+    // 0.06 + 0.06 s and step; with per-instance timers neither has stepped.
+    other.advance(0.06f);
+    subject.advance(0.06f);
+    REQUIRE(subject.getCurrentValue() == Catch::Approx(0.5f));
+}
+
+TEST_CASE("PresetManager never lets a preset name escape the preset folder", "[preset][security][regression]")
+{
+    juce::ScopedJuceInitialiser_GUI juceInit;
+
+    auto root = juce::File::getSpecialLocation(juce::File::tempDirectory)
+                    .getChildFile("GenerativeMIDIPresetSecurity")
+                    .getNonexistentChildFile("run", "", false);
+    auto presetDir = root.getChildFile("presets");
+    REQUIRE(presetDir.createDirectory());
+
+    // A file one level above the preset folder that a hostile preset name tries to reach.
+    auto victim = root.getChildFile("victim.gmpreset");
+    REQUIRE(victim.replaceWithText("keep me"));
+
+    // A preset file whose *name attribute* is a traversal path.
+    presetDir.getChildFile("evil.gmpreset").replaceWithText(minimalValidPresetXml("../victim"));
+
+    MinimalPresetTestProcessor processor;
+    PolyrhythmEngine polyEngine;
+    PresetManager manager(processor.apvts, polyEngine);
+    manager.setPresetDirectoryOverride(presetDir);
+    manager.scanUserPresets();
+
+    int evilIndex = -1;
+    for (int i = 0; i < manager.getNumPresets(); ++i)
+    {
+        REQUIRE(manager.getPreset(i).name != "../victim");
+        if (manager.getPreset(i).name == "evil")
+            evilIndex = i;
+    }
+    REQUIRE(evilIndex >= 0); // falls back to the file name
+
+    manager.deletePreset(evilIndex);
+    REQUIRE(victim.existsAsFile());
+    REQUIRE_FALSE(presetDir.getChildFile("evil.gmpreset").existsAsFile());
+
+    // Saving under an unsafe name is refused outright.
+    const int before = manager.getNumPresets();
+    manager.savePreset("../escape", "Test", "Test", "traversal");
+    REQUIRE(manager.getNumPresets() == before);
+    REQUIRE_FALSE(root.getChildFile("escape.gmpreset").existsAsFile());
+
+    root.deleteRecursively();
+}
+
+TEST_CASE("PresetManager scan skips oversized preset files", "[preset][security][regression]")
+{
+    juce::ScopedJuceInitialiser_GUI juceInit;
+
+    auto root = juce::File::getSpecialLocation(juce::File::tempDirectory)
+                    .getChildFile("GenerativeMIDIPresetSecurity")
+                    .getNonexistentChildFile("big", "", false);
+    REQUIRE(root.createDirectory());
+
+    // Valid XML, but well over the 1 MiB cap.
+    auto xml = minimalValidPresetXml("huge");
+    xml = xml.replace("description=\"round-trip\"",
+                      "description=\"" + juce::String::repeatedString("x", 1100 * 1024) + "\"");
+    root.getChildFile("huge.gmpreset").replaceWithText(xml);
+    root.getChildFile("small.gmpreset").replaceWithText(minimalValidPresetXml("small"));
+
+    MinimalPresetTestProcessor processor;
+    PolyrhythmEngine polyEngine;
+    PresetManager manager(processor.apvts, polyEngine);
+    manager.setPresetDirectoryOverride(root);
+    manager.scanUserPresets();
+
+    bool sawSmall = false;
+    for (int i = 0; i < manager.getNumPresets(); ++i)
+    {
+        REQUIRE(manager.getPreset(i).name != "huge");
+        sawSmall = sawSmall || manager.getPreset(i).name == "small";
+    }
+    REQUIRE(sawSmall);
+
+    root.deleteRecursively();
+}

@@ -49,6 +49,7 @@ void StochasticEngine::reset()
     acceleration = 0.0f;
     noiseTime = 0.0f;
     drunkPosition = 0.5f;
+    drunkElapsed = 0.0f;
 
     // Lorenz attractor: start near the origin with slight offset
     currentValue = 0.1f;
@@ -215,14 +216,13 @@ float StochasticEngine::grad(int hash, float x, float y) const
 void StochasticEngine::updateDrunkWalk(float deltaTime)
 {
     // Only take steps at discrete intervals
-    static float timeSinceLastStep = 0.0f;
-    timeSinceLastStep += deltaTime;
+    drunkElapsed += deltaTime;
 
     float stepInterval = 1.0f / (timeScale * 10.0f);  // Steps per second based on time scale
 
-    if (timeSinceLastStep >= stepInterval)
+    if (drunkElapsed >= stepInterval)
     {
-        timeSinceLastStep = 0.0f;
+        drunkElapsed = 0.0f;
 
         // Random walk with variable step size
         float step = (uniform01(rng) - 0.5f) * 2.0f * stepSize;

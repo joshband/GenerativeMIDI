@@ -91,6 +91,8 @@ public:
 
     // File I/O
     juce::File getPresetDirectory() const;
+    /** Use a different preset folder (tests, portable installs). Pass juce::File() to restore the default. */
+    void setPresetDirectoryOverride(const juce::File& directory) { presetDirectoryOverride = directory; }
     void scanUserPresets();
     bool exportPreset(int presetIndex, const juce::File& destinationFile);
     bool importPreset(const juce::File& presetFile);
@@ -99,6 +101,7 @@ private:
     juce::AudioProcessorValueTreeState& valueTreeState;
     PolyrhythmEngine& polyrhythmEngine;
     juce::Array<Preset> presets;
+    juce::File presetDirectoryOverride;
     int currentPresetIndex;
     juce::ListenerList<Listener> listeners;
 
@@ -108,6 +111,8 @@ private:
     juce::ValueTree captureCurrentState() const;
     void restoreState(const juce::ValueTree& state);
     juce::File getDefaultPresetDirectory() const;
+    /** File for a preset name inside the preset folder, or juce::File() if the name is unsafe. */
+    juce::File resolvePresetFile(const juce::String& name) const;
 
     // Factory preset creation helpers (indices match GeneratorTypeMapping / 10-item UI)
     juce::ValueTree makeFactoryParamTree() const;

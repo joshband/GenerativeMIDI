@@ -7,12 +7,17 @@ namespace
 
     bool isSafePresetFileName(const juce::String& name)
     {
-        if (name.isEmpty())
+        if (name.isEmpty() || name.length() > 128)
             return false;
 
-        // Reject path traversal and directory separators in names used for disk I/O.
-        if (name.contains("..") || name.containsChar('/') || name.containsChar('\\'))
+        // Reject path traversal, directory separators, drive/stream markers and
+        // control characters in names used for disk I/O.
+        if (name.contains("..") || name.containsAnyOf("/\\:"))
             return false;
+
+        for (auto c : name)
+            if (c < 32)
+                return false;
 
         return true;
     }
@@ -30,6 +35,11 @@ void PresetManager::savePreset(const juce::String& name,
                                const juce::String& category,
                                const juce::String& description)
 {
+    // Refuse unsafe names before touching the preset list or the disk.
+    const juce::File presetFile = resolvePresetFile(name);
+    if (presetFile == juce::File())
+        return;
+
     // Capture current parameter state
     juce::ValueTree state = captureCurrentState();
 
@@ -61,7 +71,8 @@ void PresetManager::savePreset(const juce::String& name,
     }
 
     // Save to disk
-    juce::File presetFile = getPresetDirectory().getChildFile(name + ".gmpreset");
+
+    presetFile.getParentDirectory().createDirectory();
 
     // Create XML from ValueTree
     juce::XmlElement xml("GenerativeMIDIPreset");
@@ -122,8 +133,8 @@ void PresetManager::deletePreset(int presetIndex)
         return;
 
     // Delete file
-    juce::File presetFile = getPresetDirectory().getChildFile(preset.name + ".gmpreset");
-    if (presetFile.existsAsFile())
+    const juce::File presetFile = resolvePresetFile(preset.name);
+    if (presetFile != juce::File() && presetFile.existsAsFile())
         presetFile.deleteFile();
 
     // Remove from array
@@ -213,7 +224,20 @@ void PresetManager::initializeFactoryPresets()
 
 juce::File PresetManager::getPresetDirectory() const
 {
+    if (presetDirectoryOverride != juce::File())
+        return presetDirectoryOverride;
+
     return getDefaultPresetDirectory();
+}
+
+juce::File PresetManager::resolvePresetFile(const juce::String& name) const
+{
+    if (!isSafePresetFileName(name))
+        return {};
+
+    const auto directory = getPresetDirectory();
+    const auto file = directory.getChildFile(name + ".gmpreset");
+    return file.isAChildOf(directory) ? file : juce::File();
 }
 
 void PresetManager::scanUserPresets()
@@ -227,6 +251,10 @@ void PresetManager::scanUserPresets()
 
     for (const auto& file : presetFiles)
     {
+        // Preset folders can hold files from anywhere; cap what we are willing to parse.
+        if (file.getSize() > kMaxPresetFileBytes)
+            continue;
+
         auto xml = juce::XmlDocument::parse(file);
         if (!xml)
             continue;
@@ -235,6 +263,13 @@ void PresetManager::scanUserPresets()
             continue;
 
         juce::String name = xml->getStringAttribute("name");
+
+        // The name later becomes a file name (save/delete); never trust one read from disk.
+        if (!isSafePresetFileName(name))
+            name = file.getFileNameWithoutExtension();
+        if (!isSafePresetFileName(name))
+            continue;
+
         juce::String author = xml->getStringAttribute("author");
         juce::String category = xml->getStringAttribute("category");
         juce::String description = xml->getStringAttribute("description");
