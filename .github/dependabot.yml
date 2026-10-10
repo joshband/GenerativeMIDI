@@ -5,3 +5,15 @@ updates:
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
+
+  # The `art` submodule (SynaptikUIToolkit). Dependabot opens a PR when the
+  # submodule's default branch moves.
+  - package-ecosystem: gitsubmodule
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 2
+
+  # Not covered: JUCE (cloned in CI at JUCE_VERSION / local symlink) and Catch2
+  # (CMake FetchContent). Dependabot has no CMake/FetchContent ecosystem, so bump
+  # those by hand (JUCE_VERSION in ci.yml and codeql.yml, GIT_TAG in CMakeLists.txt).
