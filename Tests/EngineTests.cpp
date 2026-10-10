@@ -890,7 +890,12 @@ TEST_CASE("PolyrhythmEngine caps layers and restarts playback after a load", "[p
 {
     PolyrhythmEngine engine;
     while (engine.getNumLayers() < PolyrhythmEngine::kMaxLayers)
-        REQUIRE(engine.addLayer() == engine.getNumLayers() - 1);
+    {
+        // Evaluate addLayer() first: operand order inside == is unspecified in C++
+        // (clang evaluated the left side first, GCC and MSVC the right side first).
+        const int added = engine.addLayer();
+        REQUIRE(added == engine.getNumLayers() - 1);
+    }
     REQUIRE(engine.addLayer() == -1);
     REQUIRE(engine.getNumLayers() == PolyrhythmEngine::kMaxLayers);
 
