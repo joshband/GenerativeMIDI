@@ -636,14 +636,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Planned Features
 - [ ] Additional algorithmic generators (Brownian motion, Fibonacci sequences)
 - [ ] MIDI input processing and transformation
-- [ ] Comprehensive preset management system
-- [ ] Standalone app with internal synthesizer
+- [x] Comprehensive preset management system (Preset Browser, 11 factory presets, user presets)
+- [x] Standalone app with internal synthesizer (optional built-in piano)
 - [ ] MPE (MIDI Polyphonic Expression) support
-- [ ] Windows VST3 build
-- [ ] Linux builds (VST3, Standalone)
+- [x] Windows VST3 build (CI: build, unit tests, pluginval; not yet QA'd in a DAW)
+- [x] Linux builds (VST3, Standalone) (CI: build, unit tests, sanitizers, pluginval)
 - [ ] Custom UI components (pattern visualizer with playhead, velocity editor)
 - [ ] MIDI file export
-- [ ] Scale/mode constraints (major, minor, pentatonic, etc.)
+- [x] Scale/mode constraints (16 scales)
 - [ ] Pattern morphing and interpolation
 - [ ] More CC modulation shapes and destinations
 - [ ] MIDI learn functionality
@@ -663,8 +663,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Support
 
-- **Bug Reports**: [GitHub Issues](https://github.com/yourusername/GenerativeMIDI/issues)
-- **Feature Requests**: [GitHub Discussions](https://github.com/yourusername/GenerativeMIDI/discussions)
+- **Bug reports and feature requests**: [GitHub Issues](https://github.com/joshband/GenerativeMIDI/issues)
+- **Security reports**: see [SECURITY.md](SECURITY.md)
 - **Documentation**: See `docs/` directory and README.md
 
 ---

@@ -138,7 +138,7 @@ public:
         auto centreY = static_cast<float>(y) + static_cast<float>(height) * 0.5f;
         auto angle = rotaryStartAngle + sliderPos * (rotaryEndAngle - rotaryStartAngle);
 
-        if (false && knobOrnate.isValid())
+        if (useImageAssets && knobOrnate.isValid())
         {
             // Aether glow (outer radiance)
             auto glowRadius = radius + 12.0f;
@@ -277,7 +277,7 @@ public:
                          const juce::Slider::SliderStyle /*style*/, juce::Slider& slider) override
     {
         // For vertical sliders with loaded rail image, use image-based rendering
-        if (false && !slider.isHorizontal() && sliderVerticalRail.isValid())
+        if (useImageAssets && !slider.isHorizontal() && sliderVerticalRail.isValid())
         {
             // Draw brass vertical rail image
             auto railBounds = juce::Rectangle<float>(static_cast<float>(x), static_cast<float>(y),
@@ -663,6 +663,10 @@ public:
 
 private:
     // UI asset images from art/themes/victorian-steampunk (optional)
+    // Image-based knob/rail rendering is disabled; the procedural drawing is used. A member
+    // rather than a literal so the disabled branches are not flagged as constant conditions.
+    bool useImageAssets = false;
+
     juce::Image knobOrnate;
     juce::Image knobConcentric;
     juce::Image knobSimple;

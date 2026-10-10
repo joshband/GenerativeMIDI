@@ -59,6 +59,10 @@ public:
      * Check if this step should have ratcheting applied
      * Uses probability to determine if ratcheting occurs
      */
+    /** Fix the RNG seed so identical inputs give identical output. Without a call the
+        engine keeps its time-based random seed. */
+    void setSeed(unsigned seed) { generator.seed(seed); }
+
     bool shouldRatchet()
     {
         if (ratchetCount <= 1 || ratchetProbability <= 0.0f)

@@ -33,6 +33,8 @@ public:
     void reset();
     void setOrder(int newOrder);
     int getOrder() const { return order; }
+    /** Fix the RNG seed so identical inputs give identical output. */
+    void setSeed(juce::int64 seed) { random.setSeed(seed); }
 
 private:
     int order;
@@ -46,7 +48,7 @@ private:
 // ============================================================================
 struct LSystemRule
 {
-    char symbol;
+    juce::juce_wchar symbol;
     juce::String replacement;
     float probability = 1.0f;
 };
@@ -57,15 +59,17 @@ public:
     LSystemEngine();
 
     void setAxiom(const juce::String& axiom);
-    void addRule(char symbol, const juce::String& replacement, float probability = 1.0f);
+    void addRule(juce::juce_wchar symbol, const juce::String& replacement, float probability = 1.0f);
     void clearRules();
+    /** Fix the RNG seed so identical inputs give identical output. */
+    void setSeed(juce::int64 seed) { random.setSeed(seed); }
     juce::String iterate(int generations);
     std::vector<int> toMidiNotes(const juce::String& sequence, int baseNote = 60);
     juce::String getAxiom() const { return axiom; }
 
 private:
     juce::String axiom;
-    std::map<char, std::vector<LSystemRule>> rules;
+    std::map<juce::juce_wchar, std::vector<LSystemRule>> rules;
     juce::Random random;
 };
 
@@ -82,6 +86,8 @@ public:
     void seedCell(int index);
     void setState(const std::vector<bool>& initialState);
     void randomizeState(float density = 0.5f);
+    /** Fix the RNG seed so identical inputs give identical output. */
+    void setSeed(juce::int64 seed) { random.setSeed(seed); }
     std::vector<bool> step();
     /** Advance one generation in-place (no heap after construction). */
     void stepInPlace();
@@ -130,6 +136,8 @@ public:
     std::vector<int> generateScale(int root, const std::vector<int>& intervals);
     std::vector<int> generateMelody(int length, int minNote, int maxNote, float stepProbability = 0.6f);
     std::vector<bool> generateRhythm(int length, float density, float grouping = 1.0f);
+    /** Fix the RNG seed so identical inputs give identical output. */
+    void setSeed(juce::int64 seed) { random.setSeed(seed); }
 
     // Brownian motion / random walk
     int randomWalk(int current, int step, int minValue, int maxValue);
@@ -163,6 +171,18 @@ public:
     GeneratorType getGeneratorType() const { return currentType; }
 
     // Access to specific generators
+    /** Fix the RNG seed of the engine and its four generators (each gets a distinct derived seed)
+        so identical inputs give identical output. Without a call every generator keeps its
+        time-based random seed. */
+    void setSeed(juce::int64 seed)
+    {
+        random.setSeed(seed);
+        markovChain.setSeed(seed + 1);
+        lSystem.setSeed(seed + 2);
+        cellularAutomaton.setSeed(seed + 3);
+        probabilistic.setSeed(seed + 4);
+    }
+
     MarkovChain& getMarkovChain() { return markovChain; }
     LSystemEngine& getLSystem() { return lSystem; }
     CellularAutomaton& getCellularAutomaton() { return cellularAutomaton; }

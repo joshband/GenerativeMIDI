@@ -37,6 +37,10 @@ public:
     void rotate(int amount);
     void randomize(float density);
 
+    /** Fix the RNG seed so identical inputs give identical output. Without a call the
+        engine keeps its time-based random seed. */
+    void setSeed(juce::int64 seed) { random.setSeed(seed); }
+
     // Reset
     void regeneratePattern();
 

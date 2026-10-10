@@ -79,7 +79,6 @@ private:
 
     bool playing = false;
     int64_t currentSample = 0;
-    int subdivisionCounter = 0;
     double samplesToNextSixteenth = 0.0; // distance from the start of the next block; 0 = hit at its first sample
 
     // External sync

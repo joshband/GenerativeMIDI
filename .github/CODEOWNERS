@@ -1,0 +1,3 @@
+# Default owner for everything. Branch protection requires a PR; add more specific
+# patterns below if other maintainers join.
+* @joshband

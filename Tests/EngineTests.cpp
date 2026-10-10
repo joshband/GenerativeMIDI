@@ -7,12 +7,16 @@
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/catch_approx.hpp>
 
+#include "Core/AlgorithmicEngine.h"
 #include "Core/EuclideanEngine.h"
+#include "Core/GateLengthController.h"
+#include "Core/RatchetEngine.h"
 #include "Core/PolyrhythmEngine.h"
 #include "Core/ScaleQuantizer.h"
 #include "Core/HarmonyParts.h"
 #include "Core/GeneratorTypeMapping.h"
 #include "Core/StochasticEngine.h"
+#include "Core/TimeSignature.h"
 #include "DSP/ClockManager.h"
 #include "DSP/PianoSynth.h"
 #include "Modulation/ModLfo.h"
@@ -20,6 +24,8 @@
 #include "Modulation/ModulationRouter.h"
 
 #include <atomic>
+#include <cmath>
+#include <limits>
 #include <thread>
 #include <vector>
 
@@ -1399,4 +1405,166 @@ TEST_CASE("Perlin noise is continuous across the time wrap", "[stochastic][perli
         prev = v;
     }
     REQUIRE(maxJump < 0.03f);
+}
+
+TEST_CASE("LSystemEngine keeps non-ASCII symbols distinct from ASCII ones", "[algorithmic]")
+{
+    // U+0141 truncates to 'A' when squeezed into a char, so with a char-keyed rule map the two
+    // symbols shared one rule list and U+0141 was rewritten by the 'A' rule (or vice versa).
+    const juce::juce_wchar wideA = 0x0141;
+
+    LSystemEngine engine;
+    engine.clearRules();
+    engine.setAxiom(juce::String::charToString(wideA) + "A");
+    engine.addRule(wideA, "B", 1.0f);
+    engine.addRule('A', "AA", 1.0f);
+
+    REQUIRE(engine.iterate(1) == juce::String("BAA"));
+}
+
+TEST_CASE("TimeSignature denominators snap to a power of two", "[clock]")
+{
+    REQUIRE(TimeSignature::sanitizeDenominator(1) == 1);
+    REQUIRE(TimeSignature::sanitizeDenominator(2) == 2);
+    REQUIRE(TimeSignature::sanitizeDenominator(4) == 4);
+    REQUIRE(TimeSignature::sanitizeDenominator(8) == 8);
+    REQUIRE(TimeSignature::sanitizeDenominator(16) == 16);
+    REQUIRE(TimeSignature::sanitizeDenominator(3) == 2);   // tie: smaller
+    REQUIRE(TimeSignature::sanitizeDenominator(5) == 4);
+    REQUIRE(TimeSignature::sanitizeDenominator(7) == 8);
+    REQUIRE(TimeSignature::sanitizeDenominator(12) == 8);  // tie: smaller
+    REQUIRE(TimeSignature::sanitizeDenominator(15) == 16);
+    REQUIRE(TimeSignature::sanitizeDenominator(0) == 1);
+    REQUIRE(TimeSignature::sanitizeDenominator(-5) == 1);
+    REQUIRE(TimeSignature::sanitizeDenominator(100) == 32);
+}
+
+TEST_CASE("ClockManager applies a sane time signature and bar length", "[clock]")
+{
+    ClockManager clock;
+    clock.setSampleRate(48000.0);
+    clock.setTempo(120.0);
+
+    clock.setTimeSignature(6, 6);   // 6 is not a note value: snaps to 4
+    REQUIRE(clock.getTimeSignatureDenominator() == 4);
+    REQUIRE(clock.getSamplesPerBar() == Catch::Approx(clock.getSamplesPerBeat() * 6.0));
+
+    clock.setTimeSignature(6, 8);   // 6/8: six eighth notes = three beats
+    REQUIRE(clock.getSamplesPerBar() == Catch::Approx(clock.getSamplesPerBeat() * 3.0));
+}
+
+TEST_CASE("ClockManager ignores an invalid sample rate instead of hanging", "[clock]")
+{
+    ClockManager clock;
+    clock.setSampleRate(48000.0);
+    clock.setTempo(120.0);
+
+    clock.setSampleRate(0.0);
+    clock.setSampleRate(-44100.0);
+    clock.setSampleRate(std::numeric_limits<double>::quiet_NaN());
+    REQUIRE(clock.getSampleRate() == Catch::Approx(48000.0));
+
+    // The clock must still advance: with a zero sample rate every subdivision would be 0 samples
+    // long and this loop could never terminate.
+    int hits = 0;
+    clock.onSubdivisionHit = [&](int) { ++hits; };
+    clock.start();
+    clock.advance(48000);                 // one second at 120 bpm = 8 sixteenths
+    REQUIRE(hits == 8);
+
+    REQUIRE(std::isfinite(clock.getSamplesPerSubdivision(0)));
+}
+
+TEST_CASE("PolyrhythmEngine restarts every layer on requestRestart", "[polyrhythm]")
+{
+    PolyrhythmEngine engine;
+    engine.setLayerDivision(0, 16); // every tick
+    engine.setLayerLength(0, 4);
+    engine.resetLayer(0);
+
+    // Play for three ticks: steps 0, 1, 2 are emitted and the layer sits on step 3.
+    for (int tick = 0; tick < 3; ++tick)
+        engine.processTick(16, [](const PolyrhythmLayer&, int) {});
+    REQUIRE(engine.getCurrentStep(0) == 3);
+
+    // Transport stops and starts again: the next tick must emit step 0, not continue at 3.
+    engine.requestRestart();
+    std::vector<int> steps;
+    for (int tick = 0; tick < 5; ++tick)
+        engine.processTick(16, [&](const PolyrhythmLayer&, int step) { steps.push_back(step); });
+    REQUIRE(steps == std::vector<int> { 0, 1, 2, 3, 0 });
+
+    // A request is consumed once: it does not keep resetting the layer.
+    REQUIRE(engine.getCurrentStep(0) == 1);
+}
+
+TEST_CASE("Seeded engines are reproducible", "[seed]")
+{
+    SECTION("ProbabilisticGenerator rhythm")
+    {
+        ProbabilisticGenerator a, b, c;
+        a.setSeed(42);
+        b.setSeed(42);
+        c.setSeed(43);
+        const auto ra = a.generateRhythm(64, 0.5f, 2.0f);
+        REQUIRE(ra == b.generateRhythm(64, 0.5f, 2.0f));
+        REQUIRE(ra != c.generateRhythm(64, 0.5f, 2.0f));
+    }
+
+    SECTION("CellularAutomaton random state")
+    {
+        CellularAutomaton a(32), b(32);
+        a.setSeed(7);
+        b.setSeed(7);
+        a.randomizeState(0.5f);
+        b.randomizeState(0.5f);
+        REQUIRE(a.getState() == b.getState());
+    }
+
+    SECTION("EuclideanEngine randomize")
+    {
+        EuclideanEngine a, b;
+        a.setSeed(5);
+        b.setSeed(5);
+        for (int i = 0; i < 8; ++i)
+        {
+            a.randomize(0.5f);
+            b.randomize(0.5f);
+            REQUIRE(a.getRotation() == b.getRotation());
+            REQUIRE(a.getPulses() == b.getPulses());
+        }
+    }
+
+    SECTION("PolyrhythmEngine randomizeLayer")
+    {
+        PolyrhythmEngine a, b;
+        a.setSeed(11);
+        b.setSeed(11);
+        a.randomizeLayer(0, 0.5f);
+        b.randomizeLayer(0, 0.5f);
+        REQUIRE(a.toValueTree().toXmlString() == b.toValueTree().toXmlString());
+    }
+
+    SECTION("GateLengthController variation and RatchetEngine probability")
+    {
+        GateLengthController ga, gb;
+        ga.setGateRandomization(1.0f);
+        gb.setGateRandomization(1.0f);
+        ga.setSeed(3);
+        gb.setSeed(3);
+
+        RatchetEngine ra, rb;
+        ra.setRatchetCount(3);
+        rb.setRatchetCount(3);
+        ra.setRatchetProbability(0.5f);
+        rb.setRatchetProbability(0.5f);
+        ra.setSeed(9);
+        rb.setSeed(9);
+
+        for (int i = 0; i < 32; ++i)
+        {
+            REQUIRE(ga.calculateGateLengthSamples(1000) == gb.calculateGateLengthSamples(1000));
+            REQUIRE(ra.shouldRatchet() == rb.shouldRatchet());
+        }
+    }
 }

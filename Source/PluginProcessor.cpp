@@ -513,6 +513,7 @@ void GenerativeMIDIProcessor::processBlock(juce::AudioBuffer<float>& buffer, juc
                     startSixteenths = juce::jmax(0.0, *ppq * 4.0);
 
         clockManager.restart(startSixteenths);
+        polyrhythmEngine.requestRestart();
         lastSubdivisionStep = static_cast<int>(std::ceil(startSixteenths - 1.0e-6));
     }
     wasAdvancing = shouldAdvance;

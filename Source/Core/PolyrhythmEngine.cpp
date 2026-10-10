@@ -8,6 +8,7 @@
 */
 
 #include "PolyrhythmEngine.h"
+#include "TimeSignature.h"
 
 #include <algorithm>
 
@@ -81,7 +82,8 @@ void PolyrhythmEngine::resetPlayState(int index, const PolyrhythmLayer& layer) n
 
 void PolyrhythmEngine::applyPendingReset(const Snapshot& snap) noexcept
 {
-    if (snap.loadId == appliedLoadId)
+    const bool restart = restartRequested.exchange(false, std::memory_order_acq_rel);
+    if (snap.loadId == appliedLoadId && !restart)
         return;
     appliedLoadId = snap.loadId;
     for (size_t i = 0; i < snap.layers.size(); ++i)
@@ -319,7 +321,7 @@ void PolyrhythmEngine::resetLayer(int layerIndex)
 void PolyrhythmEngine::setTimeSignature(int numerator, int denominator)
 {
     timeSignatureNum = juce::jlimit(1, 32, numerator);
-    timeSignatureDenom = juce::jlimit(1, 32, denominator);
+    timeSignatureDenom = TimeSignature::sanitizeDenominator(denominator);
 }
 
 void PolyrhythmEngine::setTempo(double bpm)
