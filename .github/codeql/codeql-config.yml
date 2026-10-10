@@ -4,3 +4,4 @@ paths-ignore:
   - JUCE
   - art
   - build
+  - Tests

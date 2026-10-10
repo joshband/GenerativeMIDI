@@ -3,8 +3,9 @@ name: CI
 on:
   push:
     branches: [ main, master ]
+  # No base-branch filter: stacked PRs (base = another feature branch) also get CI.
   pull_request:
-    branches: [ main, master ]
+    types: [opened, synchronize, reopened, labeled]
   workflow_dispatch:
   schedule:
     # Weekly full matrix: iOS and Windows do not run on pull requests.
@@ -37,36 +38,52 @@ jobs:
     timeout-minutes: 5
     outputs:
       code: ${{ steps.diff.outputs.code }}
+      platform: ${{ steps.diff.outputs.platform }}
     steps:
     - name: Checkout code
       uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       with:
         fetch-depth: 0
 
+    # code=true:     the change is not docs-only, so the build jobs run.
+    # platform=true: iOS, Windows and TSan also run. Always true off pull requests; on a PR it is
+    #                true when the PR carries the "full-ci" label or touches build/CI files.
     - name: Classify changed files
       id: diff
       env:
         EVENT: ${{ github.event_name }}
         BASE_SHA: ${{ github.event.pull_request.base.sha }}
         HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        FULL_CI_LABEL: ${{ contains(github.event.pull_request.labels.*.name, 'full-ci') }}
       run: |
         if [ "${EVENT}" != "pull_request" ]; then
-          echo "code=true" >> "$GITHUB_OUTPUT"; exit 0
+          echo "code=true" >> "$GITHUB_OUTPUT"
+          echo "platform=true" >> "$GITHUB_OUTPUT"
+          exit 0
         fi
         code=false
+        platform=false
+        if [ "${FULL_CI_LABEL}" = "true" ]; then
+          platform=true; echo "platform: full-ci label"
+        fi
         while IFS= read -r f; do
           case "$f" in
             docs/*|*.md|LICENSE) ;;
             *) code=true; echo "code change: $f" ;;
           esac
+          case "$f" in
+            CMakeLists.txt|*/CMakeLists.txt|cmake/*|*.cmake|.github/*|.gitmodules)
+              platform=true; echo "platform change: $f" ;;
+          esac
         done < <(git diff --name-only "${BASE_SHA}" "${HEAD_SHA}")
         echo "code=${code}" >> "$GITHUB_OUTPUT"
+        echo "platform=${platform}" >> "$GITHUB_OUTPUT"
 
   build-ios:
     name: Build iOS/iPadOS AUv3
     needs: changes
-    # Not on pull requests: runs on push to main/master, weekly, and manual dispatch.
-    if: needs.changes.outputs.code == 'true' && github.event_name != 'pull_request'
+    # Pull requests: only with the full-ci label or when build/CI files change (see Detect code changes).
+    if: needs.changes.outputs.code == 'true' && needs.changes.outputs.platform == 'true'
     runs-on: macos-latest
     timeout-minutes: 30
 
@@ -105,6 +122,7 @@ jobs:
           build
 
     - name: Upload Artifacts
+      if: github.event_name != 'pull_request'
       uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
       with:
         name: GenerativeMIDI-iOS
@@ -137,11 +155,13 @@ jobs:
       run: |
         git clone --depth 1 --branch "${JUCE_VERSION}" https://github.com/juce-framework/JUCE.git JUCE
 
-    - name: Install ccache
-      run: brew install ccache
+    - name: Install ccache and Ninja
+      run: brew install ccache ninja
 
-    - name: Cache ccache objects
-      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+    # Pull requests only restore (falling back to the newest master-scope cache); saving is done
+    # by the "Save ccache objects" step below on non-PR events. See docs/developer/CI.md.
+    - name: Restore ccache objects
+      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
         path: ~/Library/Caches/ccache
         key: ccache-macos-${{ github.sha }}
@@ -151,18 +171,32 @@ jobs:
       run: |
         mkdir -p build
         cd build
-        cmake .. -DCMAKE_BUILD_TYPE=Release \
+        cmake .. -G Ninja -DCMAKE_BUILD_TYPE=Release \
           -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
-        cmake --build . --config Release
+        if [ "${GITHUB_EVENT_NAME}" = "pull_request" ]; then
+          # PRs build only what the checks below consume: the VST3 (pluginval) and the
+          # Catch2 executables (ctest). AU, AUv3 and Standalone are built on master.
+          cmake --build . --config Release --target GenerativeMIDI_VST3 GenerativeMIDITests GenerativeMIDIHostSmokeTests
+        else
+          cmake --build . --config Release
+        fi
         ccache --show-stats
+
+    - name: Save ccache objects
+      if: github.event_name != 'pull_request'
+      uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: ~/Library/Caches/ccache
+        key: ccache-macos-${{ github.sha }}
 
     - name: Run unit tests
       run: |
         cd build
         ctest --output-on-failure -C Release
 
-    - name: Cache pluginval download
-      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+    - name: Restore pluginval download
+      id: pluginval-cache
+      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
         path: pluginval.zip
         key: pluginval-${{ env.PLUGINVAL_VERSION }}-macOS
@@ -173,6 +207,13 @@ jobs:
         echo "${PLUGINVAL_SHA256_MACOS}  pluginval.zip" | shasum -a 256 -c -
         unzip -q pluginval.zip
         chmod +x pluginval.app/Contents/MacOS/pluginval
+
+    - name: Save pluginval download
+      if: github.event_name != 'pull_request' && steps.pluginval-cache.outputs.cache-hit != 'true'
+      uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: pluginval.zip
+        key: pluginval-${{ env.PLUGINVAL_VERSION }}-macOS
 
     - name: Validate VST3 with pluginval
       run: |
@@ -198,6 +239,7 @@ jobs:
         retention-days: 14
 
     - name: Upload Artifacts
+      if: github.event_name != 'pull_request'
       uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
       with:
         name: GenerativeMIDI-macOS
@@ -208,7 +250,7 @@ jobs:
   build-windows:
     name: Build Windows VST3
     needs: changes
-    if: needs.changes.outputs.code == 'true' && github.event_name != 'pull_request'
+    if: needs.changes.outputs.code == 'true' && needs.changes.outputs.platform == 'true'
     # Pin windows-2022: windows-latest may be VS 2026-only, which breaks -G "Visual Studio 17 2022".
     runs-on: windows-2022
     timeout-minutes: 45
@@ -226,8 +268,16 @@ jobs:
       run: |
         git clone --depth 1 --branch "${JUCE_VERSION}" https://github.com/juce-framework/JUCE.git JUCE
 
+    # Ninja + MSVC needs the VS developer environment on PATH (cl.exe, link.exe, rc.exe, mt.exe).
+    - name: Set up MSVC developer environment
+      uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756 # v1.13.0
+      with:
+        arch: x64
+
+    # No debug-info flag: the Release flags carry no /Zi, and Windows has no ccache here yet
+    # (CMAKE_MSVC_DEBUG_INFORMATION_FORMAT would also be ignored: cmake_minimum_required is 3.15).
     - name: Configure
-      run: cmake -S . -B build -G "Visual Studio 17 2022" -A x64
+      run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
 
     - name: Build Plugins
       run: cmake --build build --config Release
@@ -267,6 +317,7 @@ jobs:
         retention-days: 14
 
     - name: Upload Artifacts
+      if: github.event_name != 'pull_request'
       uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
       with:
         name: GenerativeMIDI-Windows
@@ -308,29 +359,39 @@ jobs:
           libxrender-dev \
           libglu1-mesa-dev \
           libjack-jackd2-dev \
-          ccache
+          ccache \
+          ninja-build
 
     - name: Install JUCE
       run: |
         git clone --depth 1 --branch "${JUCE_VERSION}" https://github.com/juce-framework/JUCE.git JUCE
 
-    - name: Cache ccache objects
-      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+    # Pull requests only restore (falling back to the newest master-scope cache); saving is done
+    # by the "Save ccache objects" step below on non-PR events. See docs/developer/CI.md.
+    - name: Restore ccache objects
+      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
         path: ~/.cache/ccache
-        key: ccache-linux-${{ github.sha }}
-        restore-keys: ccache-linux-
+        key: ccache-linux-release-${{ github.sha }}
+        restore-keys: ccache-linux-release-
 
     - name: Configure
       run: |
         mkdir -p build
-        cmake -S . -B build -DCMAKE_BUILD_TYPE=Release \
+        cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release \
           -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
 
     - name: Build Plugins
       run: |
         cmake --build build --config Release -j"$(nproc)"
         ccache --show-stats
+
+    - name: Save ccache objects
+      if: github.event_name != 'pull_request'
+      uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: ~/.cache/ccache
+        key: ccache-linux-release-${{ github.sha }}
 
     - name: Run unit tests
       run: |
@@ -367,6 +428,7 @@ jobs:
         retention-days: 14
 
     - name: Upload Artifacts
+      if: github.event_name != 'pull_request'
       uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
       with:
         name: GenerativeMIDI-Linux
@@ -409,14 +471,17 @@ jobs:
           libxrender-dev \
           libglu1-mesa-dev \
           libjack-jackd2-dev \
-          ccache
+          ccache \
+          ninja-build
 
     - name: Install JUCE
       run: |
         git clone --depth 1 --branch "${JUCE_VERSION}" https://github.com/juce-framework/JUCE.git JUCE
 
-    - name: Cache ccache objects
-      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+    # Pull requests only restore (falling back to the newest master-scope cache); saving is done
+    # by the "Save ccache objects" step below on non-PR events. See docs/developer/CI.md.
+    - name: Restore ccache objects
+      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
         path: ~/.cache/ccache
         key: ccache-linux-asan-${{ github.sha }}
@@ -424,7 +489,7 @@ jobs:
 
     - name: Configure
       run: |
-        cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug \
+        cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug \
           -DGENMIDI_SANITIZE=address,undefined \
           -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
 
@@ -433,6 +498,13 @@ jobs:
       run: |
         cmake --build build --target GenerativeMIDITests GenerativeMIDIHostSmokeTests -j"$(nproc)"
         ccache --show-stats
+
+    - name: Save ccache objects
+      if: github.event_name != 'pull_request'
+      uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: ~/.cache/ccache
+        key: ccache-linux-asan-${{ github.sha }}
 
     - name: Run unit tests
       env:
@@ -445,8 +517,8 @@ jobs:
   sanitize-tsan:
     name: Sanitizers (TSan)
     needs: changes
-    # Not on pull requests: push to main/master, weekly, and manual dispatch.
-    if: needs.changes.outputs.code == 'true' && github.event_name != 'pull_request'
+    # Pull requests: only with the full-ci label or when build/CI files change (see Detect code changes).
+    if: needs.changes.outputs.code == 'true' && needs.changes.outputs.platform == 'true'
     runs-on: ubuntu-22.04
     timeout-minutes: 45
     # NON-REQUIRED / advisory: continue-on-error keeps a TSan finding from failing the run.
@@ -479,14 +551,17 @@ jobs:
           libxrender-dev \
           libglu1-mesa-dev \
           libjack-jackd2-dev \
-          ccache
+          ccache \
+          ninja-build
 
     - name: Install JUCE
       run: |
         git clone --depth 1 --branch "${JUCE_VERSION}" https://github.com/juce-framework/JUCE.git JUCE
 
-    - name: Cache ccache objects
-      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+    # Pull requests only restore (falling back to the newest master-scope cache); saving is done
+    # by the "Save ccache objects" step below on non-PR events. See docs/developer/CI.md.
+    - name: Restore ccache objects
+      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
         path: ~/.cache/ccache
         key: ccache-linux-tsan-${{ github.sha }}
@@ -498,7 +573,7 @@ jobs:
 
     - name: Configure
       run: |
-        cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug \
+        cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug \
           -DGENMIDI_SANITIZE=thread \
           -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
 
@@ -507,6 +582,13 @@ jobs:
       run: |
         cmake --build build --target GenerativeMIDITests GenerativeMIDIHostSmokeTests -j"$(nproc)"
         ccache --show-stats
+
+    - name: Save ccache objects
+      if: github.event_name != 'pull_request'
+      uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: ~/.cache/ccache
+        key: ccache-linux-tsan-${{ github.sha }}
 
     - name: Run unit tests
       env:
