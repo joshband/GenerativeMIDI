@@ -3,8 +3,8 @@ name: CI
 on:
   push:
     branches: [ main, master ]
+  # No base-branch filter: stacked PRs (base = another feature branch) also get CI.
   pull_request:
-    branches: [ main, master ]
   workflow_dispatch:
   schedule:
     # Weekly full matrix: iOS and Windows do not run on pull requests.
