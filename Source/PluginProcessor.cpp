@@ -56,6 +56,13 @@ GenerativeMIDIProcessor::GenerativeMIDIProcessor()
     if (wrapperType == wrapperType_Standalone)
         addBus(false);
 
+    // Cache the audio-thread parameters used every block (no string lookups in processBlock).
+    tempoParam = parameters.getRawParameterValue(PARAM_TEMPO);
+    syncToHostParam = parameters.getRawParameterValue(PARAM_SYNC_TO_HOST);
+    const auto tempoRange = parameters.getParameterRange(PARAM_TEMPO);
+    tempoMin = tempoRange.start;
+    tempoMax = tempoRange.end;
+
     // Setup clock manager callback
     clockManager.onSubdivisionHit = [this](int subdivision) {
         onSubdivisionHit(subdivision, 0);
@@ -262,6 +269,10 @@ juce::AudioProcessorValueTreeState::ParameterLayout GenerativeMIDIProcessor::cre
     params.push_back(std::make_unique<juce::AudioParameterBool>(
         PARAM_PIANO_ENABLE, "Piano", false));
 
+    // Appended last so sessions saved before this parameter existed load with the default (on).
+    params.push_back(std::make_unique<juce::AudioParameterBool>(
+        PARAM_SYNC_TO_HOST, "Sync to Host", true));
+
     return {params.begin(), params.end()};
 }
 
@@ -345,6 +356,7 @@ void GenerativeMIDIProcessor::prepareToPlay(double sampleRate, int samplesPerBlo
     lastHeldCcValue = -1;
     lastHeldPitchBend = -1;
     wasAdvancing = false;
+    haveLastHostPpq = false;
     lastGeneratorType = -1;
     lastPitchbendEnabled = parameters.getRawParameterValue(PARAM_PITCHBEND_ENABLE)->load() > 0.5f;
 
@@ -482,8 +494,15 @@ void GenerativeMIDIProcessor::processBlock(juce::AudioBuffer<float>& buffer, juc
     if (euclideanEngine.getRotation() != rotation)
         euclideanEngine.setRotation(rotation);
 
-    auto tempo = parameters.getRawParameterValue(PARAM_TEMPO)->load();
-    clockManager.setTempo(tempo);
+    // Tempo: the Tempo parameter, or the host's BPM (clamped to the parameter's range) when
+    // Sync to Host is on and the host reports one. Set before any restart so the grid uses it.
+    double effectiveTempo = static_cast<double>(tempoParam->load());
+    juce::Optional<double> hostBpm;
+    if (hostPosition.hasValue())
+        hostBpm = hostPosition->getBpm();
+    if (hostBpm.hasValue() && *hostBpm > 0.0 && syncToHostParam->load() > 0.5f)
+        effectiveTempo = juce::jlimit(static_cast<double>(tempoMin), static_cast<double>(tempoMax), *hostBpm);
+    clockManager.setTempo(effectiveTempo);
 
     // Process MIDI clock messages for external sync
     for (const auto metadata : midiMessages)
@@ -525,6 +544,39 @@ void GenerativeMIDIProcessor::processBlock(juce::AudioBuffer<float>& buffer, juc
                 startSixteenths = juce::jmax(0.0, *ppq * 4.0);
 
         realignToHost(startSixteenths);
+    }
+
+    // Loop / jump detection. While the transport keeps playing, the host ppq should advance by the
+    // previous block's duration at the host's tempo; anything further than a quarter of a 16th off
+    // means the host looped or relocated. A tempo change alone is not a jump (the prediction uses
+    // the previous block's tempo). Blocks that were already a play edge or a panic are not re-handled.
+    juce::Optional<double> hostPpq;
+    if (shouldAdvance && hostPosition.hasValue())
+        hostPpq = hostPosition->getPpqPosition();
+
+    const double jumpSampleRate = clockManager.getSampleRate();
+    if (shouldAdvance && wasAdvancing && !panic && hostPpq.hasValue() && haveLastHostPpq && jumpSampleRate > 0.0)
+    {
+        const double predicted = lastHostPpq
+                                 + (static_cast<double>(lastBlockSamples) / jumpSampleRate) * (lastBlockTempo / 60.0);
+        if (std::abs(*hostPpq - predicted) > 1.0 / 16.0)
+        {
+            releaseAllVoices(midiMessages);
+            realignToHost(juce::jmax(0.0, *hostPpq * 4.0));
+        }
+    }
+
+    if (hostPpq.hasValue())
+    {
+        lastHostPpq = *hostPpq;
+        // The ppq timeline runs at the host's tempo, even when Sync to Host is off.
+        lastBlockTempo = hostBpm.hasValue() && *hostBpm > 0.0 ? *hostBpm : effectiveTempo;
+        lastBlockSamples = buffer.getNumSamples();
+        haveLastHostPpq = true;
+    }
+    else
+    {
+        haveLastHostPpq = false;
     }
     wasAdvancing = shouldAdvance;
     lastGeneratorType = generatorNow;

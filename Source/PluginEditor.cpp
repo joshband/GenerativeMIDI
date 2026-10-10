@@ -122,6 +122,17 @@ GenerativeMIDIEditor::GenerativeMIDIEditor(GenerativeMIDIProcessor& p)
     pianoAttachment.reset(new juce::AudioProcessorValueTreeState::ButtonAttachment(
         audioProcessor.getValueTreeState(), "pianoEnable", pianoButton));
 
+    // Follow the host's tempo. Only meaningful inside a host, so it takes the Piano button's header slot there.
+    contentPanel.addAndMakeVisible(syncButton);
+    syncButton.setButtonText("Sync");
+    syncButton.setClickingTogglesState(true);
+    syncButton.setTitle("Sync to Host");
+    syncButton.setName("Sync to Host");
+    syncButton.setTooltip("Follow the host's tempo and re-align when the host loops or jumps");
+    syncButton.setVisible(audioProcessor.wrapperType != juce::AudioProcessor::wrapperType_Standalone);
+    syncAttachment.reset(new juce::AudioProcessorValueTreeState::ButtonAttachment(
+        audioProcessor.getValueTreeState(), "syncToHost", syncButton));
+
     // Generator type selector
     contentPanel.addAndMakeVisible(generatorLabel);
     generatorLabel.setText("Generator", juce::dontSendNotification);
@@ -1057,6 +1068,15 @@ void GenerativeMIDIEditor::layoutContent(juce::Rectangle<int> area)
     else
     {
         pianoButton.setBounds(0, 0, 0, 0);
+    }
+    if (syncButton.isVisible())
+    {
+        syncButton.setBounds(brand.removeFromLeft(64).withSizeKeepingCentre(60, controlH));
+        brand.removeFromLeft(6);
+    }
+    else
+    {
+        syncButton.setBounds(0, 0, 0, 0);
     }
     statusChipLabel.setBounds(brand);
 
