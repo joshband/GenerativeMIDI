@@ -1124,3 +1124,185 @@ TEST_CASE("PresetManager scan skips oversized preset files", "[preset][security]
 
     root.deleteRecursively();
 }
+
+// ============================================================================
+// StochasticEngine: seeding, Lorenz stability, Perlin precision
+// ============================================================================
+
+#include <cmath>
+#include <vector>
+#include <cstdint>
+
+namespace
+{
+    using GT = StochasticEngine::GeneratorType;
+
+    std::vector<float> runEngine(GT type, std::uint32_t seed, int steps, float dtSec)
+    {
+        StochasticEngine e;
+        e.setGeneratorType(type);
+        e.setSeed(seed);
+        std::vector<float> out;
+        for (int i = 0; i < steps; ++i)
+        {
+            e.advance(dtSec);
+            out.push_back(e.getCurrentValue());
+            out.push_back(e.getSecondaryValue());
+            out.push_back(e.getTertiaryValue());
+            out.push_back(e.shouldTriggerNote() ? 1.0f : 0.0f);
+        }
+        return out;
+    }
+
+    struct Stats { double mean = 0, var = 0, railFraction = 0, crossings = 0; bool finiteAndBounded = true; };
+
+    Stats lorenzStats(float stepSize, float timeScale, float dtSec, int steps, float momentum = 0.9f)
+    {
+        StochasticEngine e;
+        e.setGeneratorType(GT::LorenzAttractor);
+        e.setSeed(1);
+        e.setStepSize(stepSize);
+        e.setTimeScale(timeScale);
+        e.setMomentum(momentum);
+        std::vector<double> v;
+        Stats s;
+        for (int i = 0; i < steps; ++i)
+        {
+            e.advance(dtSec);
+            for (float f : { e.getCurrentValue(), e.getSecondaryValue(), e.getTertiaryValue() })
+                if (! std::isfinite(f) || f < 0.0f || f > 1.0f)
+                    s.finiteAndBounded = false;
+            v.push_back(e.getCurrentValue());
+            if (e.getCurrentValue() <= 0.0f || e.getCurrentValue() >= 1.0f
+                || e.getSecondaryValue() <= 0.0f || e.getSecondaryValue() >= 1.0f)
+                s.railFraction += 1.0;
+        }
+        s.railFraction /= (double) steps;
+        for (size_t i = 1; i < v.size(); ++i)
+            if ((v[i - 1] - 0.5) * (v[i] - 0.5) < 0.0)
+                s.crossings += 1.0; // lobe switches
+        for (double d : v) s.mean += d;
+        s.mean /= (double) v.size();
+        for (double d : v) s.var += (d - s.mean) * (d - s.mean);
+        s.var /= (double) v.size();
+        return s;
+    }
+}
+
+TEST_CASE("StochasticEngine is deterministic for a given seed", "[stochastic][seed]")
+{
+    for (auto type : { GT::BrownianMotion, GT::PerlinNoise, GT::DrunkWalk, GT::LorenzAttractor })
+    {
+        const auto a = runEngine(type, 1234u, 500, 0.02f);
+        const auto b = runEngine(type, 1234u, 500, 0.02f);
+        const auto c = runEngine(type, 4321u, 500, 0.02f);
+        REQUIRE(a == b);
+        REQUIRE(a != c); // note triggers at least differ between seeds
+    }
+}
+
+TEST_CASE("StochasticEngine reset() restarts a seeded engine identically", "[stochastic][seed]")
+{
+    StochasticEngine e;
+    e.setGeneratorType(GT::PerlinNoise);
+    e.setSeed(7u);
+    std::vector<float> first, second;
+    for (int i = 0; i < 100; ++i) { e.advance(0.05f); first.push_back(e.getCurrentValue()); }
+    e.reset();
+    for (int i = 0; i < 100; ++i) { e.advance(0.05f); second.push_back(e.getCurrentValue()); }
+    REQUIRE(first == second);
+}
+
+TEST_CASE("Lorenz stays finite, bounded and moving across the parameter grid", "[stochastic][lorenz][regression]")
+{
+    for (float step : { 0.01f, 0.1f, 0.5f, 1.0f })
+        for (float scale : { 0.01f, 0.1f, 1.0f, 10.0f })
+            for (float dtSec : { 0.001f, 0.01f, 0.1f })
+            {
+                INFO("stepSize=" << step << " timeScale=" << scale << " dt=" << dtSec);
+                const auto s = lorenzStats(step, scale, dtSec, 2000);
+                REQUIRE(s.finiteAndBounded);
+                REQUIRE(s.var > 1.0e-5);
+                REQUIRE(s.railFraction < 0.02);
+            }
+}
+
+TEST_CASE("Lorenz does not stick to the rails at fast settings", "[stochastic][lorenz][regression]")
+{
+    // Fast settings used to blow up the Euler step and pin the output at 0 or 1.
+    StochasticEngine e;
+    e.setGeneratorType(GT::LorenzAttractor);
+    e.setStepSize(1.0f);
+    e.setTimeScale(10.0f);
+    int atRail = 0;
+    const int n = 2000;
+    for (int i = 0; i < n; ++i)
+    {
+        e.advance(0.05f);
+        const float v = e.getCurrentValue();
+        if (v <= 0.0f || v >= 1.0f) ++atRail;
+    }
+    REQUIRE(atRail < n / 20);
+}
+
+TEST_CASE("Lorenz statistics do not depend on how time is chopped into calls", "[stochastic][lorenz][regression]")
+{
+    // Same 200 s delivered as 1 ms, 10 ms and 100 ms calls.
+    const auto a = lorenzStats(0.1f, 1.0f, 0.001f, 200000);
+    const auto b = lorenzStats(0.1f, 1.0f, 0.01f, 20000);
+    const auto c = lorenzStats(0.1f, 1.0f, 0.1f, 2000);
+    for (const auto* s : { &a, &b, &c })
+        REQUIRE(s->finiteAndBounded);
+    // Lobe-switch count tracks simulated time, so it exposes tempo-dependent speed.
+    REQUIRE(a.crossings > 200.0);
+    REQUIRE(std::abs(b.crossings - a.crossings) < 0.15 * a.crossings);
+    REQUIRE(std::abs(c.crossings - a.crossings) < 0.15 * a.crossings);
+    REQUIRE(std::abs(a.mean - b.mean) < 0.06);
+    REQUIRE(std::abs(a.mean - c.mean) < 0.06);
+    REQUIRE(std::abs(std::sqrt(a.var) - std::sqrt(b.var)) < 0.05);
+    REQUIRE(std::abs(std::sqrt(a.var) - std::sqrt(c.var)) < 0.05);
+}
+
+TEST_CASE("Perlin noise stays smooth after very long runtimes", "[stochastic][perlin][regression]")
+{
+    StochasticEngine e;
+    e.setGeneratorType(GT::PerlinNoise);
+    e.setSeed(99u);
+    e.setTimeScale(10.0f);
+    // ~1e7 noise-time units: beyond float's integer precision.
+    for (int i = 0; i < 1000; ++i) e.advance(1000.0f);
+    e.setTimeScale(1.0f);
+
+    float prev = e.getCurrentValue();
+    float maxJump = 0.0f, minV = 1.0f, maxV = 0.0f;
+    for (int i = 0; i < 2000; ++i)
+    {
+        e.advance(0.005f);
+        const float v = e.getCurrentValue();
+        maxJump = std::max(maxJump, std::abs(v - prev));
+        minV = std::min(minV, v);
+        maxV = std::max(maxV, v);
+        prev = v;
+    }
+    REQUIRE(maxV - minV > 0.05f); // still evolving (float time froze at ~1e7)
+    REQUIRE(maxJump < 0.05f);     // and still continuous
+}
+
+TEST_CASE("Perlin noise is continuous across the time wrap", "[stochastic][perlin]")
+{
+    StochasticEngine e;
+    e.setGeneratorType(GT::PerlinNoise);
+    e.setSeed(5u);
+    e.setStepSize(0.1f);  // freq 1
+    e.setTimeScale(1.0f);
+    // noise time passes the 256 lattice period after 25600 steps of 10 ms.
+    float prev = 0.0f, maxJump = 0.0f;
+    for (int i = 0; i < 25800; ++i)
+    {
+        e.advance(0.01f);
+        const float v = e.getCurrentValue();
+        if (i > 25500) maxJump = std::max(maxJump, std::abs(v - prev));
+        prev = v;
+    }
+    REQUIRE(maxJump < 0.03f);
+}
