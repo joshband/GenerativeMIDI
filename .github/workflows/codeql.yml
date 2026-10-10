@@ -3,8 +3,9 @@ name: CodeQL
 on:
   push:
     branches: [ main, master ]
+  # No base-branch filter: stacked PRs also get the (cheap) actions scan.
   pull_request:
-    branches: [ main, master ]
+    types: [opened, synchronize, reopened, labeled]
   workflow_dispatch:
   schedule:
     - cron: "41 5 * * 3"
@@ -20,8 +21,45 @@ env:
   JUCE_VERSION: "8.0.15"
 
 jobs:
+  # The c-cpp scan needs a full uncached build (~15 min), so on pull requests it only runs with the
+  # full-ci label or when build/CI files change. Always on push to master, weekly and manual runs.
+  # The actions scan is cheap and runs everywhere. Skipped matrix entries are not required checks.
+  scope:
+    name: CodeQL scope
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      cpp: ${{ steps.diff.outputs.cpp }}
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        fetch-depth: 0
+
+    - name: Decide whether to scan c-cpp
+      id: diff
+      env:
+        EVENT: ${{ github.event_name }}
+        BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        FULL_CI_LABEL: ${{ contains(github.event.pull_request.labels.*.name, 'full-ci') }}
+      run: |
+        if [ "${EVENT}" != "pull_request" ] || [ "${FULL_CI_LABEL}" = "true" ]; then
+          echo "cpp=true" >> "$GITHUB_OUTPUT"; exit 0
+        fi
+        cpp=false
+        while IFS= read -r f; do
+          case "$f" in
+            CMakeLists.txt|*/CMakeLists.txt|cmake/*|*.cmake|.github/*|.gitmodules)
+              cpp=true; echo "build change: $f" ;;
+          esac
+        done < <(git diff --name-only "${BASE_SHA}" "${HEAD_SHA}")
+        echo "cpp=${cpp}" >> "$GITHUB_OUTPUT"
+
   analyze:
     name: CodeQL (${{ matrix.language }})
+    needs: scope
+    if: matrix.language != 'c-cpp' || needs.scope.outputs.cpp == 'true'
     runs-on: ubuntu-22.04
     timeout-minutes: 60
     permissions:
@@ -77,12 +115,13 @@ jobs:
         git clone --depth 1 --branch "${JUCE_VERSION}" https://github.com/juce-framework/JUCE.git JUCE
 
     # No ccache here: a cache hit skips the compiler and CodeQL would extract nothing.
-    # Build the first-party code only (shared plugin code + unit tests), not the format wrappers.
+    # One target is enough: GenerativeMIDI compiles every first-party .cpp under Source/ (SOURCE_FILES);
+    # the test executables only re-compile a subset of them. No format wrappers.
     - name: Build
       if: matrix.build-mode == 'manual'
       run: |
         cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
-        cmake --build build --target GenerativeMIDI GenerativeMIDITests -j"$(nproc)"
+        cmake --build build --target GenerativeMIDI -j"$(nproc)"
 
     - name: Perform CodeQL analysis
       uses: github/codeql-action/analyze@24c54180a607b1449ed407dd24f251e4e9147c8d # v4.38.3
