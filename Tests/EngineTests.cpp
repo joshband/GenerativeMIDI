@@ -1472,3 +1472,26 @@ TEST_CASE("ClockManager ignores an invalid sample rate instead of hanging", "[cl
 
     REQUIRE(std::isfinite(clock.getSamplesPerSubdivision(0)));
 }
+
+TEST_CASE("PolyrhythmEngine restarts every layer on requestRestart", "[polyrhythm]")
+{
+    PolyrhythmEngine engine;
+    engine.setLayerDivision(0, 16); // every tick
+    engine.setLayerLength(0, 4);
+    engine.resetLayer(0);
+
+    // Play for three ticks: steps 0, 1, 2 are emitted and the layer sits on step 3.
+    for (int tick = 0; tick < 3; ++tick)
+        engine.processTick(16, [](const PolyrhythmLayer&, int) {});
+    REQUIRE(engine.getCurrentStep(0) == 3);
+
+    // Transport stops and starts again: the next tick must emit step 0, not continue at 3.
+    engine.requestRestart();
+    std::vector<int> steps;
+    for (int tick = 0; tick < 5; ++tick)
+        engine.processTick(16, [&](const PolyrhythmLayer&, int step) { steps.push_back(step); });
+    REQUIRE(steps == std::vector<int> { 0, 1, 2, 3, 0 });
+
+    // A request is consumed once: it does not keep resetting the layer.
+    REQUIRE(engine.getCurrentStep(0) == 1);
+}

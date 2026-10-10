@@ -82,7 +82,8 @@ void PolyrhythmEngine::resetPlayState(int index, const PolyrhythmLayer& layer) n
 
 void PolyrhythmEngine::applyPendingReset(const Snapshot& snap) noexcept
 {
-    if (snap.loadId == appliedLoadId)
+    const bool restart = restartRequested.exchange(false, std::memory_order_acq_rel);
+    if (snap.loadId == appliedLoadId && !restart)
         return;
     appliedLoadId = snap.loadId;
     for (size_t i = 0; i < snap.layers.size(); ++i)
