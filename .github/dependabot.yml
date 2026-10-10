@@ -5,6 +5,10 @@ updates:
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
+    # One PR per week for all action bumps, so CI runs once instead of per action.
+    groups:
+      github-actions:
+        patterns: [ "*" ]
 
   # The `art` submodule (SynaptikUIToolkit). Dependabot opens a PR when the
   # submodule's default branch moves.
