@@ -9,6 +9,26 @@ project(GenerativeMIDI VERSION 1.0.0)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# Sanitizers (GCC/Clang only). Values: empty (off, default), "address,undefined", "thread".
+# Applied to the plugin and test targets. Use a Debug or RelWithDebInfo build.
+# See docs/developer/CI.md. ASan/UBSan and TSan cannot be combined.
+set(GENMIDI_SANITIZE "" CACHE STRING "Sanitizers to enable: '', 'address,undefined' or 'thread'")
+set_property(CACHE GENMIDI_SANITIZE PROPERTY STRINGS "" "address,undefined" "thread")
+if(GENMIDI_SANITIZE)
+    if(NOT CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+        message(FATAL_ERROR "GENMIDI_SANITIZE requires GCC or Clang (got ${CMAKE_CXX_COMPILER_ID})")
+    endif()
+    if(NOT GENMIDI_SANITIZE MATCHES "^(address,undefined|thread)$")
+        message(FATAL_ERROR "GENMIDI_SANITIZE must be empty, 'address,undefined' or 'thread' (got '${GENMIDI_SANITIZE}')")
+    endif()
+    message(STATUS "GenerativeMIDI: sanitizers enabled: ${GENMIDI_SANITIZE}")
+    set(GENMIDI_SANITIZE_FLAGS -fsanitize=${GENMIDI_SANITIZE} -fno-omit-frame-pointer)
+    if(GENMIDI_SANITIZE MATCHES "undefined")
+        # Make UBSan findings fail the test instead of only printing.
+        list(APPEND GENMIDI_SANITIZE_FLAGS -fno-sanitize-recover=undefined)
+    endif()
+endif()
+
 # Add JUCE - using symlink to ~/JUCE
 if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/JUCE/CMakeLists.txt")
     add_subdirectory(JUCE)
@@ -86,6 +106,12 @@ target_compile_definitions(GenerativeMIDI
         JUCE_USE_CURL=0
         JUCE_VST3_CAN_REPLACE_VST2=0
 )
+
+# Sanitizer flags: PUBLIC so the format wrappers and host-smoke test inherit them.
+if(GENMIDI_SANITIZE)
+    target_compile_options(GenerativeMIDI PUBLIC ${GENMIDI_SANITIZE_FLAGS})
+    target_link_options(GenerativeMIDI PUBLIC ${GENMIDI_SANITIZE_FLAGS})
+endif()
 
 # Link JUCE libraries
 target_link_libraries(GenerativeMIDI
@@ -180,6 +206,11 @@ target_compile_definitions(GenerativeMIDIHostSmokeTests PRIVATE
     JUCE_WEB_BROWSER=0
     JUCE_USE_CURL=0
 )
+
+if(GENMIDI_SANITIZE)
+    target_compile_options(GenerativeMIDITests PRIVATE ${GENMIDI_SANITIZE_FLAGS})
+    target_link_options(GenerativeMIDITests PRIVATE ${GENMIDI_SANITIZE_FLAGS})
+endif()
 
 include(CTest)
 include(Catch)
