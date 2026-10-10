@@ -431,9 +431,34 @@ bool GenerativeMIDIProcessor::canApplyBusCountChange(bool isInput, bool isAdding
     return true;
 }
 
+void GenerativeMIDIProcessor::releaseAllVoices(juce::MidiBuffer& midiMessages)
+{
+    eventScheduler.allNotesOff(midiMessages, 0, &midiActivityLog);
+    for (auto& voice : melodyVoices)
+        voice = {};
+    expressionHoldUntil = 0;
+    lastHeldCcNumber = -1;
+    lastHeldCcValue = -1;
+    lastHeldPitchBend = -1;
+}
+
+void GenerativeMIDIProcessor::realignToHost(double startSixteenths)
+{
+    clockManager.restart(startSixteenths);
+    polyrhythmEngine.requestRestart();
+    lastSubdivisionStep = static_cast<int>(std::ceil(startSixteenths - 1.0e-6));
+}
+
 void GenerativeMIDIProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
 {
     juce::ScopedNoDenormals noDenormals;
+
+    // Read the host position once per block. Standalone ignores the host entirely.
+    juce::Optional<juce::AudioPlayHead::PositionInfo> hostPosition;
+    if (wrapperType != wrapperType_Standalone)
+        if (auto* hostPlayHead = getPlayHead())
+            hostPosition = hostPlayHead->getPosition();
+
     const int bufferChannels = buffer.getNumChannels();
     const int totalNumInputChannels = juce::jmin(getTotalNumInputChannels(), bufferChannels);
     const int totalNumOutputChannels = juce::jmin(getTotalNumOutputChannels(), bufferChannels);
@@ -470,14 +495,8 @@ void GenerativeMIDIProcessor::processBlock(juce::AudioBuffer<float>& buffer, juc
     // Advance when host is playing. Standalone free-runs (ignore transport gate);
     // host smoke tests attach a FakePlayHead on a non-Standalone processor.
     bool shouldAdvance = true;
-    if (wrapperType != wrapperType_Standalone)
-    {
-        if (auto* hostPlayHead = getPlayHead())
-        {
-            if (auto position = hostPlayHead->getPosition())
-                shouldAdvance = position->getIsPlaying();
-        }
-    }
+    if (hostPosition.hasValue())
+        shouldAdvance = hostPosition->getIsPlaying();
     clockAdvancing.store(shouldAdvance, std::memory_order_relaxed);
 
     // Panic when the host stops, the generator changes, or the session was torn down:
@@ -489,13 +508,7 @@ void GenerativeMIDIProcessor::processBlock(juce::AudioBuffer<float>& buffer, juc
                        || (lastGeneratorType >= 0 && generatorNow != lastGeneratorType);
     if (panic)
     {
-        eventScheduler.allNotesOff(midiMessages, 0, &midiActivityLog);
-        for (auto& voice : melodyVoices)
-            voice = {};
-        expressionHoldUntil = 0;
-        lastHeldCcNumber = -1;
-        lastHeldCcValue = -1;
-        lastHeldPitchBend = -1;
+        releaseAllVoices(midiMessages);
     }
     else if (lastPitchbendEnabled && !bendEnabledNow)
     {
@@ -507,14 +520,11 @@ void GenerativeMIDIProcessor::processBlock(juce::AudioBuffer<float>& buffer, juc
         // the host bar. With a host ppq the grid starts at that song position; without one
         // (standalone free-run) it starts at the top.
         double startSixteenths = 0.0;
-        if (auto* hostPlayHead = getPlayHead())
-            if (auto position = hostPlayHead->getPosition())
-                if (auto ppq = position->getPpqPosition())
-                    startSixteenths = juce::jmax(0.0, *ppq * 4.0);
+        if (hostPosition.hasValue())
+            if (auto ppq = hostPosition->getPpqPosition())
+                startSixteenths = juce::jmax(0.0, *ppq * 4.0);
 
-        clockManager.restart(startSixteenths);
-        polyrhythmEngine.requestRestart();
-        lastSubdivisionStep = static_cast<int>(std::ceil(startSixteenths - 1.0e-6));
+        realignToHost(startSixteenths);
     }
     wasAdvancing = shouldAdvance;
     lastGeneratorType = generatorNow;

@@ -217,6 +217,10 @@ private:
 
     // Helper methods
     void processGenerativeOutput(juce::MidiBuffer& midiMessages, int numSamples);
+    /** All-notes-off + pitch-bend centre into the block, and forget every held voice / expression state. */
+    void releaseAllVoices(juce::MidiBuffer& midiMessages);
+    /** Restart the 16th grid, polyrhythm layers and step counter at a song position (in 16ths). */
+    void realignToHost(double startSixteenths);
     void onSubdivisionHit(int subdivision, int sampleOffset = 0);
     bool continuousExpressionActive() const;
     void emitContinuousExpression(int64_t sampleTime);
