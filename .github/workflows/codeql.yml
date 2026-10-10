@@ -116,13 +116,13 @@ jobs:
         git clone --depth 1 --branch "${JUCE_VERSION}" https://github.com/juce-framework/JUCE.git JUCE
 
     # No ccache here: a cache hit skips the compiler and CodeQL would extract nothing.
-    # One target is enough: GenerativeMIDI compiles every first-party .cpp under Source/ (SOURCE_FILES);
-    # the test executables only re-compile a subset of them. No format wrappers.
+    # Both targets: building GenerativeMIDI alone was measured slower (1107 s and 1025 s vs 884 s), so the
+    # test executables stay in (JUCE modules dominate the build). No format wrappers.
     - name: Build
       if: matrix.build-mode == 'manual'
       run: |
         cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
-        cmake --build build --target GenerativeMIDI -j"$(nproc)"
+        cmake --build build --target GenerativeMIDI GenerativeMIDITests -j"$(nproc)"
 
     - name: Perform CodeQL analysis
       uses: github/codeql-action/analyze@24c54180a607b1449ed407dd24f251e4e9147c8d # v4.38.3

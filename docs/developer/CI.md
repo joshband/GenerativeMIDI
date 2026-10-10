@@ -51,7 +51,7 @@ GitHub cache scope: a run can read caches created on its own ref, on the PR base
 
 All ccache caches and the pluginval download use `actions/cache/restore` everywhere and `actions/cache/save` only when `github.event_name != 'pull_request'`. Keys are `ccache-<platform>-<sha>` with the restore-keys prefix `ccache-<platform>-`, so a PR starts from the newest master cache. The first master run after the switch to Ninja repopulates the caches.
 
-CodeQL (codeql.yml) runs `CodeQL (c-cpp)` (manual build: `cmake` on Ubuntu, targets `GenerativeMIDI` and `GenerativeMIDITests`, no ccache so extraction sees every compile) and `CodeQL (actions)` (scans the workflow files) on pull requests, pushes to master, weekly (Wednesday 05:41 UTC) and manual dispatch. JUCE, `art` and `build` are excluded via `.github/codeql/codeql-config.yml`. Results appear under Security > Code scanning.
+CodeQL (codeql.yml) first runs `CodeQL scope`, which builds the analysis matrix. `CodeQL (actions)` runs on every PR; `CodeQL (c-cpp)` runs on push to master, weekly, manual dispatch, and on PRs with the `full-ci` label or build-file changes (it needs an uncached ~15 to 18 minute build and used to be cancelled by most pushes). It runs `CodeQL (c-cpp)` (manual build: `cmake` on Ubuntu, targets `GenerativeMIDI` and `GenerativeMIDITests`, no ccache so extraction sees every compile) and `CodeQL (actions)` (scans the workflow files) on pull requests, pushes to master, weekly (Wednesday 05:41 UTC) and manual dispatch. JUCE, `art` and `build` are excluded via `.github/codeql/codeql-config.yml`. Results appear under Security > Code scanning.
 
 ### Docs-only skip
 
@@ -79,7 +79,24 @@ Pinned toolchain:
 
 Measured from real runs (one sample each; runner noise is a few tens of seconds).
 
-TIMINGS_PLACEHOLDER
+| Job / step | Before | After | Notes |
+|---|---|---|---|
+| macOS job, PR | 5m12s (build step 251s) | 1m20s to 1m49s (build step 53 to 83s) | VST3 + test targets only; build step was 83s with Makefiles and 53 to 63s with Ninja. Cache restore comes from master/base scope |
+| macOS job, full build (dispatch) | 4m25s (build 214s) | 1m52s to 2m16s (build 76 to 87s) | warm ccache; Ninja on |
+| Linux job, PR, warm cache | 2m27s to 3m03s | 2m21s (build 93s) | Ninja equals Makefiles when the cache is warm: no gain |
+| Linux job, cold or wrong cache | 6m48s (dispatch) | 3m55s to 6m49s | see the cache-prefix note below |
+| ASan+UBSan, PR | 1m11s to 1m22s | 1m07s | unchanged (noise) |
+| Windows job (dispatch) | 10m51s (configure 114s, build 506s) | 7m07s to 9m26s (configure 79 to 103s, build 313 to 426s) | VS 2022 generator replaced by Ninja + MSVC; one variant of this table was measured on 4 runs, spread is large |
+| iOS job (dispatch) | 4m32s | 4m33s to 5m06s | Xcode generator, unchanged |
+| CodeQL (c-cpp) | 14m44s, on every PR push | skipped on PRs unless `full-ci` or build files change; 17m to 18m when it runs | building only `GenerativeMIDI` instead of both targets was slower (1107s, 1025s vs 884s), so both targets stay |
+| CodeQL (actions) | 40s | 50s | runs on every PR |
+
+Notes:
+
+- The Linux release ccache used the restore-keys prefix `ccache-linux-`, which also matches `ccache-linux-asan-` and `ccache-linux-tsan-`; a second run restored a sanitizer cache and got a 3% hit rate. The key is now `ccache-linux-release-`.
+- Switching generators changes nothing about ccache hashing in practice (second Ninja run with its own cache: Linux 93s build step), but the first run per cache scope after any key change is cold.
+- Cache saves only happen on master, schedule and dispatch, so PRs see the numbers above only after a master run has populated the Ninja-era caches.
+
 
 ## Sanitizers
 
