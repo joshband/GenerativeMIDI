@@ -350,7 +350,7 @@ void PresetBrowser::paintListBoxItem(int rowNumber, juce::Graphics& g,
     // Preset name
     g.setColour(rowIsSelected ? juce::Colour(CustomLookAndFeel::AETHER_CYAN)
                               : juce::Colour(CustomLookAndFeel::GOLD_TEMPLE));
-    g.setFont(juce::Font(14.0f, preset.isFactory ? juce::Font::bold : juce::Font::plain));
+    g.setFont(juce::Font(juce::FontOptions(14.0f, preset.isFactory ? juce::Font::bold : juce::Font::plain)));
     g.drawText(preset.name, 14, 0, width - 130, height, juce::Justification::centredLeft);
 }
 

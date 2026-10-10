@@ -17,7 +17,6 @@ StochasticEngine::StochasticEngine()
       sigma(10.0f),
       rho(28.0f),
       beta(8.0f / 3.0f),
-      dt(0.01f),
       rng(std::random_device{}()),
       uniform01(0.0f, 1.0f),
       normalDist(0.0f, 1.0f)

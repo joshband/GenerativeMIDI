@@ -273,8 +273,8 @@ public:
     }
 
     void drawLinearSlider(juce::Graphics& g, int x, int y, int width, int height,
-                         float sliderPos, float minSliderPos, float maxSliderPos,
-                         const juce::Slider::SliderStyle style, juce::Slider& slider) override
+                         float sliderPos, float /*minSliderPos*/, float /*maxSliderPos*/,
+                         const juce::Slider::SliderStyle /*style*/, juce::Slider& slider) override
     {
         // For vertical sliders with loaded rail image, use image-based rendering
         if (false && !slider.isHorizontal() && sliderVerticalRail.isValid())
